@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# This script validates the app icon set and provides instructions for manually adding it to the project
+
+echo "Validating app icon set..."
+xcrun actool --output-format human-readable-text --notices --warnings --platform iphoneos --minimum-deployment-target 14.0 --target-device iphone --target-device ipad --app-icon AppIcon --output-partial-info-plist /dev/null --compile PlaydatesApp/Assets.xcassets PlaydatesApp/Assets.xcassets
+
+echo ""
+echo "If the app icon is still not showing up when you push the app to your device, try these manual steps:"
+echo ""
+echo "1. Open the project in Xcode:"
+echo "   open Playdates.xcodeproj"
+echo ""
+echo "2. In Xcode, select the project in the Project Navigator (left sidebar)"
+echo ""
+echo "3. Select the 'Playdates' target"
+echo ""
+echo "4. Go to the 'General' tab"
+echo ""
+echo "5. In the 'App Icons and Launch Images' section, make sure 'AppIcon' is selected for 'App Icons Source'"
+echo ""
+echo "6. Clean the build folder (Shift+Command+K)"
+echo ""
+echo "7. Build and run the app again (Command+R)"
+echo ""
+echo "8. If the icon still doesn't appear, try these additional steps:"
+echo "   a. Delete the app from your device"
+echo "   b. Restart Xcode"
+echo "   c. Clean the build folder again"
+echo "   d. Build and run the app"
+echo ""
+echo "9. As a last resort, you can try creating a new app icon set in Xcode:"
+echo "   a. In Xcode, open Assets.xcassets"
+echo "   b. Right-click and select 'New App Icon'"
+echo "   c. Drag and drop the icon files from Finder into the appropriate slots"
+echo "   d. Update the project settings to use this new app icon set"
+echo ""

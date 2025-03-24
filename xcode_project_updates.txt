@@ -1,0 +1,24 @@
+Xcode Project Update Instructions
+================================
+
+Since we've consolidated the app into a 2-tab structure (Dashboard and Social),
+follow these steps to update your Xcode project:
+
+1. Remove old view references from project navigator:
+   - PlaydatesApp/Views/Explore
+   - PlaydatesApp/Views/Playdates  
+   - PlaydatesApp/Views/Friends
+   - PlaydatesApp/Views/Profile
+   - PlaydatesApp/Views/Home
+
+2. Add new view structure:
+   - PlaydatesApp/Views/Dashboard/DashboardView.swift
+   - PlaydatesApp/Views/Social/SocialView.swift
+   - PlaydatesApp/Views/MainTabView.swift (already updated)
+
+3. Make sure all views import the ModelImports file:
+   import "PlaydatesApp/Utils/ModelImports.swift"
+   
+4. Update project settings to remove any build phase references to deleted files
+
+5. Clean build folder (Shift+Command+K) and rebuild project

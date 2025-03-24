@@ -1,0 +1,19 @@
+// MARK: - Playdate Cards
+"playdate.status.completed" = "Completado";
+"playdate.status.inProgress" = "En Progreso";
+"playdate.location.unknown" = "Ubicación desconocida";
+"playdate.participants" = "%d participantes";
+"playdate.activity" = "Actividad";
+"playdate.invitation" = "Invitación";
+"playdate.invitation.accept" = "Aceptar";
+"playdate.invitation.decline" = "Rechazar";
+
+// MARK: - Activity Cards
+"activity.featured" = "DESTACADO";
+
+// MARK: - Common UI Components
+"common.user" = "Usuario";
+
+// MARK: - Empty States
+"emptystate.title.default" = "No hay nada que ver aquí";
+"emptystate.message.default" = "Vuelve más tarde para actualizaciones";
