@@ -3,529 +3,24 @@ import Firebase
 import FirebaseFirestore
 import Combine
 
-class FriendshipViewModel: ObservableObject {
-    @Published var friends: [User] = []
-    @Published var friendRequests: [FriendRequest] = []
-    @Published var sentRequests: [FriendRequest] = []
-    @Published var isLoading = false
-    @Published var error: String?
+// MARK: - Extend FriendshipViewModel with Chat and Invitation Functionality
+
+extension FriendshipViewModel {
     
-    private let db = Firestore.firestore()
-    private var cancellables = Set<AnyCancellable>()
-    private var friendsListener: ListenerRegistration?
-    private var requestsListener: ListenerRegistration?
+    // MARK: - Chat Methods
     
-    deinit {
-        friendsListener?.remove()
-        requestsListener?.remove()
-    }
-    
-    // MARK: - Fetch Friends and Requests
-    
-    func fetchFriends(for userID: String) {
+    /// Fetches the chat history between the current user and a friend
+    func fetchChatHistory(userID: String, friendID: String, completion: @escaping (Result<[ChatMessage], Error>) -> Void) {
         isLoading = true
-        error = nil
         
-        // Remove any existing listener
-        friendsListener?.remove()
+        // Create a unique chat ID for the conversation
+        let chatID = getChatID(userID: userID, friendID: friendID)
         
-        // Set up a real-time listener for friendships
-        friendsListener = db.collection("friendships")
-            .whereField("status", isEqualTo: FriendshipStatus.accepted.rawValue)
-            .addSnapshotListener { [weak self] snapshot, error in
-                guard let self = self else { return }
-                
-                self.isLoading = false
-                
-                if let error = error {
-                    self.error = error.localizedDescription
-                    return
-                }
-                
-                guard let documents = snapshot?.documents else {
-                    self.friends = []
-                    return
-                }
-                
-                do {
-                    let friendships = try documents.compactMap { document -> Friendship? in
-                        try document.data(as: Friendship.self)
-                    }
-                    
-                    // Filter friendships for the current user
-                    let userFriendships = friendships.filter { 
-                        $0.userID == userID || $0.friendID == userID 
-                    }
-                    
-                    // Get the IDs of all friends
-                    let friendIDs = userFriendships.compactMap { friendship -> String? in
-                        if friendship.userID == userID {
-                            return friendship.friendID
-                        } else if friendship.friendID == userID {
-                            return friendship.userID
-                        }
-                        return nil
-                    }
-                    
-                    if friendIDs.isEmpty {
-                        DispatchQueue.main.async {
-                            self.friends = []
-                        }
-                        return
-                    }
-                    
-                    // Fetch user profiles for all friends
-                    self.fetchUserProfiles(for: friendIDs) { result in
-                        switch result {
-                        case .success(let users):
-                            DispatchQueue.main.async {
-                                self.friends = users
-                            }
-                        case .failure(let error):
-                            self.error = error.localizedDescription
-                        }
-                    }
-                } catch {
-                    self.error = "Failed to decode friendships: \(error.localizedDescription)"
-                }
-            }
-    }
-    
-    func fetchFriendRequests(for userID: String) {
-        isLoading = true
-        error = nil
-        
-        // Remove any existing listener
-        requestsListener?.remove()
-        
-        // Set up a real-time listener for friend requests
-        requestsListener = db.collection("friendRequests")
-            .whereField("status", isEqualTo: FriendRequestStatus.pending.rawValue)
-            .addSnapshotListener { [weak self] snapshot, error in
-                guard let self = self else { return }
-                
-                self.isLoading = false
-                
-                if let error = error {
-                    self.error = error.localizedDescription
-                    return
-                }
-                
-                guard let documents = snapshot?.documents else {
-                    self.friendRequests = []
-                    self.sentRequests = []
-                    return
-                }
-                
-                do {
-                    let requests = try documents.compactMap { document -> FriendRequest? in
-                        try document.data(as: FriendRequest.self)
-                    }
-                    
-                    DispatchQueue.main.async {
-                        // Separate received and sent requests
-                        self.friendRequests = requests.filter { $0.recipientID == userID }
-                        self.sentRequests = requests.filter { $0.senderID == userID }
-                    }
-                    
-                    // Fetch user profiles for request senders
-                    let senderIDs = self.friendRequests.map { $0.senderID }
-                    if !senderIDs.isEmpty {
-                        self.fetchUserProfiles(for: senderIDs) { _ in }
-                    }
-                } catch {
-                    self.error = "Failed to decode friend requests: \(error.localizedDescription)"
-                }
-            }
-    }
-    
-    private func fetchUserProfiles(for userIDs: [String], completion: @escaping (Result<[User], Error>) -> Void) {
-        let group = DispatchGroup()
-        var users: [User] = []
-        var fetchError: Error?
-        
-        for userID in userIDs {
-            group.enter()
-            
-            db.collection("users").document(userID).getDocument { [weak self] snapshot, error in
-                defer { group.leave() }
-                
-                guard let self = self else { return }
-                
-                if let error = error {
-                    fetchError = error
-                    return
-                }
-                
-                guard let snapshot = snapshot, snapshot.exists else {
-                    return
-                }
-                
-                // Parse document using FirebaseSafetyKit static methods
-                if let rawData = snapshot.data() {
-                    // IMMEDIATELY sanitize all data to prevent NSNumber->String crashes
-                    let data = FirebaseSafetyKit.sanitizeData(rawData) ?? [:]
-                    
-                    // Extract values using safe methods
-                    let name = FirebaseSafetyKit.getString(from: data, forKey: "name") ?? "User"
-                    let email = FirebaseSafetyKit.getString(from: data, forKey: "email") ?? ""
-                    let profileImageURL = FirebaseSafetyKit.getString(from: data, forKey: "profileImageURL")
-                    let bio = FirebaseSafetyKit.getString(from: data, forKey: "bio")
-                    
-                    // Handle dates
-                    var createdAt = Date()
-                    if let timestamp = data["createdAt"] as? Timestamp {
-                        createdAt = timestamp.dateValue()
-                    }
-                    
-                    var lastActive = Date()
-                    if let timestamp = data["lastActive"] as? Timestamp {
-                        lastActive = timestamp.dateValue()
-                    }
-                    
-                    // Handle arrays
-                    var children: [Child]? = nil
-                    if let childrenData = data["children"] as? [[String: Any]] {
-                        children = childrenData.compactMap { childData -> Child? in
-                            // Sanitize each child data dictionary
-                            let sanitizedData = FirebaseSafetyKit.sanitizeData(childData) ?? [:]
-                            
-                            guard let name = FirebaseSafetyKit.getString(from: sanitizedData, forKey: "name") else { return nil }
-                            let age = FirebaseSafetyKit.getInt(from: sanitizedData, forKey: "age") ?? 0
-                            let id = FirebaseSafetyKit.getString(from: sanitizedData, forKey: "id") ?? UUID().uuidString
-                            let interests = FirebaseSafetyKit.getStringArray(from: sanitizedData, forKey: "interests")
-                            
-                            return Child(id: id, name: name, age: age, interests: interests)
-                        }
-                    }
-                    
-                    // Handle string arrays
-                    let friendIDs = FirebaseSafetyKit.getStringArray(from: data, forKey: "friendIDs")
-                    let friendRequestIDs = FirebaseSafetyKit.getStringArray(from: data, forKey: "friendRequestIDs")
-                    
-                    // Create user
-                    let user = User(
-                        id: userID,
-                        name: name,
-                        email: email,
-                        profileImageURL: profileImageURL,
-                        bio: bio,
-                        children: children,
-                        friendIDs: friendIDs,
-                        friendRequestIDs: friendRequestIDs,
-                        createdAt: createdAt,
-                        lastActive: lastActive
-                    )
-                    users.append(user)
-                }
-            }
-        }
-        
-        group.notify(queue: .main) {
-            if let error = fetchError {
-                completion(.failure(error))
-            } else {
-                completion(.success(users))
-            }
-        }
-    }
-    
-    // MARK: - Friend Request Operations
-    
-    func sendFriendRequest(from senderID: String, to recipientID: String, message: String? = nil, completion: @escaping (Result<FriendRequest, Error>) -> Void) {
-        isLoading = true
-        error = nil
-        
-        // Check if a request already exists
-        db.collection("friendRequests")
-            .whereField("senderID", isEqualTo: senderID)
-            .whereField("recipientID", isEqualTo: recipientID)
-            .getDocuments { [weak self] snapshot, error in
-                guard let self = self else { return }
-                
-                if let error = error {
-                    self.isLoading = false
-                    self.error = error.localizedDescription
-                    completion(.failure(error))
-                    return
-                }
-                
-                if let documents = snapshot?.documents, !documents.isEmpty {
-                    self.isLoading = false
-                    let error = NSError(domain: "FriendshipViewModel", code: 1, userInfo: [NSLocalizedDescriptionKey: "A friend request already exists between these users"])
-                    self.error = error.localizedDescription
-                    completion(.failure(error))
-                    return
-                }
-                
-                // Check if they are already friends
-                self.db.collection("friendships")
-                    .whereField("userID", isEqualTo: senderID)
-                    .whereField("friendID", isEqualTo: recipientID)
-                    .getDocuments { [weak self] snapshot, error in
-                        guard let self = self else { return }
-                        
-                        if let error = error {
-                            self.isLoading = false
-                            self.error = error.localizedDescription
-                            completion(.failure(error))
-                            return
-                        }
-                        
-                        if let documents = snapshot?.documents, !documents.isEmpty {
-                            self.isLoading = false
-                            let error = NSError(domain: "FriendshipViewModel", code: 2, userInfo: [NSLocalizedDescriptionKey: "These users are already friends"])
-                            self.error = error.localizedDescription
-                            completion(.failure(error))
-                            return
-                        }
-                        
-                        // Create a new friend request
-                        let newRequest = FriendRequest(
-                            senderID: senderID,
-                            recipientID: recipientID,
-                            message: message,
-                            status: .pending,
-                            createdAt: Date(),
-                            updatedAt: Date()
-                        )
-                        
-                        do {
-                            let docRef = try self.db.collection("friendRequests").addDocument(from: newRequest)
-                            
-                            docRef.getDocument { [weak self] document, error in
-                                guard let self = self else { return }
-                                
-                                self.isLoading = false
-                                
-                                if let error = error {
-                                    self.error = error.localizedDescription
-                                    completion(.failure(error))
-                                    return
-                                }
-                                
-                                do {
-                                    if let request = try document?.data(as: FriendRequest.self) {
-                                        completion(.success(request))
-                                    } else {
-                                        let error = NSError(domain: "FriendshipViewModel", code: 3, userInfo: [NSLocalizedDescriptionKey: "Failed to decode created request"])
-                                        self.error = error.localizedDescription
-                                        completion(.failure(error))
-                                    }
-                                } catch {
-                                    self.error = error.localizedDescription
-                                    completion(.failure(error))
-                                }
-                            }
-                        } catch {
-                            self.isLoading = false
-                            self.error = error.localizedDescription
-                            completion(.failure(error))
-                        }
-                    }
-            }
-    }
-    
-    func acceptFriendRequest(_ request: FriendRequest, completion: @escaping (Result<Friendship, Error>) -> Void) {
-        guard let id = request.id else {
-            let error = NSError(domain: "FriendshipViewModel", code: 4, userInfo: [NSLocalizedDescriptionKey: "Friend request has no ID"])
-            self.error = error.localizedDescription
-            completion(.failure(error))
-            return
-        }
-        
-        isLoading = true
-        error = nil
-        
-        // Update the request status
-        var updatedRequest = request
-        updatedRequest.status = .accepted
-        updatedRequest.updatedAt = Date()
-        
-        // Create a new friendship
-        let newFriendship = Friendship(
-            userID: request.senderID,
-            friendID: request.recipientID,
-            status: .accepted,
-            createdAt: Date(),
-            updatedAt: Date()
-        )
-        
-        // Use a batch write to update both documents
-        let batch = db.batch()
-        
-        do {
-            // Update the request
-            let requestRef = db.collection("friendRequests").document(id)
-            try batch.setData(from: updatedRequest, forDocument: requestRef)
-            
-            // Create the friendship
-            let friendshipRef = db.collection("friendships").document()
-            try batch.setData(from: newFriendship, forDocument: friendshipRef)
-            
-            // Commit the batch
-            batch.commit { [weak self] error in
-                guard let self = self else { return }
-                
-                self.isLoading = false
-                
-                if let error = error {
-                    self.error = error.localizedDescription
-                    completion(.failure(error))
-                    return
-                }
-                
-                // Get the created friendship
-                friendshipRef.getDocument { document, error in
-                    if let error = error {
-                        self.error = error.localizedDescription
-                        completion(.failure(error))
-                        return
-                    }
-                    
-                    do {
-                        if let friendship = try document?.data(as: Friendship.self) {
-                            completion(.success(friendship))
-                        } else {
-                            let error = NSError(domain: "FriendshipViewModel", code: 5, userInfo: [NSLocalizedDescriptionKey: "Failed to decode created friendship"])
-                            self.error = error.localizedDescription
-                            completion(.failure(error))
-                        }
-                    } catch {
-                        self.error = error.localizedDescription
-                        completion(.failure(error))
-                    }
-                }
-            }
-        } catch {
-            isLoading = false
-            self.error = error.localizedDescription
-            completion(.failure(error))
-        }
-    }
-    
-    func declineFriendRequest(_ request: FriendRequest, completion: @escaping (Result<FriendRequest, Error>) -> Void) {
-        guard let id = request.id else {
-            let error = NSError(domain: "FriendshipViewModel", code: 6, userInfo: [NSLocalizedDescriptionKey: "Friend request has no ID"])
-            self.error = error.localizedDescription
-            completion(.failure(error))
-            return
-        }
-        
-        isLoading = true
-        error = nil
-        
-        var updatedRequest = request
-        updatedRequest.status = .declined
-        updatedRequest.updatedAt = Date()
-        
-        do {
-            try db.collection("friendRequests").document(id).setData(from: updatedRequest)
-            
-            isLoading = false
-            completion(.success(updatedRequest))
-        } catch {
-            isLoading = false
-            self.error = error.localizedDescription
-            completion(.failure(error))
-        }
-    }
-    
-    // MARK: - Friendship Operations
-    
-    func removeFriend(userID: String, friendID: String, completion: @escaping (Result<Void, Error>) -> Void) {
-        isLoading = true
-        error = nil
-        
-        // Find the friendship document
-        db.collection("friendships")
-            .whereField("userID", isEqualTo: userID)
-            .whereField("friendID", isEqualTo: friendID)
-            .getDocuments { [weak self] snapshot, error in
-                guard let self = self else { return }
-                
-                if let error = error {
-                    self.isLoading = false
-                    self.error = error.localizedDescription
-                    completion(.failure(error))
-                    return
-                }
-                
-                guard let documents = snapshot?.documents, let document = documents.first else {
-                    // Try the reverse relationship
-                    self.db.collection("friendships")
-                        .whereField("userID", isEqualTo: friendID)
-                        .whereField("friendID", isEqualTo: userID)
-                        .getDocuments { [weak self] snapshot, error in
-                            guard let self = self else { return }
-                            
-                            if let error = error {
-                                self.isLoading = false
-                                self.error = error.localizedDescription
-                                completion(.failure(error))
-                                return
-                            }
-                            
-                            guard let documents = snapshot?.documents, let document = documents.first else {
-                                self.isLoading = false
-                                let error = NSError(domain: "FriendshipViewModel", code: 7, userInfo: [NSLocalizedDescriptionKey: "Friendship not found"])
-                                self.error = error.localizedDescription
-                                completion(.failure(error))
-                                return
-                            }
-                            
-                            // Delete the friendship
-                            document.reference.delete { [weak self] error in
-                                guard let self = self else { return }
-                                
-                                self.isLoading = false
-                                
-                                if let error = error {
-                                    self.error = error.localizedDescription
-                                    completion(.failure(error))
-                                    return
-                                }
-                                
-                                completion(.success(()))
-                            }
-                        }
-                    return
-                }
-                
-                // Delete the friendship
-                document.reference.delete { [weak self] error in
-                    guard let self = self else { return }
-                    
-                    self.isLoading = false
-                    
-                    if let error = error {
-                        self.error = error.localizedDescription
-                        completion(.failure(error))
-                        return
-                    }
-                    
-                    completion(.success(()))
-                }
-            }
-    }
-    
-    // MARK: - User Search
-    
-    func searchUsers(query: String, currentUserID: String, completion: @escaping (Result<[User], Error>) -> Void) {
-        guard !query.isEmpty else {
-            completion(.success([]))
-            return
-        }
-        
-        isLoading = true
-        error = nil
-        
-        // Search for users by name or email
-        let lowercasedQuery = query.lowercased()
-        
-        // We'll use a simpler approach to search by getting all users and filtering in memory
-        // This is not ideal for large datasets but works for a small app
-        db.collection("users")
+        // Query messages from Firestore
+        db.collection("chats")
+            .document(chatID)
+            .collection("messages")
+            .order(by: "timestamp", descending: false)
             .getDocuments { [weak self] snapshot, error in
                 guard let self = self else { return }
                 
@@ -542,79 +37,399 @@ class FriendshipViewModel: ObservableObject {
                     return
                 }
                 
-                // Create an array to hold our users
-                var users: [User] = []
-                
-                // Process each document with our safe dictionary extension
-                for document in documents {
-                    let rawData = document.data()
-                    // IMMEDIATELY sanitize the data to prevent NSNumber/String crashes
-                    let data = FirebaseSafetyKit.sanitizeData(rawData) ?? [:]
-                    
-                    let documentID = document.documentID
-                    
-                    // Get name and email safely
-                    let name = FirebaseSafetyKit.getString(from: data, forKey: "name") ?? "User"
-                    let email = FirebaseSafetyKit.getString(from: data, forKey: "email") ?? ""
-                    
-                    // Only add users that match our search criteria
-                    if documentID != currentUserID,
-                       name.lowercased().contains(lowercasedQuery) || 
-                       email.lowercased().contains(lowercasedQuery) {
+                // Map documents to ChatMessage objects
+                let messages = documents.compactMap { document -> ChatMessage? in
+                    do {
+                        let data = document.data()
                         
-                        let profileImageURL = FirebaseSafetyKit.getString(from: data, forKey: "profileImageURL")
-                        let bio = FirebaseSafetyKit.getString(from: data, forKey: "bio")
-                        
-                        // Handle dates
-                        var createdAt = Date()
-                        if let timestamp = data["createdAt"] as? Timestamp {
-                            createdAt = timestamp.dateValue()
+                        // Safely extract data
+                        guard let id = document.documentID as String?,
+                              let senderID = data["senderID"] as? String,
+                              let text = data["text"] as? String else {
+                            return nil
                         }
                         
-                        var lastActive = Date()
-                        if let timestamp = data["lastActive"] as? Timestamp {
-                            lastActive = timestamp.dateValue()
+                        // Handle timestamp
+                        let timestamp: Date
+                        if let timestampValue = data["timestamp"] as? Timestamp {
+                            timestamp = timestampValue.dateValue()
+                        } else {
+                            timestamp = Date()
                         }
                         
-                        // Handle arrays
-                        var children: [Child]? = nil
-                        if let childrenData = data["children"] as? [[String: Any]] {
-                            children = childrenData.compactMap { childData -> Child? in
-                                let sanitizedData = FirebaseSafetyKit.sanitizeData(childData) ?? [:]
-                                
-                                guard let name = FirebaseSafetyKit.getString(from: sanitizedData, forKey: "name") else { return nil }
-                                let age = FirebaseSafetyKit.getInt(from: sanitizedData, forKey: "age") ?? 0
-                                let id = FirebaseSafetyKit.getString(from: sanitizedData, forKey: "id") ?? UUID().uuidString
-                                let interests = FirebaseSafetyKit.getStringArray(from: sanitizedData, forKey: "interests")
-                                
-                                return Child(id: id, name: name, age: age, interests: interests)
-                            }
-                        }
+                        // Handle optional image URL
+                        let imageURL = data["imageURL"] as? String
                         
-                        // Handle string arrays
-                        let friendIDs = FirebaseSafetyKit.getStringArray(from: data, forKey: "friendIDs")
-                        let friendRequestIDs = FirebaseSafetyKit.getStringArray(from: data, forKey: "friendRequestIDs")
+                        // Determine if message is from current user
+                        let isFromCurrentUser = senderID == userID
                         
-                        // Create user
-                        let user = User(
-                            id: documentID,
-                            name: name,
-                            email: email,
-                            profileImageURL: profileImageURL,
-                            bio: bio,
-                            children: children,
-                            friendIDs: friendIDs,
-                            friendRequestIDs: friendRequestIDs,
-                            createdAt: createdAt,
-                            lastActive: lastActive
+                        return ChatMessage(
+                            id: id,
+                            text: text,
+                            isFromCurrentUser: isFromCurrentUser,
+                            timestamp: timestamp,
+                            imageURL: imageURL
                         )
-                        
-                        users.append(user)
+                    } catch {
+                        print("Error parsing chat message: \(error.localizedDescription)")
+                        return nil
                     }
                 }
                 
-                // Return the filtered users
-                completion(.success(users))
+                completion(.success(messages))
             }
     }
+    
+    /// Sends a message from the current user to a friend
+    func sendMessage(
+        from senderID: String,
+        to recipientID: String,
+        text: String,
+        imageURL: String? = nil,
+        completion: @escaping (Result<ChatMessage, Error>) -> Void
+    ) {
+        // Create a unique chat ID for the conversation
+        let chatID = getChatID(userID: senderID, friendID: recipientID)
+        
+        // Create the message data
+        let messageData: [String: Any] = [
+            "senderID": senderID,
+            "recipientID": recipientID,
+            "text": text,
+            "timestamp": Timestamp(date: Date()),
+            "read": false,
+            "imageURL": imageURL as Any
+        ]
+        
+        // Add message to Firestore
+        let messageRef = db.collection("chats")
+            .document(chatID)
+            .collection("messages")
+            .document()
+        
+        messageRef.setData(messageData) { [weak self] error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                self.error = error.localizedDescription
+                completion(.failure(error))
+                return
+            }
+            
+            // Also update chat metadata
+            self.updateChatMetadata(
+                chatID: chatID,
+                senderID: senderID,
+                recipientID: recipientID,
+                lastMessage: text,
+                lastMessageTime: Date()
+            )
+            
+            // Create ChatMessage object for return
+            let message = ChatMessage(
+                id: messageRef.documentID,
+                text: text,
+                isFromCurrentUser: true,
+                timestamp: Date(),
+                imageURL: imageURL
+            )
+            
+            completion(.success(message))
+        }
+    }
+    
+    /// Updates metadata for the chat (last message, timestamp, etc.)
+    private func updateChatMetadata(
+        chatID: String,
+        senderID: String,
+        recipientID: String,
+        lastMessage: String,
+        lastMessageTime: Date
+    ) {
+        let chatData: [String: Any] = [
+            "participants": [senderID, recipientID],
+            "lastMessage": lastMessage,
+            "lastMessageTime": Timestamp(date: lastMessageTime),
+            "lastSenderID": senderID,
+            "updatedAt": Timestamp(date: Date())
+        ]
+        
+        db.collection("chats")
+            .document(chatID)
+            .setData(chatData, merge: true) { error in
+                if let error = error {
+                    print("Error updating chat metadata: \(error.localizedDescription)")
+                }
+            }
+    }
+    
+    /// Marks all unread messages in a chat as read
+    func markMessagesAsRead(userID: String, friendID: String) {
+        let chatID = getChatID(userID: userID, friendID: friendID)
+        
+        // Query all unread messages sent by the friend
+        db.collection("chats")
+            .document(chatID)
+            .collection("messages")
+            .whereField("senderID", isEqualTo: friendID)
+            .whereField("read", isEqualTo: false)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("Error getting unread messages: \(error.localizedDescription)")
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else { return }
+                
+                // Update each message
+                for document in documents {
+                    document.reference.updateData(["read": true])
+                }
+            }
+    }
+    
+    // Helper to create a consistent chat ID for two users
+    private func getChatID(userID: String, friendID: String) -> String {
+        // Sort IDs to ensure the same chat ID regardless of who initiates
+        let sortedIDs = [userID, friendID].sorted()
+        return "\(sortedIDs[0])_\(sortedIDs[1])"
+    }
+    
+    // MARK: - Playdate Invitation Methods
+    
+    /// Send a playdate invitation to a user
+    func sendPlaydateInvitation(
+        playdateID: String,
+        senderID: String,
+        recipientID: String,
+        message: String? = nil,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        let invitationData: [String: Any] = [
+            "playdateID": playdateID,
+            "senderID": senderID,
+            "recipientID": recipientID,
+            "status": "pending",
+            "message": message as Any,
+            "createdAt": Timestamp(date: Date()),
+            "updatedAt": Timestamp(date: Date())
+        ]
+        
+        db.collection("playdateInvitations")
+            .document()
+            .setData(invitationData) { [weak self] error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    self.error = error.localizedDescription
+                    completion(.failure(error))
+                    return
+                }
+                
+                completion(.success(()))
+            }
+    }
+    
+    /// Fetch pending playdate invitations for a user
+    func fetchPendingInvitations(
+        for userID: String,
+        completion: @escaping (Result<[PlaydateInvitation], Error>) -> Void
+    ) {
+        isLoading = true
+        
+        db.collection("playdateInvitations")
+            .whereField("recipientID", isEqualTo: userID)
+            .whereField("status", isEqualTo: "pending")
+            .getDocuments { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                self.isLoading = false
+                
+                if let error = error {
+                    self.error = error.localizedDescription
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    completion(.success([]))
+                    return
+                }
+                
+                // Map to PlaydateInvitation objects
+                let invitations = documents.compactMap { document -> PlaydateInvitation? in
+                    let data = document.data()
+                    
+                    // Safely extract data
+                    guard let playdateID = data["playdateID"] as? String,
+                          let senderID = data["senderID"] as? String,
+                          let recipientID = data["recipientID"] as? String,
+                          let statusString = data["status"] as? String,
+                          let status = InvitationStatus(rawValue: statusString) else {
+                        return nil
+                    }
+                    
+                    // Handle timestamps
+                    let createdAt: Date
+                    if let createdTimestamp = data["createdAt"] as? Timestamp {
+                        createdAt = createdTimestamp.dateValue()
+                    } else {
+                        createdAt = Date()
+                    }
+                    
+                    let updatedAt: Date
+                    if let updatedTimestamp = data["updatedAt"] as? Timestamp {
+                        updatedAt = updatedTimestamp.dateValue()
+                    } else {
+                        updatedAt = Date()
+                    }
+                    
+                    // Handle optional message
+                    let message = data["message"] as? String
+                    
+                    return PlaydateInvitation(
+                        id: document.documentID,
+                        playdateID: playdateID,
+                        senderID: senderID,
+                        recipientID: recipientID,
+                        status: status,
+                        message: message,
+                        createdAt: createdAt,
+                        updatedAt: updatedAt
+                    )
+                }
+                
+                completion(.success(invitations))
+            }
+    }
+    
+    /// Respond to a playdate invitation
+    func respondToInvitation(
+        invitation: PlaydateInvitation,
+        accept: Bool,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        guard let invitationID = invitation.id else {
+            let error = NSError(domain: "FriendshipViewModel", code: 8, userInfo: [NSLocalizedDescriptionKey: "Invitation has no ID"])
+            self.error = error.localizedDescription
+            completion(.failure(error))
+            return
+        }
+        
+        // Update the invitation status
+        let status = accept ? InvitationStatus.accepted : InvitationStatus.declined
+        
+        db.collection("playdateInvitations")
+            .document(invitationID)
+            .updateData([
+                "status": status.rawValue,
+                "updatedAt": Timestamp(date: Date())
+            ]) { [weak self] error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    self.error = error.localizedDescription
+                    completion(.failure(error))
+                    return
+                }
+                
+                if accept {
+                    // If accepted, add user to playdate attendees
+                    self.addUserToPlaydate(
+                        userID: invitation.recipientID,
+                        playdateID: invitation.playdateID,
+                        completion: completion
+                    )
+                } else {
+                    completion(.success(()))
+                }
+            }
+    }
+    
+    /// Add a user to playdate attendees
+    private func addUserToPlaydate(
+        userID: String,
+        playdateID: String,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        // Reference to the playdate document
+        let playdateRef = db.collection("playdates").document(playdateID)
+        
+        // Use a transaction to ensure atomic update of attendees
+        db.runTransaction({ (transaction, errorPointer) -> Any? in
+            // Get the current playdate data
+            let playdateDocument: DocumentSnapshot
+            do {
+                try playdateDocument = transaction.getDocument(playdateRef)
+            } catch let fetchError as NSError {
+                errorPointer?.pointee = fetchError
+                return nil
+            }
+            
+            // Ensure the document exists
+            guard let data = playdateDocument.data() else {
+                let error = NSError(domain: "FriendshipViewModel", code: 9, userInfo: [NSLocalizedDescriptionKey: "Playdate not found"])
+                errorPointer?.pointee = error
+                return nil
+            }
+            
+            // Get current attendees
+            var attendeeIDs = data["attendeeIDs"] as? [String] ?? []
+            
+            // Add the user if not already in the list
+            if !attendeeIDs.contains(userID) {
+                attendeeIDs.append(userID)
+                
+                // Update the playdate
+                transaction.updateData(["attendeeIDs": attendeeIDs], forDocument: playdateRef)
+            }
+            
+            return nil
+        }) { (_, error) in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            completion(.success(()))
+        }
+    }
+    
+    // Cancel a friend request that the current user sent
+    func cancelFriendRequest(id: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        isLoading = true
+        
+        db.collection("friendRequests").document(id).delete { [weak self] error in
+            guard let self = self else { return }
+            
+            self.isLoading = false
+            
+            if let error = error {
+                self.error = error.localizedDescription
+                completion(.failure(error))
+                return
+            }
+            
+            completion(.success(()))
+        }
+    }
+}
+
+// MARK: - Additional Models for Social Features
+
+struct PlaydateInvitation: Identifiable {
+    let id: String?
+    let playdateID: String
+    let senderID: String
+    let recipientID: String
+    let status: InvitationStatus
+    let message: String?
+    let createdAt: Date
+    let updatedAt: Date
+}
+
+enum InvitationStatus: String {
+    case pending
+    case accepted
+    case declined
 }

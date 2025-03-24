@@ -224,11 +224,8 @@ class ActivityViewModel: ObservableObject {
         let minLon = longitude - lonDelta
         let maxLon = longitude + lonDelta
         
-        // Fetch activities within the rough bounding box
+        // Fetch activities - simplified query to avoid index issues
         db.collection("activities")
-            .whereField("isPublic", isEqualTo: true)
-            .whereField("location.latitude", isGreaterThan: minLat)
-            .whereField("location.latitude", isLessThan: maxLat)
             .getDocuments { [weak self] snapshot, error in
                 guard let self = self else { return }
                 
@@ -246,19 +243,29 @@ class ActivityViewModel: ObservableObject {
                         return
                     }
                     
-                    // Parse activities and filter by longitude and precise distance
+                    // Parse activities and filter by location in memory
                     let activities = self.parseActivities(from: documents)
                     
-                    // Now filter by longitude and actual distance in a second pass
+                    // Filter by location criteria in memory
                     self.nearbyActivities = activities.filter { activity in
                         let activityLoc = activity.location
                         
-                        // First check longitude (couldn't be done in the query due to limitations)
-                        if activityLoc.longitude < minLon || activityLoc.longitude > maxLon {
+                        // Check if public
+                        guard activity.isPublic == true else {
                             return false
                         }
                         
-                        // Then calculate actual distance using CLLocation distance method
+                        // Check latitude bounds
+                        guard activityLoc.latitude >= minLat && activityLoc.latitude <= maxLat else {
+                            return false
+                        }
+                        
+                        // Check longitude bounds
+                        guard activityLoc.longitude >= minLon && activityLoc.longitude <= maxLon else {
+                            return false
+                        }
+                        
+                        // Calculate actual distance using CLLocation distance method
                         let activityLocation = CLLocation(latitude: activityLoc.latitude, longitude: activityLoc.longitude)
                         let userLocation = CLLocation(latitude: latitude, longitude: longitude)
                         let distanceInMeters = activityLocation.distance(from: userLocation)
@@ -342,6 +349,7 @@ class ActivityViewModel: ObservableObject {
                 let reviewCount = FirebaseSafetyKit.getInt(from: data, forKey: "reviewCount")
                 
                 // Parse boolean values
+                let isPublic = FirebaseSafetyKit.getBool(from: data, forKey: "isPublic", defaultValue: true)
                 let isFeatured = FirebaseSafetyKit.getBool(from: data, forKey: "isFeatured", defaultValue: false)
                 
                 // Parse dates
@@ -367,6 +375,7 @@ class ActivityViewModel: ObservableObject {
                     photos: photos,
                     rating: rating,
                     reviewCount: reviewCount,
+                    isPublic: isPublic,
                     isFeatured: isFeatured,
                     createdAt: createdAt,
                     updatedAt: updatedAt

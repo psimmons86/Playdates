@@ -26,6 +26,7 @@ struct Activity: Identifiable, Codable {
     var category: String?
     var rating: Double?
     var reviewCount: Int?
+    var isPublic: Bool
     var isFeatured: Bool
     var createdAt: Date
     var updatedAt: Date
@@ -44,6 +45,7 @@ struct Activity: Identifiable, Codable {
         case category
         case rating
         case reviewCount
+        case isPublic
         case isFeatured
         case createdAt
         case updatedAt
@@ -63,6 +65,7 @@ struct Activity: Identifiable, Codable {
         self.category = nil
         self.rating = nil
         self.reviewCount = nil
+        self.isPublic = true
         self.isFeatured = false
         self.createdAt = Date()
         self.updatedAt = Date()
@@ -72,7 +75,7 @@ struct Activity: Identifiable, Codable {
     init(id: String? = nil, name: String, description: String, type: ActivityType, location: Location,
          website: String? = nil, phoneNumber: String? = nil, photos: [String]? = nil,
          tags: [String]? = nil, category: String? = nil, rating: Double? = nil, reviewCount: Int? = nil,
-         isFeatured: Bool = false, createdAt: Date = Date(), updatedAt: Date = Date()) {
+         isPublic: Bool = true, isFeatured: Bool = false, createdAt: Date = Date(), updatedAt: Date = Date()) {
 
         self.id = id
         self.name = name
@@ -86,6 +89,7 @@ struct Activity: Identifiable, Codable {
         self.category = category
         self.rating = rating
         self.reviewCount = reviewCount
+        self.isPublic = isPublic
         self.isFeatured = isFeatured
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -170,7 +174,18 @@ struct Activity: Identifiable, Codable {
             reviewCount = nil
         }
 
-        // Decode boolean with fallback
+        // Decode isPublic with fallback
+        if let publicBool = try? container.decode(Bool.self, forKey: .isPublic) {
+            isPublic = publicBool
+        } else if let publicInt = try? container.decode(Int.self, forKey: .isPublic) {
+            isPublic = publicInt != 0
+        } else if let publicString = try? container.decode(String.self, forKey: .isPublic) {
+            isPublic = publicString.lowercased() == "true" || publicString == "1"
+        } else {
+            isPublic = true // Default to public
+        }
+        
+        // Decode isFeatured with fallback
         if let featuredBool = try? container.decode(Bool.self, forKey: .isFeatured) {
             isFeatured = featuredBool
         } else if let featuredInt = try? container.decode(Int.self, forKey: .isFeatured) {
@@ -218,6 +233,7 @@ struct Activity: Identifiable, Codable {
         try container.encodeIfPresent(reviewCount, forKey: .reviewCount)
 
         // Encode other fields
+        try container.encode(isPublic, forKey: .isPublic)
         try container.encode(isFeatured, forKey: .isFeatured)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)
