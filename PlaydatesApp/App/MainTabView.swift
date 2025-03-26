@@ -274,10 +274,8 @@ struct ProfileView: View {
                                     // Navigate to ChildProfileSetupView
                                     let childSetupView = ChildProfileSetupView(
                                         onComplete: {
-                                            // Refresh user data after adding child
-                                            if let userId = authViewModel.user?.id {
-                                                authViewModel.fetchUserProfile(for: userId)
-                                            }
+                                            // Child will be added through the ChildProfileSetupView
+                                            // No need to manually refresh user data as addChild updates the user property
                                         },
                                         onSkip: {
                                             // Do nothing on skip
