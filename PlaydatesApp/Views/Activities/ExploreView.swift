@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import CoreLocation
 
 public struct ExploreView: View {
     @ObservedObject var activityViewModel = ActivityViewModel()
@@ -153,14 +154,23 @@ public struct ExploreView: View {
     }
     
     private var filteredActivities: [Activity] {
-        if searchText.isEmpty {
-            return combinedActivities
-        } else {
-            return combinedActivities.filter { activity in
-                activity.name.localizedCaseInsensitiveContains(searchText) ||
-                activity.description.localizedCaseInsensitiveContains(searchText) ||
-                (activity.category?.localizedCaseInsensitiveContains(searchText) ?? false)
+        // First filter by search text if needed
+        let filtered = searchText.isEmpty ? combinedActivities : combinedActivities.filter { activity in
+            activity.name.localizedCaseInsensitiveContains(searchText) ||
+            activity.description.localizedCaseInsensitiveContains(searchText) ||
+            (activity.category?.localizedCaseInsensitiveContains(searchText) ?? false)
+        }
+        
+        // Then sort by distance if user location is available
+        if let userLocation = LocationManager.shared.location {
+            return filtered.sorted { a, b in
+                let locationA = CLLocation(latitude: a.location.latitude, longitude: a.location.longitude)
+                let locationB = CLLocation(latitude: b.location.latitude, longitude: b.location.longitude)
+                
+                return userLocation.distance(from: locationA) < userLocation.distance(from: locationB)
             }
+        } else {
+            return filtered
         }
     }
 }
