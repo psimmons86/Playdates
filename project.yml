@@ -50,6 +50,7 @@ targets:
         CFBundleVersion: 1
         CFBundleShortVersionString: 1.0.0
         UILaunchStoryboardName: LaunchScreen
+        CFBundleIconName: AppIcon
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
           UISceneConfigurations:
