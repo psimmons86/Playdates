@@ -2,7 +2,7 @@ name: Playdates
 options:
   bundleIdPrefix: com.example
   deploymentTarget:
-    iOS: 15.0
+    iOS: 17.0
   xcodeVersion: "14.0"
 packages:
   Firebase:
@@ -12,7 +12,7 @@ targets:
   Playdates:
     type: application
     platform: iOS
-    deploymentTarget: "15.0"
+    deploymentTarget: "17.0"
     sources: [PlaydatesApp]
     info:
       path: PlaydatesApp/Info.plist

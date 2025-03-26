@@ -156,13 +156,33 @@ class WeatherService: ObservableObject {
             .map { response -> [Weather] in
                 // Group forecasts by day (one forecast per day)
                 let calendar = Calendar.current
-                let groupedForecasts = Dictionary(grouping: response.list) { item in
+                
+                // Create a dictionary where keys are date strings and values are arrays of forecast items
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "yyyy-MM-dd"
+                
+                var groupedForecasts: [String: [ForecastResponse.ForecastItem]] = [:]
+                
+                // Manually group the forecast items by date
+                for item in response.list {
                     let date = Date(timeIntervalSince1970: item.dt)
-                    return calendar.startOfDay(for: date)
+                    let startOfDay = calendar.startOfDay(for: date)
+                    let dateString = dateFormatter.string(from: startOfDay)
+                    
+                    if groupedForecasts[dateString] == nil {
+                        groupedForecasts[dateString] = []
+                    }
+                    
+                    groupedForecasts[dateString]?.append(item)
                 }
                 
                 // Get the mid-day forecast for each day
-                let dayForecasts = groupedForecasts.compactMap { (date, forecasts) -> Weather? in
+                var dayForecasts: [Weather] = []
+                
+                for (dateString, forecasts) in groupedForecasts {
+                    // Parse the dateString back to Date
+                    guard let date = dateFormatter.date(from: dateString) else { continue }
+                    
                     // Find forecast closest to noon
                     let sortedByTimeOfDay = forecasts.sorted { item1, item2 in
                         let date1 = Date(timeIntervalSince1970: item1.dt)
@@ -177,9 +197,9 @@ class WeatherService: ObservableObject {
                         return hourDiff1 < hourDiff2
                     }
                     
-                    guard let bestForecast = sortedByTimeOfDay.first else { return nil }
+                    guard let bestForecast = sortedByTimeOfDay.first else { continue }
                     
-                    return Weather(
+                    let weather = Weather(
                         id: UUID().uuidString,
                         date: Date(timeIntervalSince1970: bestForecast.dt),
                         temperature: bestForecast.main.temp,
@@ -190,20 +210,26 @@ class WeatherService: ObservableObject {
                         windSpeed: bestForecast.wind.speed,
                         humidity: bestForecast.main.humidity,
                         precipitation: bestForecast.rain?.h1,
-                        isGoodForOutdoor: self.isGoodForOutdoorActivity(wind: bestForecast.wind.speed,
-                                                            conditionCode: bestForecast.weather.first?.id ?? 800,
-                                                            precipitation: bestForecast.rain?.h1,
-                                                            temperature: bestForecast.main.temp)
+                        isGoodForOutdoor: self.isGoodForOutdoorActivity(
+                            wind: bestForecast.wind.speed,
+                            conditionCode: bestForecast.weather.first?.id ?? 800,
+                            precipitation: bestForecast.rain?.h1,
+                            temperature: bestForecast.main.temp
+                        )
                     )
+                    
+                    dayForecasts.append(weather)
                 }
-                .sorted { $0.date < $1.date }
+                
+                // Sort forecasts by date
+                let sortedForecasts = dayForecasts.sorted { $0.date < $1.date }
                 
                 DispatchQueue.main.async {
-                    self.forecast = dayForecasts
+                    self.forecast = sortedForecasts
                     self.isLoading = false
                 }
                 
-                return dayForecasts
+                return sortedForecasts
             }
             .mapError { error -> Error in
                 DispatchQueue.main.async {

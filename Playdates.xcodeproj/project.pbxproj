@@ -36,6 +36,7 @@
 		2F1A86A3A9599A6225F58474 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = FA3F6B966701403DF94E9697 /* README.md */; };
 		3226437F1EC820D8B0AF22A1 /* CommentsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A525EA1F329F25217A8597CF /* CommentsSection.swift */; };
 		33A715C67C386B4B1BCC4C22 /* ActivityViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DBCC0858A51569CF95A19FA /* ActivityViewModel.swift */; };
+		3ACE78A028DA521FF363C0BF /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 615BDA681B1E3F9367A512E8 /* FirebaseAppCheck */; };
 		3D468747C52B4DA2E9C4330E /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4535E33607D1DF35F6695EA8 /* OnboardingCoordinator.swift */; };
 		3F61CEBE23055E05B0B73591 /* SwiftUIToolbarFix.md in Resources */ = {isa = PBXBuildFile; fileRef = 92754B9F122E5127A1814C95 /* SwiftUIToolbarFix.md */; };
 		3F74CED3F499D78528B9E8BE /* ConversationsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5BDFF6E6E8246E943B7FF97 /* ConversationsListView.swift */; };
@@ -56,16 +57,16 @@
 		54C7B2547A662E7CE5A929A6 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8BBB794C203786738B5090 /* ProfileView.swift */; };
 		561864442ABD5E4F1BE733B1 /* verify_files.sh in Resources */ = {isa = PBXBuildFile; fileRef = 53AA783986F56C7003352475 /* verify_files.sh */; };
 		56EAA66D8E4676BD95E2E470 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50723DBF3D41E8ACF5C5EFC4 /* ChatMessage.swift */; };
-		5EDA024481794D4330DF54DA /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 39B985D7BD3C2B602FEF1A40 /* FirebaseMessaging */; };
+		5EDA024481794D4330DF54DA /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = DD07AEE56ACD16A2DBF25099 /* FirebaseStorage */; };
 		68891832B4507DB94ACF71A8 /* cleanup_firebase_utils.sh in Resources */ = {isa = PBXBuildFile; fileRef = 3D5B0ABBEF1A68B2D1FEEB35 /* cleanup_firebase_utils.sh */; };
 		6E989BCC9758403794D3748B /* PlaydateInvitation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51CC5564DE4603D1B9C1C4A1 /* PlaydateInvitation.swift */; };
 		6FBFB36A3C68350EAA277F24 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A2FE0C3AF6DB4F07392F055 /* WelcomeView.swift */; };
 		7940B0EC988090913C860861 /* Activity.swift in Sources */ = {isa = PBXBuildFile; fileRef = EADA35F037710848A91880F1 /* Activity.swift */; };
-		7B812CF46A3146A5AB1FCCB7 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = DD07AEE56ACD16A2DBF25099 /* FirebaseStorage */; };
+		7B812CF46A3146A5AB1FCCB7 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = BD9B4FAAD3A97874E3288948 /* FirebaseAuth */; };
 		7BBEDA2E9FC06293143AD19C /* verify_files_modified.sh in Resources */ = {isa = PBXBuildFile; fileRef = 7272FF2F0D351163D5618D0D /* verify_files_modified.sh */; };
 		818B304C60E094A63E13DBD2 /* ModelImports.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4DE6AADB4B994249BF99BBA /* ModelImports.swift */; };
 		8370AA59C151F1DD48651726 /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D598769C4603D9A2EA5505E /* FriendsView.swift */; };
-		846260A4AA686A53CC71DE09 /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 615BDA681B1E3F9367A512E8 /* FirebaseAppCheck */; };
+		846260A4AA686A53CC71DE09 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 39B985D7BD3C2B602FEF1A40 /* FirebaseMessaging */; };
 		88BE7FCEBB199D99A7106497 /* open_in_xcode.sh in Resources */ = {isa = PBXBuildFile; fileRef = 39D64EEECBC9E0FB43D9EFA7 /* open_in_xcode.sh */; };
 		89F52522CDEFB469D3959031 /* Comment.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CD7AF0E9ACFFCE17D4B2F6 /* Comment.swift */; };
 		8B30A594209A54CBC81563A3 /* MemoryOptimization.md in Resources */ = {isa = PBXBuildFile; fileRef = 110F395CC383550F12017961 /* MemoryOptimization.md */; };
@@ -98,7 +99,7 @@
 		D9D3C8DF322241CE542B9579 /* finalize_consolidation.sh in Resources */ = {isa = PBXBuildFile; fileRef = A8B1BA7F944F20DA6C7691F6 /* finalize_consolidation.sh */; };
 		DE1B811F8890C47B7C486B27 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDB1DC5081D8F35EB9375211 /* StringExtensions.swift */; };
 		E6821E62453652AD3D92A8B6 /* NewPlaydateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFA1347872B4AD84BDDEA192 /* NewPlaydateView.swift */; };
-		E7A52CE3855AC000DE4CD1B3 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = BD9B4FAAD3A97874E3288948 /* FirebaseAuth */; };
+		E7A52CE3855AC000DE4CD1B3 /* FirebaseFirestoreSwift in Frameworks */ = {isa = PBXBuildFile; productRef = E35B741DB6590FC4CA6DD2D7 /* FirebaseFirestoreSwift */; };
 		EA01C4804AADEDF99B715A34 /* Playdate+Mock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77338D64A1FB35AF07584F71 /* Playdate+Mock.swift */; };
 		EA0B0A6C50903E2B78D96A0C /* MessagingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500876562E04DC10D8F18620 /* MessagingService.swift */; };
 		EAC598A4CBBB0D434F81D021 /* GooglePlacesModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0154266D8C669AF4D36D463 /* GooglePlacesModels.swift */; };
@@ -224,10 +225,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				A3049AD8923FD2AD1350D2EE /* FirebaseFirestore in Frameworks */,
-				E7A52CE3855AC000DE4CD1B3 /* FirebaseAuth in Frameworks */,
-				7B812CF46A3146A5AB1FCCB7 /* FirebaseStorage in Frameworks */,
-				5EDA024481794D4330DF54DA /* FirebaseMessaging in Frameworks */,
-				846260A4AA686A53CC71DE09 /* FirebaseAppCheck in Frameworks */,
+				E7A52CE3855AC000DE4CD1B3 /* FirebaseFirestoreSwift in Frameworks */,
+				7B812CF46A3146A5AB1FCCB7 /* FirebaseAuth in Frameworks */,
+				5EDA024481794D4330DF54DA /* FirebaseStorage in Frameworks */,
+				846260A4AA686A53CC71DE09 /* FirebaseMessaging in Frameworks */,
+				3ACE78A028DA521FF363C0BF /* FirebaseAppCheck in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -615,6 +617,7 @@
 			name = Playdates;
 			packageProductDependencies = (
 				0E2A403E343C1228B74BAB25 /* FirebaseFirestore */,
+				E35B741DB6590FC4CA6DD2D7 /* FirebaseFirestoreSwift */,
 				BD9B4FAAD3A97874E3288948 /* FirebaseAuth */,
 				DD07AEE56ACD16A2DBF25099 /* FirebaseStorage */,
 				39B985D7BD3C2B602FEF1A40 /* FirebaseMessaging */,
@@ -1011,6 +1014,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = FFC18EAAEB3CE534F92B07DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseStorage;
+		};
+		E35B741DB6590FC4CA6DD2D7 /* FirebaseFirestoreSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FFC18EAAEB3CE534F92B07DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestoreSwift;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
