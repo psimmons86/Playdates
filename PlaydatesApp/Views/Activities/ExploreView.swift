@@ -19,8 +19,9 @@ public struct ExploreView: View {
     ]
     
     public var body: some View {
-        // Wrap in NavigationView but don't set background at the ZStack level
-        NavigationView {
+        ZStack {
+            ColorTheme.background.edgesIgnoringSafeArea(.all)
+            
             VStack(spacing: 0) {
                 // Search bar
                 ExploreSearchBar(text: $searchText, placeholder: "Search activities...")
@@ -118,7 +119,6 @@ public struct ExploreView: View {
                     print("Debug: Location is nil when trying to fetch nearby activities")
                 }
             }
-            .background(ColorTheme.background) // Move background to here to fix the blue box issue
         }
     }
     
