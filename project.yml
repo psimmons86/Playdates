@@ -2,76 +2,42 @@ name: Playdates
 options:
   bundleIdPrefix: com.example
   deploymentTarget:
-    iOS: 16.0
+    iOS: 15.0
   xcodeVersion: "14.0"
-  generateEmptyDirectories: true
-  createIntermediateGroups: true
 packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk.git
-    from: 10.15.0
+    from: 10.0.0
 targets:
   Playdates:
     type: application
     platform: iOS
-    sources:
-      - path: PlaydatesApp
-    dependencies:
-      - package: Firebase
-        product: FirebaseAuth
-      - package: Firebase
-        product: FirebaseFirestore
-      - package: Firebase
-        product: FirebaseFirestoreSwift
-      - package: Firebase
-        product: FirebaseStorage
-      - package: Firebase
-        product: FirebaseFunctions
-      - package: Firebase
-        product: FirebaseAppCheck
-      - package: Firebase
-        product: FirebaseAnalytics
-    settings:
-      base:
-        INFOPLIST_FILE: PlaydatesApp/Info.plist
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.playdates
-        PRODUCT_NAME: Playdates
-        TARGETED_DEVICE_FAMILY: "1,2"  # "1" for iPhone, "2" for iPad, "1,2" for Universal
-        CURRENT_PROJECT_VERSION: "1.1.0"
-        DEVELOPMENT_TEAM: "$(DEVELOPMENT_TEAM)"
-        CODE_SIGN_STYLE: Automatic
-        CODE_SIGN_IDENTITY: "iPhone Developer"
+    deploymentTarget: "15.0"
+    sources: [PlaydatesApp]
     info:
       path: PlaydatesApp/Info.plist
       properties:
-        CFBundleName: Playdates
         CFBundleDisplayName: Playdates
-        CFBundleIdentifier: com.example.playdates
-        CFBundleVersion: "1.1.0"
-        CFBundleShortVersionString: "1.1.0"
         UILaunchStoryboardName: LaunchScreen
-        CFBundleIconName: AppIcon
-        UIApplicationSceneManifest:
-          UIApplicationSupportsMultipleScenes: false
-          UISceneConfigurations:
-            UIWindowSceneSessionRoleApplication:
-              - UISceneConfigurationName: Default Configuration
-                UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).SceneDelegate
-        NSLocationWhenInUseUsageDescription: "Playdates needs your location to find activities and playdates near you."
-        UIBackgroundModes: [location]
-        UISupportedInterfaceOrientations:
-          - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
-        "UISupportedInterfaceOrientations~ipad":
-          - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationPortraitUpsideDown
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
-    fileGroups:
-      - PlaydatesApp/App
-      - PlaydatesApp/Models
-      - PlaydatesApp/Views
-      - PlaydatesApp/ViewModels
-      - PlaydatesApp/Utils
-      - PlaydatesApp/Services
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UIBackgroundModes: [location, remote-notification]
+        NSLocationWhenInUseUsageDescription: Playdates needs your location to find activities and playdates near you.
+    entitlements:
+      path: Playdates.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.playdates
+        DEVELOPMENT_TEAM: XXXXXXXXXX
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: 5.0
+    dependencies:
+      - package: Firebase
+        product: FirebaseFirestore
+      - package: Firebase
+        product: FirebaseAuth
+      - package: Firebase
+        product: FirebaseStorage
+      - package: Firebase
+        product: FirebaseMessaging
