@@ -214,6 +214,7 @@ struct NewPlaydateView: View {
 // Profile View
 struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var showingChildSetupSheet = false
     
     var body: some View {
         NavigationView {
@@ -271,25 +272,7 @@ struct ProfileView: View {
                                     .multilineTextAlignment(.center)
                                 
                                 Button(action: {
-                                    // Navigate to ChildProfileSetupView
-                                    let childSetupView = ChildProfileSetupView(
-                                        onComplete: {
-                                            // Child will be added through the ChildProfileSetupView
-                                            // No need to manually refresh user data as addChild updates the user property
-                                        },
-                                        onSkip: {
-                                            // Do nothing on skip
-                                        }
-                                    )
-                                    
-                                    // Create a UIHostingController to present the view
-                                    let hostingController = UIHostingController(rootView: childSetupView)
-                                    
-                                    // Get the current UIViewController
-                                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                                       let rootViewController = windowScene.windows.first?.rootViewController {
-                                        rootViewController.present(hostingController, animated: true)
-                                    }
+                                    showingChildSetupSheet = true
                                 }) {
                                     Text("Add Child")
                                         .font(.subheadline)
@@ -350,6 +333,17 @@ struct ProfileView: View {
                 .padding(.vertical)
             }
             .navigationTitle("Profile")
+            .sheet(isPresented: $showingChildSetupSheet) {
+                ChildProfileSetupView(
+                    onComplete: {
+                        // Child will be added through the ChildProfileSetupView
+                        // No need to manually refresh user data as addChild updates the user property
+                    },
+                    onSkip: {
+                        // Do nothing on skip
+                    }
+                )
+            }
         }
     }
 }
