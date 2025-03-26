@@ -19,246 +19,138 @@ struct HomeView: View {
     private let categories = ["All", "Parks", "Museums", "Playgrounds", "Swimming", "Zoo"]
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                // Enhanced animated header
-                EnhancedHomeHeader(isAnimating: $isAnimating)
-                
-                // Featured section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Featured Activities")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(ColorTheme.darkPurple)
-                        .padding(.horizontal)
+        ZStack {
+            ColorTheme.background.edgesIgnoringSafeArea(.all)
+            
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    // Enhanced animated header
+                    EnhancedHomeHeader(isAnimating: $isAnimating)
                     
-                    // Featured carousel
-                    TabView {
-                        ForEach(featuredActivities) { activity in
-                            Button(action: {
-                                // Navigate to activity detail
-                            }) {
-                                FeaturedActivityCard(activity: activity)
-                            }
-                        }
-                    }
-                    .frame(height: 200)
-                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
-                }
-                .padding(.bottom, 24)
-                
-                // Category selector
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Browse by Category")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(ColorTheme.darkPurple)
-                        .padding(.horizontal)
-                    
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(0..<categories.count, id: \.self) { index in
-                                CategoryButton(
-                                    title: categories[index],
-                                    isSelected: selectedCategoryIndex == index,
-                                    action: {
-                                        selectedCategoryIndex = index
-                                    }
-                                )
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                }
-                .padding(.bottom, 24)
-                
-                // Upcoming Playdates
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text("Upcoming Playdates")
-                            .font(.title3)
-                            .fontWeight(.bold)
-                            .foregroundColor(ColorTheme.darkPurple)
-                        
-                        Spacer()
-                        
-                        Button(action: {
-                            // View all playdates
-                        }) {
-                            Text("View All")
-                                .font(.subheadline)
-                                .foregroundColor(ColorTheme.primary)
-                        }
-                    }
-                    .padding(.horizontal)
-                    
-                    if playdateViewModel.playdates.isEmpty {
-                        VStack(spacing: 16) {
-                            ZStack {
-                                Circle()
-                                    .fill(ColorTheme.primary.opacity(0.2))
-                                    .frame(width: 80, height: 80)
-                                
-                                Image(systemName: "calendar")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(ColorTheme.primary)
-                            }
-                            
-                            Text("No upcoming playdates")
-                                .font(.headline)
-                                .foregroundColor(ColorTheme.darkPurple)
-                                .multilineTextAlignment(.center)
-                            
-                            Text("Create your first playdate to get started")
-                                .font(.subheadline)
-                                .foregroundColor(ColorTheme.lightText)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 40)
-                            
-                            Button(action: {
-                                // Create playdate
-                            }) {
-                                HStack {
-                                    Image(systemName: "plus")
-                                        .font(.system(size: 14))
-                                    
-                                    Text("Create Playdate")
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 12)
-                                .background(ColorTheme.primary)
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                                .shadow(color: ColorTheme.primary.opacity(0.3), radius: 5, x: 0, y: 3)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 30)
-                    } else {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 16) {
-                                ForEach(playdateViewModel.playdates.prefix(5)) { playdate in
-                                    Button(action: {
-                                        // Navigate to playdate detail
-                                    }) {
-                                        EnhancedPlaydateCard(playdate: playdate)
-                                    }
-                                }
-                            }
-                            .padding(.horizontal)
-                        }
-                    }
-                }
-                .padding(.bottom, 24)
-                
-                // Popular Activities
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text("Popular Activities")
-                            .font(.title3)
-                            .fontWeight(.bold)
-                            .foregroundColor(ColorTheme.darkPurple)
-                        
-                        Spacer()
-                        
-                        Button(action: {
-                            // View all activities
-                        }) {
-                            Text("View All")
-                                .font(.subheadline)
-                                .foregroundColor(ColorTheme.primary)
-                        }
-                    }
-                    .padding(.horizontal)
-                    
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 160))], spacing: 16) {
-                        ForEach(filteredActivities.prefix(4)) { activity in
-                            Button(action: {
-                                // Navigate to activity detail
-                            }) {
-                                PopularActivityCard(
-                                    activity: activity,
-                                    onAddToWishlist: {
-                                        toggleWishlist(activity)
-                                    },
-                                    isInWishlist: isInWishlist(activity)
-                                )
-                            }
-                        }
-                    }
-                    .padding(.horizontal)
-                }
-                .padding(.bottom, 24)
-                
-                // Wishlist section
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text("Your Wishlist")
-                            .font(.title3)
-                            .fontWeight(.bold)
-                            .foregroundColor(ColorTheme.darkPurple)
-                        
-                        Spacer()
-                        
-                        if !wishlistActivities.isEmpty {
-                            Button(action: {
-                                wishlistActivities.removeAll()
-                            }) {
-                                Text("Clear All")
-                                    .font(.subheadline)
-                                    .foregroundColor(ColorTheme.primary)
-                            }
-                        }
-                    }
-                    .padding(.horizontal)
-                    
-                    if wishlistActivities.isEmpty {
-                        VStack(spacing: 16) {
-                            ZStack {
-                                Circle()
-                                    .fill(ColorTheme.primary.opacity(0.2))
-                                    .frame(width: 80, height: 80)
-                                
-                                Image(systemName: "heart")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(ColorTheme.primary)
-                            }
-                            
-                            Text("Your wishlist is empty")
-                                .font(.headline)
-                                .foregroundColor(ColorTheme.darkPurple)
-                                .multilineTextAlignment(.center)
-                            
-                            Text("Add activities to your wishlist by tapping the heart icon")
-                                .font(.subheadline)
-                                .foregroundColor(ColorTheme.lightText)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 40)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 30)
-                    } else {
-                        VStack(spacing: 12) {
-                            ForEach(wishlistActivities) { activity in
+                    // Featured section
+                    SectionBox(title: "Featured Activities") {
+                        // Featured carousel
+                        TabView {
+                            ForEach(featuredActivities) { activity in
                                 Button(action: {
                                     // Navigate to activity detail
                                 }) {
-                                    WishlistActivityCard(
-                                        activity: activity,
-                                        onRemove: {
-                                            removeFromWishlist(activity)
+                                    FeaturedActivityCard(activity: activity)
+                                }
+                            }
+                        }
+                        .frame(height: 200)
+                        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
+                    }
+                    
+                    // Category selector
+                    SectionBox(title: "Browse by Category") {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(0..<categories.count, id: \.self) { index in
+                                    CategoryButton(
+                                        title: categories[index],
+                                        isSelected: selectedCategoryIndex == index,
+                                        action: {
+                                            selectedCategoryIndex = index
                                         }
                                     )
                                 }
                             }
                         }
-                        .padding(.horizontal)
+                    }
+                    
+                    // Upcoming Playdates
+                    SectionBox(
+                        title: "Upcoming Playdates",
+                        viewAllAction: {
+                            // View all playdates
+                        }
+                    ) {
+                        if playdateViewModel.playdates.isEmpty {
+                            EmptyStateBox(
+                                icon: "calendar",
+                                title: "No upcoming playdates",
+                                message: "Create your first playdate to get started",
+                                buttonTitle: "Create Playdate",
+                                buttonAction: {
+                                    // Create playdate
+                                }
+                            )
+                        } else {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 16) {
+                                    ForEach(playdateViewModel.playdates.prefix(5)) { playdate in
+                                        Button(action: {
+                                            // Navigate to playdate detail
+                                        }) {
+                                            EnhancedPlaydateCard(playdate: playdate)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Popular Activities
+                    SectionBox(
+                        title: "Popular Activities",
+                        viewAllAction: {
+                            // View all activities
+                        }
+                    ) {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 160))], spacing: 16) {
+                            ForEach(filteredActivities.prefix(4)) { activity in
+                                Button(action: {
+                                    // Navigate to activity detail
+                                }) {
+                                    PopularActivityCard(
+                                        activity: activity,
+                                        onAddToWishlist: {
+                                            toggleWishlist(activity)
+                                        },
+                                        isInWishlist: isInWishlist(activity)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Wishlist section
+                    SectionBox(
+                        title: "Your Wishlist",
+                        viewAllAction: wishlistActivities.isEmpty ? nil : {
+                            wishlistActivities.removeAll()
+                        }
+                    ) {
+                        if wishlistActivities.isEmpty {
+                            EmptyStateBox(
+                                icon: "heart",
+                                title: "Your wishlist is empty",
+                                message: "Add activities to your wishlist by tapping the heart icon",
+                                buttonTitle: nil,
+                                buttonAction: nil
+                            )
+                        } else {
+                            VStack(spacing: 12) {
+                                ForEach(wishlistActivities) { activity in
+                                    Button(action: {
+                                        // Navigate to activity detail
+                                    }) {
+                                        WishlistActivityCard(
+                                            activity: activity,
+                                            onRemove: {
+                                                removeFromWishlist(activity)
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
+                .padding(.vertical)
             }
-            .padding(.vertical)
         }
         .navigationTitle("Home")
         .onAppear {

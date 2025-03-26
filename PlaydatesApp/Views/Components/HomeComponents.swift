@@ -131,7 +131,7 @@ struct EnhancedHomeHeader: View {
                 // Quick action buttons
                 HStack(spacing: 12) {
                     QuickActionButton(
-                        icon: "plus.circle.fill",
+                        icon: "plus",
                         title: "New Playdate",
                         action: {
                             // Create playdate
@@ -139,7 +139,7 @@ struct EnhancedHomeHeader: View {
                     )
                     
                     QuickActionButton(
-                        icon: "magnifyingglass.circle.fill",
+                        icon: "magnifyingglass",
                         title: "Find Activities",
                         action: {
                             // Find activities
@@ -197,5 +197,102 @@ struct CategoryButton: View {
                 .foregroundColor(isSelected ? .white : ColorTheme.primary)
                 .cornerRadius(20)
         }
+    }
+}
+
+// MARK: - Section Box
+struct SectionBox<Content: View>: View {
+    let title: String
+    let viewAllAction: (() -> Void)?
+    let content: Content
+    
+    init(title: String, viewAllAction: (() -> Void)? = nil, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.viewAllAction = viewAllAction
+        self.content = content()
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(title)
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(ColorTheme.darkPurple)
+                
+                Spacer()
+                
+                if let viewAllAction = viewAllAction {
+                    Button(action: viewAllAction) {
+                        Text("View All")
+                            .font(.subheadline)
+                            .foregroundColor(ColorTheme.primary)
+                    }
+                }
+            }
+            
+            content
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .padding(.horizontal)
+        .padding(.bottom, 16)
+    }
+}
+
+// MARK: - Empty State Box
+struct EmptyStateBox: View {
+    let icon: String
+    let title: String
+    let message: String
+    let buttonTitle: String?
+    let buttonAction: (() -> Void)?
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(ColorTheme.primary.opacity(0.2))
+                    .frame(width: 80, height: 80)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 40))
+                    .foregroundColor(ColorTheme.primary)
+            }
+            
+            Text(title)
+                .font(.headline)
+                .foregroundColor(ColorTheme.darkPurple)
+                .multilineTextAlignment(.center)
+            
+            Text(message)
+                .font(.subheadline)
+                .foregroundColor(ColorTheme.lightText)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+            
+            if let buttonTitle = buttonTitle, let buttonAction = buttonAction {
+                Button(action: buttonAction) {
+                    HStack {
+                        Image(systemName: "plus")
+                            .font(.system(size: 14))
+                        
+                        Text(buttonTitle)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(ColorTheme.primary)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                    .shadow(color: ColorTheme.primary.opacity(0.3), radius: 5, x: 0, y: 3)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 30)
     }
 }
