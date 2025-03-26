@@ -31,6 +31,8 @@ struct ChildInput: Identifiable {
 struct ChildProfileSetupView: View {
     @State private var childInputs: [ChildInput] = [ChildInput()]
     @State private var isLoading = false
+    @State private var errorMessage: String? = nil
+    @ObservedObject private var authViewModel = AuthViewModel()
     private var onComplete: () -> Void
     private var onSkip: () -> Void
     
@@ -68,14 +70,17 @@ struct ChildProfileSetupView: View {
                 // Child forms
                 ScrollView {
                     VStack(spacing: 24) {
-                        ForEach(Array(childInputs.enumerated()), id: \.element.id) { index, _ in
+                        ForEach(0..<childInputs.count, id: \.self) { index in
                             ChildFormView(
                                 index: index,
                                 childInput: $childInputs[index],
                                 interestOptions: interestOptions,
                                 onRemove: {
-                                    if childInputs.count > 1 {
-                                        childInputs.remove(at: index)
+                                    withAnimation {
+                                        if childInputs.count > 1 {
+                                            childInputs.remove(at: index)
+                                            print("Removed child at index \(index), remaining: \(childInputs.count)")
+                                        }
                                     }
                                 }
                             )
@@ -83,25 +88,45 @@ struct ChildProfileSetupView: View {
                         
                         // Add another child button
                         Button(action: {
-                            childInputs.append(ChildInput())
+                            withAnimation {
+                                let newChild = ChildInput()
+                                childInputs.append(newChild)
+                                print("Added new child, total count: \(childInputs.count)")
+                            }
                         }) {
-                            Text("+ Add Another Child")
-                                .font(.headline)
-                                .fontWeight(.medium)
-                                .foregroundColor(ColorTheme.darkPurple)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [6]))
-                                        .foregroundColor(ColorTheme.accent)
-                                        .background(ColorTheme.accent.opacity(0.1))
-                                        .cornerRadius(12)
-                                )
+                            HStack {
+                                Image(systemName: "plus.circle.fill")
+                                    .foregroundColor(ColorTheme.darkPurple)
+                                    .font(.system(size: 20))
+                                
+                                Text("Add Another Child")
+                                    .font(.headline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(ColorTheme.darkPurple)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [6]))
+                                    .foregroundColor(ColorTheme.accent)
+                                    .background(ColorTheme.accent.opacity(0.1))
+                                    .cornerRadius(12)
+                            )
                         }
+                        .buttonStyle(PlainButtonStyle()) // Ensure button style doesn't interfere
                         .padding(.bottom, 32)
                     }
                     .padding(.horizontal, 16)
+                }
+                
+                // Error message (if any)
+                if let errorMessage = errorMessage {
+                    Text(errorMessage)
+                        .font(.footnote)
+                        .foregroundColor(.red)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 8)
                 }
                 
                 // Bottom buttons
@@ -110,14 +135,38 @@ struct ChildProfileSetupView: View {
                         // Validate and save
                         if isFormValid {
                             isLoading = true
+                            errorMessage = nil
                             
                             // Convert ChildInput to Child models
                             let children = childInputs.map { $0.toChild() }
                             
-                            // Here you would save the children to the user profile
-                            // For now, we'll just simulate saving
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            // Check if we have a current user
+                            if var user = authViewModel.currentUser {
+                                // Update the user's children
+                                user.children = children
+                                
+                                // Save the updated user profile
+                                authViewModel.updateUserProfile(
+                                    name: user.name,
+                                    bio: user.bio,
+                                    profileImageURL: user.profileImageURL
+                                ) { success in
+                                    isLoading = false
+                                    
+                                    if success {
+                                        print("Successfully saved \(children.count) children to user profile")
+                                        onComplete()
+                                    } else {
+                                        errorMessage = authViewModel.error ?? "Failed to save children"
+                                    }
+                                }
+                            } else {
+                                // No user is signed in or user data isn't loaded yet
                                 isLoading = false
+                                errorMessage = "User profile not available"
+                                
+                                // For onboarding, we'll still proceed even if saving fails
+                                print("Warning: No user profile available, proceeding with onboarding")
                                 onComplete()
                             }
                         }
