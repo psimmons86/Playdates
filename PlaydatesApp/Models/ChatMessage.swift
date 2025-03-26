@@ -1,7 +1,7 @@
 import Foundation
 import FirebaseFirestore
 
-struct ChatMessage: Identifiable, Codable {
+struct ChatMessage: Identifiable, Codable, Equatable {
     let id: String
     let text: String
     let senderID: String
@@ -76,5 +76,16 @@ struct ChatMessage: Identifiable, Codable {
         try container.encode(Timestamp(date: timestamp), forKey: .timestamp)
         try container.encodeIfPresent(imageURL, forKey: .imageURL)
         try container.encode(isRead, forKey: .isRead)
+    }
+    
+    // Implement Equatable
+    static func == (lhs: ChatMessage, rhs: ChatMessage) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.text == rhs.text &&
+               lhs.senderID == rhs.senderID &&
+               lhs.recipientID == rhs.recipientID &&
+               lhs.timestamp == rhs.timestamp &&
+               lhs.imageURL == rhs.imageURL &&
+               lhs.isRead == rhs.isRead
     }
 }

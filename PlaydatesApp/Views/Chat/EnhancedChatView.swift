@@ -87,7 +87,7 @@ struct EnhancedChatView: View {
             ScrollView {
                 LazyVStack(spacing: 16) {
                     // Date divider
-                    ForEach(viewModel.messageSections.keys.sorted(), id: \.self) { date in
+                    ForEach(Array(viewModel.messageSections.keys.sorted()), id: \.self) { date in
                         if let sectionMessages = viewModel.messageSections[date] {
                             DateDivider(date: date)
                                 .padding(.vertical, 8)
@@ -285,15 +285,32 @@ class ChatViewModel: ObservableObject {
         
         // Subscribe to messages and create date sections
         $messages
-            .map { messages -> [Date: [ChatMessage]] in
-                let calendar = Calendar.current
-                
-                return Dictionary(grouping: messages) { message in
-                    let components = calendar.dateComponents([.year, .month, .day], from: message.timestamp)
-                    return calendar.date(from: components) ?? message.timestamp
-                }
+            .sink { [weak self] messages in
+                self?.updateMessageSections(with: messages)
             }
-            .assign(to: &$messageSections)
+            .store(in: &cancellables)
+    }
+    
+    private func updateMessageSections(with messages: [ChatMessage]) {
+        let calendar = Calendar.current
+        var sections: [Date: [ChatMessage]] = [:]
+        
+        for message in messages {
+            let components = calendar.dateComponents([.year, .month, .day], from: message.timestamp)
+            if let date = calendar.date(from: components) {
+                if sections[date] == nil {
+                    sections[date] = []
+                }
+                sections[date]?.append(message)
+            }
+        }
+        
+        // Sort messages within each section by timestamp
+        for (date, messagesInSection) in sections {
+            sections[date] = messagesInSection.sorted { $0.timestamp < $1.timestamp }
+        }
+        
+        self.messageSections = sections
     }
     
     func sendMessage(from senderID: String, to recipientID: String, text: String, imageURL: String? = nil) {
