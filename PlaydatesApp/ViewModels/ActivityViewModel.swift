@@ -123,19 +123,24 @@ class ActivityViewModel: ObservableObject {
     }
     
     // Add method that accepts CLLocation parameter with throttling
-    func fetchNearbyActivities(location: CLLocation, radiusInKm: Double = 50.0) {
+    func fetchNearbyActivities(location: CLLocation, radiusInKm: Double = 50.0, activityType: String? = nil) {
         isLoading = true
         error = nil
         
         // Convert radius to meters for Google Places API
         let radiusInMeters = Int(radiusInKm * 1000)
         
+        // Use the provided activity type or default to "family_friendly"
+        let searchType = activityType?.lowercased() ?? "family_friendly"
+        
+        print("Debug: Searching for nearby activities of type: \(searchType)")
+        
         // Use regular search for nearby activities
         // We'll implement throttling and caching in the service layer
         GooglePlacesService.shared.searchNearbyActivities(
             location: location,
             radius: radiusInMeters,
-            activityType: "family_friendly",
+            activityType: searchType,
             completion: { [weak self] (result: Result<[ActivityPlace], Error>) in
                 guard let self = self else { return }
                 

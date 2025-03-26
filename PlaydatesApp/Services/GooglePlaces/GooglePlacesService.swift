@@ -383,15 +383,31 @@ class GooglePlacesService {
             return "family activities kids"
         }
         
-        // For specific activities, enhance with family-friendly terms
-        if ["park", "playground", "museum", "zoo", "aquarium", "library", 
-            "swimming", "pool", "sports", "amusement", "theme park", "art", 
-            "bowling", "movie", "cinema"].contains(where: lowercased.contains) {
-            return "\(lowercased) family kids"
+        // Handle category names from ExploreView
+        if lowercased.contains("park") {
+            return "park playground family kids"
+        } else if lowercased.contains("playground") {
+            return "playground kids family"
+        } else if lowercased.contains("museum") {
+            return "museum family kids children educational"
+        } else if lowercased.contains("zoo") {
+            return "zoo animals family kids"
+        } else if lowercased.contains("aquarium") {
+            return "aquarium sea life family kids"
+        } else if lowercased.contains("librar") {
+            return "library books reading family kids"
+        } else if lowercased.contains("swim") || lowercased.contains("pool") {
+            return "swimming pool family kids"
+        } else if lowercased.contains("sport") {
+            return "sports recreation family kids"
+        } else if lowercased.contains("theme park") || lowercased.contains("amusement") {
+            return "theme park amusement rides family kids"
+        } else if lowercased.contains("movie") || lowercased.contains("cinema") {
+            return "movie theater cinema family kids"
         }
         
         // For other types, just add "family" to the search
-        return "\(lowercased) family"
+        return "\(lowercased) family kids"
     }
     
     /**
@@ -402,41 +418,44 @@ class GooglePlacesService {
      */
     private func mapActivityTypeToPlaceType(_ activityType: String) -> String {
         // Map common activity types to Google Places API types
-        switch activityType.lowercased() {
-        case "park", "playground":
+        // Handle both singular and plural forms, and case-insensitive matching
+        let lowercased = activityType.lowercased()
+        
+        // Handle category names from ExploreView
+        if lowercased.contains("park") || lowercased.contains("playground") {
             return "park"
-        case "museum":
+        } else if lowercased.contains("museum") {
             return "museum"
-        case "zoo":
+        } else if lowercased.contains("zoo") {
             return "zoo"
-        case "aquarium":
+        } else if lowercased.contains("aquarium") {
             return "aquarium"
-        case "library":
+        } else if lowercased.contains("librar") {
             return "library"
-        case "swimming", "pool":
+        } else if lowercased.contains("swim") || lowercased.contains("pool") {
             return "swimming_pool"
-        case "sports", "athletics":
+        } else if lowercased.contains("sport") || lowercased.contains("athletic") {
             return "stadium"
-        case "amusement", "theme park":
+        } else if lowercased.contains("amusement") || lowercased.contains("theme park") {
             return "amusement_park"
-        case "art":
+        } else if lowercased.contains("art") {
             return "art_gallery"
-        case "bowling":
+        } else if lowercased.contains("bowl") {
             return "bowling_alley"
-        case "movie", "cinema":
+        } else if lowercased.contains("movie") || lowercased.contains("cinema") {
             return "movie_theater"
-        case "restaurant", "food", "dining":
+        } else if lowercased.contains("restaurant") || lowercased.contains("food") || lowercased.contains("dining") {
             return "restaurant"
-        case "cafe", "coffee":
+        } else if lowercased.contains("cafe") || lowercased.contains("coffee") {
             return "cafe"
-        case "ice cream":
+        } else if lowercased.contains("ice cream") {
             return "ice_cream"
-        case "shopping":
+        } else if lowercased.contains("shop") {
             return "shopping_mall"
-        case "family_friendly":
+        } else if lowercased == "family_friendly" {
             // For generic family-friendly search, use a broader type
             return "tourist_attraction"
-        default:
+        } else {
             // For other types, just use the original term as a keyword
             return "point_of_interest"
         }

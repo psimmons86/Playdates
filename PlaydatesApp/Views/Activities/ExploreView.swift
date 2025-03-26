@@ -93,10 +93,11 @@ public struct ExploreView: View {
         
         // Also fetch from Google Places if location is available
         if let location = LocationManager.shared.location {
-            let activityType = selectedCategory?.lowercased() ?? "family_friendly"
+            // Pass the selected category to the fetchNearbyActivities method
             activityViewModel.fetchNearbyActivities(
                 location: location,
-                radiusInKm: 50.0
+                radiusInKm: 50.0,
+                activityType: selectedCategory
             )
         }
     }
