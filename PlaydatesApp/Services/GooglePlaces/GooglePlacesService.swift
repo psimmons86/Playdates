@@ -308,7 +308,7 @@ class GooglePlacesService {
      */
     func searchPlaces(
         query: String,
-        completion: @escaping (Result<[Place], Error>) -> Void
+        completion: @escaping (Result<[PlaceResult], Error>) -> Void
     ) {
         // Construct the URL for the Text Search request
         var components = URLComponents(string: "\(baseURL)/textsearch/json")!
@@ -319,7 +319,8 @@ class GooglePlacesService {
         ]
         
         guard let url = components.url else {
-            completion(.failure(NSError(domain: "GooglePlacesService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
+            let error = NSError(domain: "GooglePlacesService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
+            completion(.failure(error))
             return
         }
         
@@ -337,8 +338,9 @@ class GooglePlacesService {
                 }
                 
                 guard let data = data else {
+                    let error = NSError(domain: "GooglePlacesService", code: 2, userInfo: [NSLocalizedDescriptionKey: "No data received"])
                     DispatchQueue.main.async {
-                        completion(.failure(NSError(domain: "GooglePlacesService", code: 2, userInfo: [NSLocalizedDescriptionKey: "No data received"])))
+                        completion(.failure(error))
                     }
                     return
                 }
@@ -353,7 +355,8 @@ class GooglePlacesService {
                     // Check if the request was successful
                     guard response.status == "OK" || response.status == "ZERO_RESULTS" else {
                         print("Debug: Google Places Text Search API error status: \(response.status)")
-                        throw NSError(domain: "GooglePlacesService", code: 3, userInfo: [NSLocalizedDescriptionKey: "API Error: \(response.status)"])
+                        let error = NSError(domain: "GooglePlacesService", code: 3, userInfo: [NSLocalizedDescriptionKey: "API Error: \(response.status)"])
+                        throw error
                     }
                     
                     print("Debug: Google Places Text Search API returned \(response.results.count) results")

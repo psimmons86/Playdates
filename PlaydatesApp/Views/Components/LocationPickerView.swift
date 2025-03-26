@@ -150,9 +150,9 @@ struct LocationPickerView: View {
                 // Convert places to locations
                 self.searchResults = places.map { place in
                     Location(
-                        id: place.id,
+                        id: place.placeId,
                         name: place.name,
-                        address: place.formattedAddress ?? place.vicinity ?? "",
+                        address: place.vicinity,
                         latitude: place.geometry.location.lat,
                         longitude: place.geometry.location.lng
                     )
