@@ -3,10 +3,11 @@ import Combine
 import CoreLocation
 
 public struct ExploreView: View {
-    @ObservedObject var activityViewModel = ActivityViewModel()
+    @ObservedObject var activityViewModel = ActivityViewModel.shared
     @State private var selectedCategory: String? = nil
     @State private var searchText = ""
     @State private var selectedDistance: Double = 10.0 // Default 10 miles
+    @State private var showFavoritesOnly = false
     
     private let distanceOptions: [Double] = [5.0, 10.0, 25.0, 50.0, 100.0] // In miles
     
@@ -46,21 +47,35 @@ public struct ExploreView: View {
                     .padding(.vertical, 12)
                 }
                 
-                // Distance selector
-                HStack {
-                    Text("Distance:")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                    Picker("Distance", selection: $selectedDistance) {
-                        ForEach(distanceOptions, id: \.self) { distance in
-                            Text("\(Int(distance)) miles").tag(distance)
+                // Distance selector and favorites toggle
+                VStack(spacing: 8) {
+                    HStack {
+                        Text("Distance:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Picker("Distance", selection: $selectedDistance) {
+                            ForEach(distanceOptions, id: \.self) { distance in
+                                Text("\(Int(distance)) miles").tag(distance)
+                            }
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .onChange(of: selectedDistance) { _ in
+                            fetchActivitiesForCategory()
                         }
                     }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .onChange(of: selectedDistance) { _ in
-                        fetchActivitiesForCategory()
+                    
+                    // Favorites toggle
+                    Toggle(isOn: $showFavoritesOnly) {
+                        HStack {
+                            Image(systemName: "heart.fill")
+                                .foregroundColor(.red)
+                                .font(.system(size: 16))
+                            Text("Show Favorites Only")
+                                .font(.subheadline)
+                        }
                     }
+                    .toggleStyle(SwitchToggleStyle(tint: Color.red))
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 8)
@@ -73,16 +88,11 @@ public struct ExploreView: View {
                                 .padding()
                         } else if let error = activityViewModel.error {
                             ExploreErrorView(message: error)  // Renamed
-                        } else if combinedActivities.isEmpty {
+                        } else if filteredActivities.isEmpty {
                             ExploreEmptyStateView(  // Renamed
-                                message: selectedCategory == nil 
-                                    ? "No activities found" 
-                                    : "No activities found in \(selectedCategory!)",
-                                buttonTitle: selectedCategory == nil ? nil : "Show All Activities",
-                                buttonAction: {
-                                    selectedCategory = nil
-                                    fetchActivitiesForCategory()
-                                }
+                                message: emptyStateMessage,
+                                buttonTitle: emptyStateButtonTitle,
+                                buttonAction: emptyStateButtonAction
                             )
                         } else {
                             activityGrid  // Extract this to simplify expressions
@@ -106,6 +116,39 @@ public struct ExploreView: View {
                     print("Debug: Location is nil when trying to fetch nearby activities")
                 }
             }
+        }
+    }
+    
+    // Empty state message and button based on current filters
+    private var emptyStateMessage: String {
+        if showFavoritesOnly {
+            return "No favorite activities found"
+        } else if let category = selectedCategory {
+            return "No activities found in \(category)"
+        } else {
+            return "No activities found"
+        }
+    }
+    
+    private var emptyStateButtonTitle: String? {
+        if showFavoritesOnly {
+            return "Show All Activities"
+        } else if selectedCategory != nil {
+            return "Show All Activities"
+        } else {
+            return nil
+        }
+    }
+    
+    private var emptyStateButtonAction: (() -> Void)? {
+        if showFavoritesOnly || selectedCategory != nil {
+            return {
+                showFavoritesOnly = false
+                selectedCategory = nil
+                fetchActivitiesForCategory()
+            }
+        } else {
+            return nil
         }
     }
     
@@ -154,14 +197,27 @@ public struct ExploreView: View {
     }
     
     private var filteredActivities: [Activity] {
-        // First filter by search text if needed
-        let filtered = searchText.isEmpty ? combinedActivities : combinedActivities.filter { activity in
-            activity.name.localizedCaseInsensitiveContains(searchText) ||
-            activity.description.localizedCaseInsensitiveContains(searchText) ||
-            (activity.category?.localizedCaseInsensitiveContains(searchText) ?? false)
+        // Start with all activities
+        var filtered = combinedActivities
+        
+        // Filter by search text if needed
+        if !searchText.isEmpty {
+            filtered = filtered.filter { activity in
+                activity.name.localizedCaseInsensitiveContains(searchText) ||
+                activity.description.localizedCaseInsensitiveContains(searchText) ||
+                (activity.category?.localizedCaseInsensitiveContains(searchText) ?? false)
+            }
         }
         
-        // Then sort by distance if user location is available
+        // Filter by favorites if enabled
+        if showFavoritesOnly {
+            filtered = filtered.filter { activity in
+                guard let id = activity.id else { return false }
+                return activityViewModel.favoriteActivities.contains(id)
+            }
+        }
+        
+        // Sort by distance if user location is available
         if let userLocation = LocationManager.shared.location {
             return filtered.sorted { a, b in
                 let locationA = CLLocation(latitude: a.location.latitude, longitude: a.location.longitude)
@@ -258,83 +314,105 @@ struct ExploreCategoryButton: View {  // Renamed from CategoryButton
 
 struct ExploreActivityCard: View {  // Renamed from ActivityCard
     let activity: Activity
+    @ObservedObject var viewModel: ActivityViewModel
+    
+    init(activity: Activity, viewModel: ActivityViewModel = ActivityViewModel.shared) {
+        self.activity = activity
+        self.viewModel = viewModel
+    }
     
     var body: some View {
-        NavigationLink(destination: ExploreActivityDetailView(activity: activity)) {  // Renamed
-            VStack(alignment: .leading) {
-                // Activity icon
-                activityIcon
-                    .frame(width: 60, height: 60)
-                    .padding(.bottom, 8)
-                
-                // Activity name
-                Text(activity.name)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                
-                // Activity type
-                Text(activity.type.title)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-                
-                // Distance from user
-                if let userLocation = LocationManager.shared.location {
-                    let activityLocation = CLLocation(
-                        latitude: activity.location.latitude,
-                        longitude: activity.location.longitude
-                    )
-                    let distanceInMeters = userLocation.distance(from: activityLocation)
-                    let distanceInMiles = distanceInMeters / 1609.34 // Convert meters to miles
+        ZStack(alignment: .topTrailing) {
+            NavigationLink(destination: ExploreActivityDetailView(activity: activity)) {  // Renamed
+                VStack(alignment: .leading) {
+                    // Activity icon
+                    activityIcon
+                        .frame(width: 60, height: 60)
+                        .padding(.bottom, 8)
                     
-                    HStack {
-                        Image(systemName: "location")
-                            .foregroundColor(.blue)
-                            .font(.system(size: 12))
+                    // Activity name
+                    Text(activity.name)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
+                    // Activity type
+                    Text(activity.type.title)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                    
+                    // Distance from user
+                    if let userLocation = LocationManager.shared.location {
+                        let activityLocation = CLLocation(
+                            latitude: activity.location.latitude,
+                            longitude: activity.location.longitude
+                        )
+                        let distanceInMeters = userLocation.distance(from: activityLocation)
+                        let distanceInMiles = distanceInMeters / 1609.34 // Convert meters to miles
                         
-                        // Format distance based on how far away it is
-                        if distanceInMiles < 0.1 {
-                            Text("Nearby")
-                                .font(.caption)
+                        HStack {
+                            Image(systemName: "location")
                                 .foregroundColor(.blue)
-                        } else if distanceInMiles < 10 {
-                            Text(String(format: "%.1f miles away", distanceInMiles))
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                        } else {
-                            Text(String(format: "%.0f miles away", distanceInMiles))
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                        }
-                    }
-                }
-                
-                // Rating if available
-                if let rating = activity.rating {
-                    HStack(spacing: 4) {
-                        ForEach(0..<5) { index in
-                            Image(systemName: index < Int(rating) ? "star.fill" : "star")
-                                .foregroundColor(.yellow)
                                 .font(.system(size: 12))
-                        }
-                        
-                        if let reviewCount = activity.reviewCount {
-                            Text("(\(reviewCount))")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            
+                            // Format distance based on how far away it is
+                            if distanceInMiles < 0.1 {
+                                Text("Nearby")
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                            } else if distanceInMiles < 10 {
+                                Text(String(format: "%.1f miles away", distanceInMiles))
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                            } else {
+                                Text(String(format: "%.0f miles away", distanceInMiles))
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                            }
                         }
                     }
+                    
+                    // Rating if available
+                    if let rating = activity.rating {
+                        HStack(spacing: 4) {
+                            ForEach(0..<5) { index in
+                                Image(systemName: index < Int(rating) ? "star.fill" : "star")
+                                    .foregroundColor(.yellow)
+                                    .font(.system(size: 12))
+                            }
+                            
+                            if let reviewCount = activity.reviewCount {
+                                Text("(\(reviewCount))")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    
+                    Spacer()
                 }
-                
-                Spacer()
+                .padding()
+                .frame(height: 200) // Increased height to accommodate distance
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
             }
-            .padding()
-            .frame(height: 200) // Increased height to accommodate distance
-            .background(Color(.systemBackground))
-            .cornerRadius(12)
-            .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+            
+            // Favorite button
+            Button(action: {
+                viewModel.toggleFavorite(for: activity)
+            }) {
+                Image(systemName: viewModel.isFavorite(activity: activity) ? "heart.fill" : "heart")
+                    .foregroundColor(viewModel.isFavorite(activity: activity) ? .red : .gray)
+                    .font(.system(size: 22))
+                    .padding(12)
+                    .background(Color(.systemBackground))
+                    .clipShape(Circle())
+                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+            }
+            .padding(8)
         }
+        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
     }
     
     private var activityIcon: some View {
@@ -369,6 +447,7 @@ struct ExploreActivityCard: View {  // Renamed from ActivityCard
 
 struct ExploreActivityDetailView: View {  // Renamed from ActivityDetailView
     let activity: Activity
+    @ObservedObject var viewModel = ActivityViewModel.shared
     
     var body: some View {
         ScrollView {
@@ -417,6 +496,17 @@ struct ExploreActivityDetailView: View {  // Renamed from ActivityDetailView
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarItems(trailing: favoriteButton)
+    }
+    
+    private var favoriteButton: some View {
+        Button(action: {
+            viewModel.toggleFavorite(for: activity)
+        }) {
+            Image(systemName: viewModel.isFavorite(activity: activity) ? "heart.fill" : "heart")
+                .foregroundColor(viewModel.isFavorite(activity: activity) ? .red : .gray)
+                .font(.system(size: 22))
+        }
     }
     
     // Break up complex views into smaller pieces

@@ -5,18 +5,50 @@ import Combine
 import CoreLocation
 
 class ActivityViewModel: ObservableObject {
+    // Shared instance for easy access
+    static let shared = ActivityViewModel()
+    
     @Published var activities: [Activity] = []
     @Published var popularActivities: [Activity] = []
     @Published var nearbyActivities: [Activity] = []
+    @Published var favoriteActivities: Set<String> = [] // Store favorite activity IDs
     @Published var isLoading = false
     @Published var error: String?
     
     private let db = Firestore.firestore()
     private var cancellables = Set<AnyCancellable>()
     private var activitiesListener: ListenerRegistration?
+    private let favoritesKey = "favoriteActivities" // Key for UserDefaults
+    
+    init() {
+        // Load favorites from UserDefaults
+        if let savedFavorites = UserDefaults.standard.array(forKey: favoritesKey) as? [String] {
+            favoriteActivities = Set(savedFavorites)
+        }
+    }
     
     deinit {
         activitiesListener?.remove()
+    }
+    
+    // MARK: - Favorites Management
+    
+    func toggleFavorite(for activity: Activity) {
+        guard let id = activity.id else { return }
+        
+        if favoriteActivities.contains(id) {
+            favoriteActivities.remove(id)
+        } else {
+            favoriteActivities.insert(id)
+        }
+        
+        // Save to UserDefaults
+        UserDefaults.standard.set(Array(favoriteActivities), forKey: favoritesKey)
+    }
+    
+    func isFavorite(activity: Activity) -> Bool {
+        guard let id = activity.id else { return false }
+        return favoriteActivities.contains(id)
     }
     
     // MARK: - Fetch Activities
