@@ -4,7 +4,7 @@ import FirebaseFirestore
 import FirebaseMessaging
 import Combine
 
-class MessagingService: ObservableObject {
+class MessagingService: NSObject, ObservableObject {
     static let shared = MessagingService()
     
     @Published var conversations: [String: [ChatMessage]] = [:]
@@ -12,7 +12,9 @@ class MessagingService: ObservableObject {
     private var db = Firestore.firestore()
     private var listeners: [String: ListenerRegistration] = [:]
     
-    private init() {}
+    private override init() {
+        super.init()
+    }
     
     // Register device for push notifications
     func registerForPushNotifications() {
@@ -102,8 +104,8 @@ class MessagingService: ObservableObject {
                 self.conversations[chatID] = messages
                 
                 // Count unread messages
-                let unreadCount = messages.filter { 
-                    !$0.isRead && $0.recipientID == currentUserID 
+                let unreadCount = messages.filter {
+                    !$0.isRead && $0.recipientID == currentUserID
                 }.count
                 
                 self.unreadCounts[otherUserID] = unreadCount

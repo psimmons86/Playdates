@@ -28,6 +28,7 @@ struct ChildInput: Identifiable {
     }
 }
 
+@available(iOS 17.0, *)
 struct ChildProfileSetupView: View {
     @State private var childInputs: [ChildInput] = [ChildInput()]
     @State private var isLoading = false
@@ -42,7 +43,7 @@ struct ChildProfileSetupView: View {
     }
     
     let interestOptions = [
-        "Sports", "Arts & Crafts", "Music", "Reading", 
+        "Sports", "Arts & Crafts", "Music", "Reading",
         "Dance", "Nature", "Science", "Board Games"
     ]
     
@@ -212,6 +213,7 @@ struct ChildProfileSetupView: View {
     }
 }
 
+@available(iOS 17.0, *)
 struct ChildFormView: View {
     let index: Int
     @Binding var childInput: ChildInput
@@ -316,6 +318,7 @@ struct ChildFormView: View {
     }
 }
 
+@available(iOS 17.0, *)
 struct InterestToggleButton: View {
     let interest: String
     let isSelected: Bool
@@ -335,7 +338,8 @@ struct InterestToggleButton: View {
     }
 }
 
-// Flow layout for interests
+// Flow layout for interests - iOS 17.0+ only
+@available(iOS 17.0, *)
 struct FlowLayout: Layout {
     var spacing: CGFloat = 8
     
@@ -387,6 +391,7 @@ struct FlowLayout: Layout {
     }
 }
 
+@available(iOS 17.0, *)
 struct ChildProfileSetupView_Previews: PreviewProvider {
     static var previews: some View {
         ChildProfileSetupView(
