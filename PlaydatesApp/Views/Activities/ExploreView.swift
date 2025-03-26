@@ -448,6 +448,11 @@ struct ExploreActivityCard: View {  // Renamed from ActivityCard
 struct ExploreActivityDetailView: View {  // Renamed from ActivityDetailView
     let activity: Activity
     @ObservedObject var viewModel = ActivityViewModel.shared
+    @ObservedObject var playdateViewModel = PlaydateViewModel()
+    @ObservedObject var authViewModel = AuthViewModel()
+    @State private var showingCreatePlaydateSheet = false
+    @State private var isCreatingPlaydate = false
+    @State private var playdateCreationError: String? = nil
     
     var body: some View {
         ScrollView {
@@ -491,12 +496,60 @@ struct ExploreActivityDetailView: View {  // Renamed from ActivityDetailView
                 // Activity details - break into smaller components
                 detailsSection
                 
+                // Create Playdate Button
+                Button(action: {
+                    showingCreatePlaydateSheet = true
+                }) {
+                    HStack {
+                        Image(systemName: "calendar.badge.plus")
+                            .font(.system(size: 18))
+                        Text("Create Playdate Here")
+                            .fontWeight(.medium)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color(hex: "91DDCF"))
+                    .foregroundColor(Color(hex: "5D4E6D"))
+                    .cornerRadius(12)
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                
+                // Error message if playdate creation fails
+                if let error = playdateCreationError {
+                    Text(error)
+                        .foregroundColor(.red)
+                        .font(.caption)
+                        .padding(.horizontal)
+                }
+                
                 // Contact information
                 contactSection
             }
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarItems(trailing: favoriteButton)
+        .sheet(isPresented: $showingCreatePlaydateSheet) {
+            createPlaydateView
+        }
+    }
+    
+    private var createPlaydateView: some View {
+        NavigationView {
+            CreatePlaydateFromActivityView(
+                activity: activity,
+                isPresented: $showingCreatePlaydateSheet,
+                onPlaydateCreated: { playdate in
+                    // Handle successful playdate creation
+                    showingCreatePlaydateSheet = false
+                    playdateCreationError = nil
+                }
+            )
+            .navigationTitle("Create Playdate")
+            .navigationBarItems(trailing: Button("Cancel") {
+                showingCreatePlaydateSheet = false
+            })
+        }
     }
     
     private var favoriteButton: some View {
