@@ -252,9 +252,31 @@ struct ProfileView: View {
                     
                     // Children section
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Your Children")
-                            .font(.headline)
-                            .foregroundColor(ColorTheme.darkPurple)
+                        HStack {
+                            Text("Your Children")
+                                .font(.headline)
+                                .foregroundColor(ColorTheme.darkPurple)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                showingChildSetupSheet = true
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "plus")
+                                        .font(.caption)
+                                    
+                                    Text("Add Child")
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(ColorTheme.primary)
+                                .foregroundColor(.white)
+                                .cornerRadius(16)
+                            }
+                        }
                         
                         if let children = authViewModel.currentUser?.children, !children.isEmpty {
                             ForEach(children, id: \.id) { child in
@@ -270,19 +292,6 @@ struct ProfileView: View {
                                     .font(.subheadline)
                                     .foregroundColor(ColorTheme.lightText)
                                     .multilineTextAlignment(.center)
-                                
-                                Button(action: {
-                                    showingChildSetupSheet = true
-                                }) {
-                                    Text("Add Child")
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                        .padding(.horizontal, 20)
-                                        .padding(.vertical, 10)
-                                        .background(ColorTheme.primary)
-                                        .foregroundColor(.white)
-                                        .cornerRadius(8)
-                                }
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 20)
@@ -336,11 +345,12 @@ struct ProfileView: View {
             .sheet(isPresented: $showingChildSetupSheet) {
                 ChildProfileSetupView(
                     onComplete: {
-                        // Child will be added through the ChildProfileSetupView
-                        // No need to manually refresh user data as addChild updates the user property
+                        // Dismiss the sheet when the child is added successfully
+                        showingChildSetupSheet = false
                     },
                     onSkip: {
-                        // Do nothing on skip
+                        // Dismiss the sheet when the user skips
+                        showingChildSetupSheet = false
                     }
                 )
             }
