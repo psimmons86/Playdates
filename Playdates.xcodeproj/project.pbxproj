@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 56;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -23,6 +23,7 @@
 		1CD705DFCAE62CAB4243E03E /* API-Debugging-Guide.md in Resources */ = {isa = PBXBuildFile; fileRef = 599538F94DB71BDDDDAF074D /* API-Debugging-Guide.md */; };
 		1E36EF01D6CD20B071F0CA13 /* Google-Maps-API-Guide.md in Resources */ = {isa = PBXBuildFile; fileRef = D650008E7782E5D082C04D94 /* Google-Maps-API-Guide.md */; };
 		2144BAB99FCF66B07B9A75B0 /* ActivityIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDE42679E3891FA211ECE114 /* ActivityIcons.swift */; };
+		24061C3A086468D6E1257338 /* WeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE0E1BBE25551786A3D028D2 /* WeatherService.swift */; };
 		24C07229AAB7BF15DF8DDD5F /* validate_app_icon.sh in Resources */ = {isa = PBXBuildFile; fileRef = 171EA61F9DE01A8231056EA7 /* validate_app_icon.sh */; };
 		256D0D3CE193AA109A0E7687 /* PlaydateDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE0E223DB0F12634470C076 /* PlaydateDetailView.swift */; };
 		25B48FDB0C333A53B65E74B8 /* Friendship.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86D8D913AF600989B39FECD8 /* Friendship.swift */; };
@@ -83,6 +84,7 @@
 		B64A6949FFEFAFCD97A573F5 /* NotificationCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B9B8048C2ED930831DDDA65 /* NotificationCenterView.swift */; };
 		B83CA365A83117E8C0A57797 /* FirebaseSafetyKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59B038F7911108AD63D437C9 /* FirebaseSafetyKit.swift */; };
 		BC3F2AF80EE5979A7549448A /* GooglePlacesServiceCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308FBC38B4D380C05F10CD23 /* GooglePlacesServiceCache.swift */; };
+		C06989AF7B1C18A0C4B717F0 /* WeatherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FEEE3958143544FD5B4EFBA /* WeatherView.swift */; };
 		C3ED66886CE19A64F9DC773A /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E567E0458E485CE1192E72AD /* LocationManager.swift */; };
 		C54A9E950A1D731AE859DDB3 /* PlaydateDetailHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90BC89833B5797E5F3FBEE4D /* PlaydateDetailHelpers.swift */; };
 		C577A91ED85ECA18B3D45DA3 /* ActivitySearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E5FC5223AB3D47E69056B65 /* ActivitySearchView.swift */; };
@@ -112,7 +114,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		00E24D26DC411F585FD49030 /* Playdates.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Playdates.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		00E24D26DC411F585FD49030 /* Playdates.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Playdates.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		02804A2FDF6E4CA1DCDE5614 /* ColorTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorTheme.swift; sourceTree = "<group>"; };
 		063F0C6B656BD6F07754B7B1 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		06CCFD98FBF993E4DBCD0C33 /* LocationManagerCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManagerCache.swift; sourceTree = "<group>"; };
@@ -167,6 +169,7 @@
 		7272FF2F0D351163D5618D0D /* verify_files_modified.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = verify_files_modified.sh; sourceTree = "<group>"; };
 		73E00D5A70C97A334D6F82C6 /* fix_firebase_permissions.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = fix_firebase_permissions.sh; sourceTree = "<group>"; };
 		77338D64A1FB35AF07584F71 /* Playdate+Mock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Playdate+Mock.swift"; sourceTree = "<group>"; };
+		7FEEE3958143544FD5B4EFBA /* WeatherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherView.swift; sourceTree = "<group>"; };
 		83ED3B720C3956099B3D1477 /* CommentWithUser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommentWithUser.swift; sourceTree = "<group>"; };
 		86D8D913AF600989B39FECD8 /* Friendship.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Friendship.swift; sourceTree = "<group>"; };
 		87A4F344889F3515101F8B07 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -185,6 +188,7 @@
 		A525EA1F329F25217A8597CF /* CommentsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommentsSection.swift; sourceTree = "<group>"; };
 		A6DA450B960C9E15A81395AF /* PlaydatesApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaydatesApp.swift; sourceTree = "<group>"; };
 		A8B1BA7F944F20DA6C7691F6 /* finalize_consolidation.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = finalize_consolidation.sh; sourceTree = "<group>"; };
+		AE0E1BBE25551786A3D028D2 /* WeatherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherService.swift; sourceTree = "<group>"; };
 		B10A85FFD472648C9DA9DCF5 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		B578D0DBACD477A65CE9320D /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		B7014C0CE95B2DBDF26505FB /* PlaydateModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaydateModels.swift; sourceTree = "<group>"; };
@@ -260,6 +264,14 @@
 			path = Messaging;
 			sourceTree = "<group>";
 		};
+		1D2305255841522F61A4E3E4 /* Weather */ = {
+			isa = PBXGroup;
+			children = (
+				AE0E1BBE25551786A3D028D2 /* WeatherService.swift */,
+			);
+			path = Weather;
+			sourceTree = "<group>";
+		};
 		203266C7F7B77CF03102CFF4 /* app-icon */ = {
 			isa = PBXGroup;
 			children = (
@@ -326,6 +338,7 @@
 				2A406BE1BD41B89A1C860617 /* GooglePlaces */,
 				E0760B3FD657EE8C671AC8F5 /* Location */,
 				169C8BEF269CFD4F466EFD98 /* Messaging */,
+				1D2305255841522F61A4E3E4 /* Weather */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -484,6 +497,14 @@
 			path = Utils;
 			sourceTree = "<group>";
 		};
+		B6552C6C00635DE986FFD06D /* Weather */ = {
+			isa = PBXGroup;
+			children = (
+				7FEEE3958143544FD5B4EFBA /* WeatherView.swift */,
+			);
+			path = Weather;
+			sourceTree = "<group>";
+		};
 		CCAE683DD6BF8C0AEEB0857E /* Playdates */ = {
 			isa = PBXGroup;
 			children = (
@@ -527,6 +548,7 @@
 				CCAE683DD6BF8C0AEEB0857E /* Playdates */,
 				5E2882EF03A41E97E53A5555 /* Profile */,
 				A3D910EB238A47F4C2DFA7C4 /* Social */,
+				B6552C6C00635DE986FFD06D /* Weather */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -612,7 +634,6 @@
 				LastUpgradeCheck = 1400;
 				TargetAttributes = {
 					D798C11D8B900CE0EC146F1B = {
-						DevelopmentTeam = XXXXXXXXXX;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -749,6 +770,8 @@
 				F3117A4C2530DBB07F9001BD /* StoredOnHeap.swift in Sources */,
 				DE1B811F8890C47B7C486B27 /* StringExtensions.swift in Sources */,
 				49BB7D0808D14C6152E55DBA /* User.swift in Sources */,
+				24061C3A086468D6E1257338 /* WeatherService.swift in Sources */,
+				C06989AF7B1C18A0C4B717F0 /* WeatherView.swift in Sources */,
 				6FBFB36A3C68350EAA277F24 /* WelcomeView.swift in Sources */,
 				146B030F77FEDEDBF69593A5 /* WishlistActivityCard.swift in Sources */,
 			);
@@ -776,7 +799,7 @@
 				CODE_SIGN_ENTITLEMENTS = Playdates.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = XXXXXXXXXX;
+				DEVELOPMENT_TEAM = 4Y39R5M676;
 				INFOPLIST_FILE = PlaydatesApp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -916,7 +939,7 @@
 				CODE_SIGN_ENTITLEMENTS = Playdates.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = XXXXXXXXXX;
+				DEVELOPMENT_TEAM = 4Y39R5M676;
 				INFOPLIST_FILE = PlaydatesApp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
