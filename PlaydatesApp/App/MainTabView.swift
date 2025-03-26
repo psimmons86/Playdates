@@ -232,7 +232,6 @@ struct HomeView: View {
         ]
         
         playdateViewModel.playdates = mockPlaydates
-        }
     }
 }
 
