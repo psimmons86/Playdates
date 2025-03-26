@@ -6,90 +6,89 @@ struct PlaydateCard: View {
     let playdate: Playdate
     
     var body: some View {
-        GradientCard(
-            gradientColors: [Color.white, Color.white.opacity(0.95)],
-            startPoint: .top,
-            endPoint: .bottom,
-            animation: nil
-        ) {
-            VStack(alignment: .leading, spacing: 12) {
-                // Header with activity type icon
-                HStack {
-                    // Activity type icon
-                    activityTypeIcon
-                        .frame(width: 40, height: 40)
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        // Title
-                        Text(playdate.title)
-                            .font(.headline)
-                            .foregroundColor(ColorTheme.darkPurple)
-                            .lineLimit(1)
-                        
-                        // Host info if available
-                        Text("Hosted by You")
-                            .font(.caption)
-                            .foregroundColor(ColorTheme.lightText)
-                    }
-                    
-                    Spacer()
-                    
-                    // Date badge
-                    GradientCard(
-                        gradientColors: [ColorTheme.highlight, ColorTheme.highlight.opacity(0.8)],
-                        cornerRadius: 8,
-                        shadowRadius: 4,
-                        shadowColor: ColorTheme.highlight.opacity(0.3),
-                        animation: Animation.easeInOut(duration: 2).repeatForever(autoreverses: true)
-                    ) {
-                        VStack(spacing: 0) {
-                            Text(dayOfMonth)
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(.white)
-                            
-                            Text(monthAbbreviation)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.white)
-                        }
-                        .frame(width: 40, height: 40)
-                    }
-                }
+        VStack(alignment: .leading, spacing: 12) {
+            // Header with activity type icon
+            HStack {
+                // Activity type icon
+                activityTypeIcon
+                    .frame(width: 40, height: 40)
                 
-                Divider()
-                
-                // Date and time
-                HStack {
-                    Image(systemName: "clock")
-                        .foregroundColor(ColorTheme.primary)
-                    
-                    Text(formatTime(playdate.startDate))
-                        .font(.subheadline)
-                        .foregroundColor(ColorTheme.lightText)
-                }
-                
-                // Location
-                HStack {
-                    Image(systemName: "mappin.and.ellipse")
-                        .foregroundColor(ColorTheme.primary)
-                    
-                    Text(playdate.location?.name ?? playdate.address ?? "Location TBD")
-                        .font(.subheadline)
-                        .foregroundColor(ColorTheme.lightText)
+                VStack(alignment: .leading, spacing: 2) {
+                    // Title
+                    Text(playdate.title)
+                        .font(.headline)
+                        .foregroundColor(ColorTheme.darkPurple)
                         .lineLimit(1)
-                }
-                
-                // Attendees
-                HStack {
-                    Image(systemName: "person.2")
-                        .foregroundColor(ColorTheme.primary)
                     
-                    Text("\(playdate.attendeeIDs.count) attending")
-                        .font(.subheadline)
+                    // Host info if available
+                    Text("Hosted by You")
+                        .font(.caption)
                         .foregroundColor(ColorTheme.lightText)
                 }
+                
+                Spacer()
+                
+                // Date badge
+                VStack(spacing: 0) {
+                    Text(dayOfMonth)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    Text(monthAbbreviation)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white)
+                }
+                .frame(width: 40, height: 40)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            ColorTheme.highlight,
+                            ColorTheme.highlight.opacity(0.8)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .cornerRadius(8)
             }
-            .padding()
+            
+            Divider()
+            
+            // Date and time
+            HStack {
+                Image(systemName: "clock")
+                    .foregroundColor(ColorTheme.primary)
+                
+                Text(formatTime(playdate.startDate))
+                    .font(.subheadline)
+                    .foregroundColor(ColorTheme.lightText)
+            }
+            
+            // Location
+            HStack {
+                Image(systemName: "mappin.and.ellipse")
+                    .foregroundColor(ColorTheme.primary)
+                
+                Text(playdate.location?.name ?? playdate.address ?? "Location TBD")
+                    .font(.subheadline)
+                    .foregroundColor(ColorTheme.lightText)
+                    .lineLimit(1)
+            }
+            
+            // Attendees
+            HStack {
+                Image(systemName: "person.2")
+                    .foregroundColor(ColorTheme.primary)
+                
+                Text("\(playdate.attendeeIDs.count) attending")
+                    .font(.subheadline)
+                    .foregroundColor(ColorTheme.lightText)
+            }
         }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
     }
     
     // Helper properties for date formatting
@@ -176,17 +175,17 @@ struct PlaydateCard: View {
     }
     
     private func activityIconView(systemName: String, color: Color) -> some View {
-        GradientCard(
-            gradientColors: [color, color.opacity(0.8)],
-            cornerRadius: 20,
-            shadowRadius: 4,
-            shadowColor: color.opacity(0.3),
-            animation: Animation.easeInOut(duration: 2).repeatForever(autoreverses: true)
-        ) {
-            Image(systemName: systemName)
-                .font(.system(size: 24))
-                .foregroundColor(.white)
-                .frame(width: 40, height: 40)
-        }
+        Image(systemName: systemName)
+            .font(.system(size: 24))
+            .foregroundColor(.white)
+            .frame(width: 40, height: 40)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [color, color.opacity(0.8)]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .clipShape(Circle())
     }
 }
