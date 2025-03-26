@@ -63,7 +63,7 @@ extension Color {
     public static var backgroundColor: Color { ColorTheme.background }
     
     // Extension to create colors from hex values
-    init(hex: String) {
+    public init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&int)
