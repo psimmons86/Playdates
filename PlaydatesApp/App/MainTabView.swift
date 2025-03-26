@@ -162,7 +162,7 @@ struct HomeView: View {
     private func addMockActivities() {
         let mockActivities = [
             Activity(
-                id: "mock1",
+                id: nil, // Let Firestore generate the ID
                 name: "Central Park Playground",
                 description: "A fun playground for kids of all ages",
                 type: .park,
@@ -172,7 +172,7 @@ struct HomeView: View {
                 isPublic: true
             ),
             Activity(
-                id: "mock2",
+                id: nil, // Let Firestore generate the ID
                 name: "Children's Museum",
                 description: "Interactive exhibits for children",
                 type: .museum,
@@ -182,7 +182,7 @@ struct HomeView: View {
                 isPublic: true
             ),
             Activity(
-                id: "mock3",
+                id: nil, // Let Firestore generate the ID
                 name: "Public Library Story Time",
                 description: "Weekly story time for kids",
                 type: .library,
@@ -193,8 +193,11 @@ struct HomeView: View {
             )
         ]
         
-        activityViewModel.activities = mockActivities
-        activityViewModel.popularActivities = mockActivities
+        // Use DispatchQueue.main to ensure UI updates happen on the main thread
+        DispatchQueue.main.async {
+            self.activityViewModel.activities = mockActivities
+            self.activityViewModel.popularActivities = mockActivities
+        }
     }
     
     // Helper function to add mock playdates if none are found
@@ -206,7 +209,7 @@ struct HomeView: View {
         
         let mockPlaydates = [
             Playdate(
-                id: "mockPlaydate1",
+                id: nil, // Let Firestore generate the ID
                 hostID: userID,
                 title: "Park Playdate",
                 description: "Let's meet at the park for a fun afternoon",
@@ -218,7 +221,7 @@ struct HomeView: View {
                 isPublic: true
             ),
             Playdate(
-                id: "mockPlaydate2",
+                id: nil, // Let Firestore generate the ID
                 hostID: userID,
                 title: "Museum Trip",
                 description: "Exploring the children's museum",
@@ -231,7 +234,10 @@ struct HomeView: View {
             )
         ]
         
-        playdateViewModel.playdates = mockPlaydates
+        // Use DispatchQueue.main to ensure UI updates happen on the main thread
+        DispatchQueue.main.async {
+            self.playdateViewModel.playdates = mockPlaydates
+        }
     }
 }
 
@@ -263,7 +269,7 @@ struct NewPlaydateView: View {
                         guard let userID = authViewModel.user?.id ?? Auth.auth().currentUser?.uid else { return }
                         
                         let playdate = Playdate(
-                            id: "local-\(UUID().uuidString)",
+                            id: nil, // Let Firestore generate the ID
                             hostID: userID,
                             title: title,
                             description: description,
@@ -277,21 +283,24 @@ struct NewPlaydateView: View {
                         
                         // Try to save to Firebase first
                         playdateViewModel.createPlaydate(playdate) { result in
-                            switch result {
-                            case .success(_):
-                                // Successfully saved to Firebase
-                                print("Playdate saved to Firebase")
-                            case .failure(let error):
-                                // Failed to save to Firebase, add to local array
-                                print("Failed to save to Firebase: \(error.localizedDescription)")
-                                playdateViewModel.playdates.append(playdate)
+                            // Ensure UI updates happen on the main thread
+                            DispatchQueue.main.async {
+                                switch result {
+                                case .success(_):
+                                    // Successfully saved to Firebase
+                                    print("Playdate saved to Firebase")
+                                case .failure(let error):
+                                    // Failed to save to Firebase, add to local array
+                                    print("Failed to save to Firebase: \(error.localizedDescription)")
+                                    self.playdateViewModel.playdates.append(playdate)
+                                }
+                                
+                                // Reset form
+                                self.title = ""
+                                self.description = ""
+                                self.date = Date()
+                                self.location = ""
                             }
-                            
-                            // Reset form
-                            title = ""
-                            description = ""
-                            date = Date()
-                            location = ""
                         }
                     }) {
                         Text("Create Playdate")
