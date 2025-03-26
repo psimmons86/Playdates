@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyDSU3XhdAThwIxeDEnsh7AsOuhjGg9j-2s</string>
+	<string>AIzaSyAcQ7XZJO34El_8MbeUAYAq7OhIogHeoDk</string>
 	<key>GCM_SENDER_ID</key>
-	<string>976668713522</string>
+	<string>359438930307</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.KidsActivities</string>
+	<string>com.example.playdates</string>
 	<key>PROJECT_ID</key>
-	<string>kidscrew-calendar</string>
+	<string>playdates-b9a52</string>
 	<key>STORAGE_BUCKET</key>
-	<string>kidscrew-calendar.firebasestorage.app</string>
+	<string>playdates-b9a52.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:976668713522:ios:80a3fdcfecc9473f70d22b</string>
+	<string>1:359438930307:ios:9876bb0b4f2fcb8c97e6b6</string>
 </dict>
 </plist>

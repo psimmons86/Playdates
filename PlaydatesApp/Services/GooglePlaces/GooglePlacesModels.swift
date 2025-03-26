@@ -83,12 +83,13 @@ struct PlacesResponse: Decodable {
 struct PlaceResult: Decodable {
     let placeId: String
     let name: String
-    let vicinity: String
+    let vicinity: String?
     let geometry: Geometry
     let types: [String]
     let rating: Double?
     let userRatingsTotal: Int?
     let photos: [PhotoResult]?
+    let formattedAddress: String?
     
     enum CodingKeys: String, CodingKey {
         case placeId = "place_id"
@@ -99,6 +100,7 @@ struct PlaceResult: Decodable {
         case rating
         case userRatingsTotal = "user_ratings_total"
         case photos
+        case formattedAddress = "formatted_address"
     }
 }
 

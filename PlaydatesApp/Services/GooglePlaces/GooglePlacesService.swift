@@ -143,9 +143,12 @@ class GooglePlacesService {
                     
                     // Map the results to ActivityPlace objects
                     let activities = response.results.map { result -> ActivityPlace in
+                        // Get the address from vicinity, formattedAddress, or fallback to name
+                        let address = result.vicinity ?? result.formattedAddress ?? result.name
+                        
                         let location = Location(
                             name: result.name,
-                            address: result.vicinity,
+                            address: address,
                             latitude: result.geometry.location.lat,
                             longitude: result.geometry.location.lng
                         )

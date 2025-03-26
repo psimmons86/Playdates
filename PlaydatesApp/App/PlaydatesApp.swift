@@ -1,75 +1,61 @@
 import SwiftUI
-import FirebaseCore
+import Firebase
+import FirebaseFirestore
+import FirebaseAuth
+import FirebaseStorage
+import CoreLocation
 
 @main
 struct PlaydatesApp: App {
-    // Apply the AppDelegate to handle Firebase initialization properly
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @StateObject private var authViewModel = AuthViewModel()
+    @StateObject private var locationManager = LocationManager.shared
     
     init() {
-        print("🚀 PlaydatesApp: init")
-        
-        // Setup crash reporting (additional safety)
-        setupCrashReporting()
+        // Set up appearance
+        configureAppearance()
     }
     
     var body: some Scene {
         WindowGroup {
-            let authViewModel = AuthViewModel()
-            let locationManager = LocationManager()
-            
-            ContentView()
+            AppContentView()
                 .environmentObject(authViewModel)
                 .environmentObject(locationManager)
-                .onAppear {
-                    print("🚀 ContentView: onAppear")
-                    // Initial check for authentication state
-                    authViewModel.checkAuthState()
-                }
-                .onLoad {
-                    print("🚀 PlaydatesApp: Creating WindowGroup")
-                    print("🚀 PlaydatesApp: ViewModels initialized")
-                }
         }
     }
     
-    // Additional crash reporting setup (optional but recommended)
-    private func setupCrashReporting() {
-        // Monitor for uncaught Swift exceptions
-        NSSetUncaughtExceptionHandler { exception in
-            print("⚠️ UNCAUGHT EXCEPTION: \(exception)")
-            print("⚠️ Reason: \(exception.reason ?? "Unknown")")
-            print("⚠️ Name: \(exception.name)")
-            print("⚠️ Stack trace:")
-            for symbol in exception.callStackSymbols {
-                print("  \(symbol)")
+    private func configureAppearance() {
+        // Configure navigation bar appearance
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(ColorTheme.primary)
+        appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
+        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+        
+        UINavigationBar.appearance().standardAppearance = appearance
+        UINavigationBar.appearance().compactAppearance = appearance
+        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        UINavigationBar.appearance().tintColor = .white
+        
+        // Configure tab bar appearance
+        UITabBar.appearance().tintColor = UIColor(ColorTheme.primary)
+    }
+}
+
+struct AppContentView: View {
+    @EnvironmentObject var authViewModel: AuthViewModel
+    
+    var body: some View {
+        Group {
+            if authViewModel.isSignedIn {
+                MainTabView()
+            } else {
+                AuthView()
             }
         }
-    }
-}
-
-// Helper extension to execute code when a view appears for the first time
-extension View {
-    func onLoad(perform action: @escaping () -> Void) -> some View {
-        modifier(ViewDidLoadModifier(perform: action))
-    }
-}
-
-// Modifier that will be called only once when view is loaded
-struct ViewDidLoadModifier: ViewModifier {
-    @State private var didLoad = false
-    private let action: () -> Void
-    
-    init(perform action: @escaping () -> Void) {
-        self.action = action
-    }
-    
-    func body(content: Content) -> some View {
-        content.onAppear {
-            if didLoad == false {
-                didLoad = true
-                action()
-            }
+        .onAppear {
+            // Check if user is already logged in
+            authViewModel.checkAuthState()
         }
     }
 }

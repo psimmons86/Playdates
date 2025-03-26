@@ -13,16 +13,17 @@ public struct ExploreView: View {
     private let distanceOptions: [Double] = [5.0, 10.0, 25.0, 50.0, 100.0] // In miles
     
     private let categories = [
-        "Parks", "Museums", "Playgrounds", "Libraries", 
-        "Swimming", "Sports", "Zoo", "Aquarium", 
+        "Parks", "Museums", "Playgrounds", "Libraries",
+        "Swimming", "Sports", "Zoo", "Aquarium",
         "Movies", "Theme Parks"
     ]
     
-    public var body: some View {  // Make body public
+    public var body: some View {
+        // Wrap in NavigationView but don't set background at the ZStack level
         NavigationView {
             VStack(spacing: 0) {
                 // Search bar
-                ExploreSearchBar(text: $searchText, placeholder: "Search activities...")  // Renamed
+                ExploreSearchBar(text: $searchText, placeholder: "Search activities...")
                     .padding(.horizontal)
                     .padding(.top, 8)
                 
@@ -30,7 +31,7 @@ public struct ExploreView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         ForEach(categories, id: \.self) { category in
-                            ExploreCategoryButton(  // Renamed
+                            ExploreCategoryButton(
                                 category: category,
                                 isSelected: selectedCategory == category,
                                 action: {
@@ -81,22 +82,22 @@ public struct ExploreView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 8)
                 
-                // Break up complex expressions to help type checking
+                // Activities content
                 ScrollView {
                     ZStack {
                         if activityViewModel.isLoading {
                             ProgressView()
                                 .padding()
                         } else if let error = activityViewModel.error {
-                            ExploreErrorView(message: error)  // Renamed
+                            ExploreErrorView(message: error)
                         } else if filteredActivities.isEmpty {
-                            ExploreEmptyStateView(  // Renamed
+                            ExploreEmptyStateView(
                                 message: emptyStateMessage,
                                 buttonTitle: emptyStateButtonTitle,
                                 buttonAction: emptyStateButtonAction
                             )
                         } else {
-                            activityGrid  // Extract this to simplify expressions
+                            activityGrid
                         }
                     }
                 }
@@ -117,6 +118,7 @@ public struct ExploreView: View {
                     print("Debug: Location is nil when trying to fetch nearby activities")
                 }
             }
+            .background(ColorTheme.background) // Move background to here to fix the blue box issue
         }
     }
     
@@ -176,7 +178,7 @@ public struct ExploreView: View {
     private var activityGrid: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 160))], spacing: 16) {
             ForEach(filteredActivities) { activity in
-                ExploreActivityCard(activity: activity)  // Renamed
+                ExploreActivityCard(activity: activity)
             }
         }
         .padding()
@@ -234,7 +236,7 @@ public struct ExploreView: View {
 
 // MARK: - Supporting Views (with renamed components)
 
-struct ExploreSearchBar: View {  // Renamed from SearchBar
+struct ExploreSearchBar: View {
     @Binding var text: String
     var placeholder: String
     
@@ -261,7 +263,7 @@ struct ExploreSearchBar: View {  // Renamed from SearchBar
     }
 }
 
-struct ExploreCategoryButton: View {  // Renamed from CategoryButton
+struct ExploreCategoryButton: View {
     let category: String
     let isSelected: Bool
     let action: () -> Void
@@ -313,7 +315,7 @@ struct ExploreCategoryButton: View {  // Renamed from CategoryButton
     }
 }
 
-struct ExploreActivityCard: View {  // Renamed from ActivityCard
+struct ExploreActivityCard: View {
     let activity: Activity
     @ObservedObject var viewModel: ActivityViewModel
     
@@ -324,7 +326,7 @@ struct ExploreActivityCard: View {  // Renamed from ActivityCard
     
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            NavigationLink(destination: ExploreActivityDetailView(activity: activity).environmentObject(PlaydateViewModel.shared)) {  // Renamed
+            NavigationLink(destination: ExploreActivityDetailView(activity: activity).environmentObject(PlaydateViewModel.shared)) {
                 VStack(alignment: .leading) {
                     // Activity icon
                     activityIcon
@@ -446,281 +448,7 @@ struct ExploreActivityCard: View {  // Renamed from ActivityCard
     }
 }
 
-struct ExploreActivityDetailView: View {  // Renamed from ActivityDetailView
-    let activity: Activity
-    @ObservedObject var viewModel = ActivityViewModel.shared
-    @EnvironmentObject var playdateViewModel: PlaydateViewModel
-    @ObservedObject var authViewModel = AuthViewModel()
-    @State private var showingCreatePlaydateSheet = false
-    @State private var isCreatingPlaydate = false
-    @State private var playdateCreationError: String? = nil
-    
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                // Activity icon
-                HStack {
-                    Spacer()
-                    
-                    // Use a simpler switch statement to help with type checking
-                    Group {
-                        switch activity.type {
-                        case .park:
-                            ActivityIcons.ParkIcon(size: 120)
-                        case .museum:
-                            ActivityIcons.MuseumIcon(size: 120)
-                        case .playground:
-                            ActivityIcons.PlaygroundIcon(size: 120)
-                        case .library:
-                            ActivityIcons.LibraryIcon(size: 120)
-                        case .swimmingPool:
-                            ActivityIcons.SwimmingIcon(size: 120)
-                        case .sportingEvent:
-                            ActivityIcons.SportsIcon(size: 120)
-                        case .zoo:
-                            ActivityIcons.ZooIcon(size: 120)
-                        case .aquarium:
-                            ActivityIcons.AquariumIcon(size: 120)
-                        case .movieTheater:
-                            ActivityIcons.MovieTheaterIcon(size: 120)
-                        case .themePark:
-                            ActivityIcons.ThemeParkIcon(size: 120)
-                        default:
-                            ActivityIcons.OtherActivityIcon(size: 120)
-                        }
-                    }
-                    
-                    Spacer()
-                }
-                .padding(.vertical)
-                
-                // Activity details - break into smaller components
-                detailsSection
-                
-                // Create Playdate Button
-                Button(action: {
-                    showingCreatePlaydateSheet = true
-                }) {
-                    HStack {
-                        Image(systemName: "calendar.badge.plus")
-                            .font(.system(size: 18))
-                        Text("Create Playdate Here")
-                            .fontWeight(.medium)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color(hex: "91DDCF"))
-                    .foregroundColor(Color(hex: "5D4E6D"))
-                    .cornerRadius(12)
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-                
-                // Error message if playdate creation fails
-                if let error = playdateCreationError {
-                    Text(error)
-                        .foregroundColor(.red)
-                        .font(.caption)
-                        .padding(.horizontal)
-                }
-                
-                // Contact information
-                contactSection
-            }
-        }
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarItems(trailing: favoriteButton)
-        .sheet(isPresented: $showingCreatePlaydateSheet) {
-            createPlaydateView
-        }
-    }
-    
-    private var createPlaydateView: some View {
-        NavigationView {
-            CreatePlaydateFromActivityView(
-                activity: activity,
-                isPresented: $showingCreatePlaydateSheet,
-                onPlaydateCreated: { playdate in
-                    // Handle successful playdate creation
-                    showingCreatePlaydateSheet = false
-                    playdateCreationError = nil
-                }
-            )
-            .environmentObject(playdateViewModel)
-            .navigationTitle("Create Playdate")
-            .navigationBarItems(trailing: Button("Cancel") {
-                showingCreatePlaydateSheet = false
-            })
-        }
-    }
-    
-    private var favoriteButton: some View {
-        Button(action: {
-            viewModel.toggleFavorite(for: activity)
-        }) {
-            Image(systemName: viewModel.isFavorite(activity: activity) ? "heart.fill" : "heart")
-                .foregroundColor(viewModel.isFavorite(activity: activity) ? .red : .gray)
-                .font(.system(size: 22))
-        }
-    }
-    
-    // Break up complex views into smaller pieces
-    private var detailsSection: some View {
-        Group {
-            Text(activity.name)
-                .font(.title)
-                .fontWeight(.bold)
-            
-            Text(activity.type.title)
-                .font(.headline)
-                .foregroundColor(.secondary)
-            
-            if let rating = activity.rating {
-                ratingView(rating: rating)
-            }
-            
-            Divider()
-            
-            Text("Description")
-                .font(.headline)
-            
-            Text(activity.description)
-                .fixedSize(horizontal: false, vertical: true)
-            
-            Divider()
-            
-            Text("Location")
-                .font(.headline)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(activity.location.name)
-                    .fontWeight(.medium)
-                
-                Text(activity.location.address)
-                    .foregroundColor(.secondary)
-                
-                // Distance from user
-                if let userLocation = LocationManager.shared.location {
-                    let activityLocation = CLLocation(
-                        latitude: activity.location.latitude,
-                        longitude: activity.location.longitude
-                    )
-                    let distanceInMeters = userLocation.distance(from: activityLocation)
-                    let distanceInMiles = distanceInMeters / 1609.34 // Convert meters to miles
-                    
-                    HStack {
-                        Image(systemName: "location.circle.fill")
-                            .foregroundColor(.blue)
-                        
-                        // Format distance based on how far away it is
-                        if distanceInMiles < 0.1 {
-                            Text("Nearby")
-                                .foregroundColor(.blue)
-                        } else if distanceInMiles < 10 {
-                            Text(String(format: "%.1f miles from your location", distanceInMiles))
-                                .foregroundColor(.blue)
-                        } else {
-                            Text(String(format: "%.0f miles from your location", distanceInMiles))
-                                .foregroundColor(.blue)
-                        }
-                    }
-                    .padding(.top, 4)
-                }
-            }
-            
-            // Map placeholder
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray5))
-                .frame(height: 200)
-                .overlay(
-                    Image(systemName: "map")
-                        .font(.system(size: 40))
-                        .foregroundColor(.secondary)
-                )
-        }
-        .padding(.horizontal)
-    }
-    
-    private func ratingView(rating: Double) -> some View {
-        HStack(spacing: 4) {
-            ForEach(0..<5) { index in
-                Image(systemName: index < Int(rating) ? "star.fill" : "star")
-                    .foregroundColor(.yellow)
-            }
-            
-            Text(String(format: "%.1f", rating))
-                .fontWeight(.medium)
-            
-            if let reviewCount = activity.reviewCount {
-                Text("(\(reviewCount) reviews)")
-                    .foregroundColor(.secondary)
-            }
-        }
-    }
-    
-    private var contactSection: some View {
-        Group {
-            if activity.website != nil || activity.phoneNumber != nil {
-                Divider()
-                    .padding(.horizontal)
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Contact Information")
-                        .font(.headline)
-                        .padding(.horizontal)
-                    
-                    if let website = activity.website {
-                        websiteButton(website: website)
-                    }
-                    
-                    if let phoneNumber = activity.phoneNumber {
-                        phoneButton(phoneNumber: phoneNumber)
-                    }
-                }
-            }
-        }
-    }
-    
-    private func websiteButton(website: String) -> some View {
-        Button(action: {
-            // Open website
-        }) {
-            HStack {
-                Image(systemName: "globe")
-                Text(website)
-                Spacer()
-                Image(systemName: "arrow.up.right.square")
-                    .foregroundColor(.secondary)
-            }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(8)
-        }
-        .buttonStyle(PlainButtonStyle())
-        .padding(.horizontal)
-    }
-    
-    private func phoneButton(phoneNumber: String) -> some View {
-        Button(action: {
-            // Call phone number
-        }) {
-            HStack {
-                Image(systemName: "phone")
-                Text(phoneNumber)
-                Spacer()
-                Image(systemName: "arrow.up.right.square")
-                    .foregroundColor(.secondary)
-            }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(8)
-        }
-        .buttonStyle(PlainButtonStyle())
-        .padding(.horizontal)
-    }
-}
-
-struct ExploreErrorView: View {  // Renamed from ErrorView
+struct ExploreErrorView: View {
     let message: String
     
     var body: some View {
@@ -742,7 +470,7 @@ struct ExploreErrorView: View {  // Renamed from ErrorView
     }
 }
 
-struct ExploreEmptyStateView: View {  // Renamed from EmptyStateView
+struct ExploreEmptyStateView: View {
     let message: String
     let buttonTitle: String?
     let buttonAction: (() -> Void)?
@@ -772,328 +500,5 @@ struct ExploreEmptyStateView: View {  // Renamed from EmptyStateView
         }
         .padding()
         .frame(maxWidth: .infinity)
-    }
-}
-
-struct ExploreView_Previews: PreviewProvider {
-    static var previews: some View {
-        ExploreView()
-    }
-}
-
-// MARK: - CreatePlaydateFromActivityView
-import FirebaseFirestore
-
-struct CreatePlaydateFromActivityView: View {
-    let activity: Activity
-    @Binding var isPresented: Bool
-    var onPlaydateCreated: (Playdate) -> Void
-    
-    @ObservedObject private var authViewModel = AuthViewModel()
-    @EnvironmentObject var playdateViewModel: PlaydateViewModel
-    
-    @State private var title: String = ""
-    @State private var description: String = ""
-    @State private var startDate = Date().addingTimeInterval(86400) // Tomorrow
-    @State private var endDate = Date().addingTimeInterval(86400 + 7200) // 2 hours after start
-    @State private var isPublic = true
-    @State private var minAge: String = ""
-    @State private var maxAge: String = ""
-    @State private var isLoading = false
-    @State private var errorMessage: String? = nil
-    
-    private var location: Location {
-        return activity.location
-    }
-    
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Activity info section
-                activityInfoSection
-                
-                // Playdate details form
-                playdateDetailsForm
-                
-                // Error message
-                if let errorMessage = errorMessage {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                        .font(.caption)
-                        .padding(.horizontal)
-                }
-                
-                // Create button
-                createButton
-            }
-            .padding()
-        }
-        .onAppear {
-            // Pre-fill title and description based on activity
-            title = "Playdate at \(activity.name)"
-            description = "Join me for a playdate at \(activity.name)! \(activity.description)"
-        }
-    }
-    
-    private var activityInfoSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Create a playdate at:")
-                .font(.headline)
-            
-            HStack(spacing: 16) {
-                // Activity icon
-                activityIcon
-                    .frame(width: 60, height: 60)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(activity.name)
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                    
-                    Text(activity.type.title)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                    Text(activity.location.address)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
-        }
-    }
-    
-    private var playdateDetailsForm: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Playdate Details")
-                .font(.headline)
-            
-            // Title
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Title")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                
-                TextField("Enter title", text: $title)
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
-            }
-            
-            // Description
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Description")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                
-                TextEditor(text: $description)
-                    .frame(minHeight: 100)
-                    .padding(4)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
-            }
-            
-            // Date and time pickers
-            VStack(alignment: .leading, spacing: 16) {
-                // Start date
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Start Date & Time")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    
-                    DatePicker("", selection: $startDate)
-                        .datePickerStyle(CompactDatePickerStyle())
-                        .labelsHidden()
-                        .onChange(of: startDate) { newValue in
-                            // Ensure end date is after start date
-                            if endDate <= newValue {
-                                endDate = newValue.addingTimeInterval(7200) // 2 hours later
-                            }
-                        }
-                }
-                
-                // End date
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("End Date & Time")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    
-                    DatePicker("", selection: $endDate, in: startDate..., displayedComponents: [.date, .hourAndMinute])
-                        .datePickerStyle(CompactDatePickerStyle())
-                        .labelsHidden()
-                }
-            }
-            
-            // Age range
-            HStack(spacing: 16) {
-                // Min age
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Min Age")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    
-                    TextField("Optional", text: $minAge)
-                        .keyboardType(.numberPad)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                        .frame(maxWidth: .infinity)
-                }
-                
-                // Max age
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Max Age")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    
-                    TextField("Optional", text: $maxAge)
-                        .keyboardType(.numberPad)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            
-            // Public toggle
-            Toggle(isOn: $isPublic) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Public Playdate")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    
-                    Text("Anyone can discover and join this playdate")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "91DDCF")))
-        }
-    }
-    
-    private var createButton: some View {
-        Button(action: createPlaydate) {
-            if isLoading {
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color(hex: "91DDCF"))
-                    .cornerRadius(12)
-            } else {
-                Text("Create Playdate")
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color(hex: "91DDCF"))
-                    .foregroundColor(Color(hex: "5D4E6D"))
-                    .cornerRadius(12)
-            }
-        }
-        .disabled(isLoading || !isFormValid)
-        .padding(.top, 16)
-    }
-    
-    private var activityIcon: some View {
-        Group {
-            switch activity.type {
-            case .park:
-                ActivityIcons.ParkIcon(size: 60)
-            case .museum:
-                ActivityIcons.MuseumIcon(size: 60)
-            case .playground:
-                ActivityIcons.PlaygroundIcon(size: 60)
-            case .library:
-                ActivityIcons.LibraryIcon(size: 60)
-            case .swimmingPool:
-                ActivityIcons.SwimmingIcon(size: 60)
-            case .sportingEvent:
-                ActivityIcons.SportsIcon(size: 60)
-            case .zoo:
-                ActivityIcons.ZooIcon(size: 60)
-            case .aquarium:
-                ActivityIcons.AquariumIcon(size: 60)
-            case .movieTheater:
-                ActivityIcons.MovieTheaterIcon(size: 60)
-            case .themePark:
-                ActivityIcons.ThemeParkIcon(size: 60)
-            default:
-                ActivityIcons.OtherActivityIcon(size: 60)
-            }
-        }
-    }
-    
-    private var isFormValid: Bool {
-        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        startDate < endDate &&
-        validateAgeRange()
-    }
-    
-    private func validateAgeRange() -> Bool {
-        // If both fields are empty, that's valid (no age restriction)
-        if minAge.isEmpty && maxAge.isEmpty {
-            return true
-        }
-        
-        // If only one field has a value, that's valid
-        if minAge.isEmpty || maxAge.isEmpty {
-            return true
-        }
-        
-        // If both fields have values, min should be less than or equal to max
-        if let min = Int(minAge), let max = Int(maxAge) {
-            return min <= max
-        }
-        
-        // If we can't parse the values as integers, it's invalid
-        return false
-    }
-    
-    private func createPlaydate() {
-        guard let currentUser = authViewModel.currentUser, let userID = currentUser.id else {
-            errorMessage = "You must be signed in to create a playdate"
-            return
-        }
-        
-        isLoading = true
-        errorMessage = nil
-        
-        // Parse age range
-        let minAgeInt = minAge.isEmpty ? nil : Int(minAge)
-        let maxAgeInt = maxAge.isEmpty ? nil : Int(maxAge)
-        
-        // Create playdate object
-        let newPlaydate = Playdate(
-            hostID: userID,
-            title: title,
-            description: description,
-            activityType: activity.type.rawValue,
-            location: location,
-            startDate: startDate,
-            endDate: endDate,
-            minAge: minAgeInt,
-            maxAge: maxAgeInt,
-            attendeeIDs: [userID], // Host is automatically an attendee
-            isPublic: isPublic,
-            createdAt: Date()
-        )
-        
-        // Save to Firebase
-        playdateViewModel.createPlaydate(newPlaydate) { result in
-            isLoading = false
-            
-            switch result {
-            case .success(let playdate):
-                // Call the completion handler with the created playdate
-                onPlaydateCreated(playdate)
-                isPresented = false
-                
-            case .failure(let error):
-                errorMessage = error.localizedDescription
-            }
-        }
     }
 }

@@ -509,32 +509,40 @@ struct MainTabViewWithNotifications: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             // Home Tab
-            HomeView()
-                .environmentObject(authViewModel)
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
-                .tag(0)
+            NavigationView {
+                SocialFeedView()
+            }
+            .environmentObject(authViewModel)
+            .tabItem {
+                Label("Home", systemImage: "house.fill")
+            }
+            .tag(0)
             
             // Explore Tab
-            ExploreView()
-                .tabItem {
-                    Label("Explore", systemImage: "map.fill")
-                }
-                .tag(1)
+            NavigationView {
+                ExploreView()
+            }
+            .tabItem {
+                Label("Explore", systemImage: "map.fill")
+            }
+            .tag(1)
             
             // Create Tab
-            CreatePlaydateView(onComplete: { _ in })
-                .environmentObject(authViewModel)
-                .tabItem {
-                    Label("Create", systemImage: "plus.circle.fill")
-                }
-                .tag(2)
+            NavigationView {
+                ActivitySearchView()
+            }
+            .environmentObject(authViewModel)
+            .tabItem {
+                Label("Create", systemImage: "plus.circle.fill")
+            }
+            .tag(2)
             
             // Friends Tab with notification badge
             ZStack(alignment: .topTrailing) {
-                FriendsView()
-                    .environmentObject(authViewModel)
+                NavigationView {
+                    SocialFeedView()
+                }
+                .environmentObject(authViewModel)
                 
                 NotificationBadge(count: friendRequestCount)
                     .offset(x: -10, y: 10)

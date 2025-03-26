@@ -41,7 +41,7 @@ For security, you should restrict your API key:
 2. Find your API key and click "Edit"
 3. Under "Application restrictions", restrict it to iOS apps
 4. Under "API restrictions", restrict it to only the APIs you've enabled
-5. Add your app's bundle ID (com.example.KidsActivities) to the allowed applications
+5. Add your app's bundle ID (com.example.playdates) to the allowed applications
 
 ## Implementation Details
 

@@ -34,10 +34,10 @@ targets:
     settings:
       base:
         INFOPLIST_FILE: PlaydatesApp/Info.plist
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.KidsActivities
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.playdates
         PRODUCT_NAME: Playdates
         TARGETED_DEVICE_FAMILY: "1,2"  # "1" for iPhone, "2" for iPad, "1,2" for Universal
-        CURRENT_PROJECT_VERSION: "3.0.0"
+        CURRENT_PROJECT_VERSION: "1.1.0"
         DEVELOPMENT_TEAM: "$(DEVELOPMENT_TEAM)"
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: "iPhone Developer"
@@ -46,9 +46,9 @@ targets:
       properties:
         CFBundleName: Playdates
         CFBundleDisplayName: Playdates
-        CFBundleIdentifier: com.example.KidsActivities
-        CFBundleVersion: "3.0.0"
-        CFBundleShortVersionString: "3.0.0"
+        CFBundleIdentifier: com.example.playdates
+        CFBundleVersion: "1.1.0"
+        CFBundleShortVersionString: "1.1.0"
         UILaunchStoryboardName: LaunchScreen
         CFBundleIconName: AppIcon
         UIApplicationSceneManifest:

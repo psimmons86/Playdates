@@ -215,19 +215,21 @@ class AuthViewModel: ObservableObject {
                 }
 
                 // Handle arrays
-                var children: [Child]? = nil
+                var children: [PlaydateChild]? = nil
                 if let childrenData = data["children"] as? [[String: Any]] {
                     print("🔍 Processing \(childrenData.count) children")
-                    children = childrenData.compactMap { childData -> Child? in
+                    children = childrenData.compactMap { childData -> PlaydateChild? in
                         // Safety: Sanitize each child data dictionary
                         let sanitizedData = FirebaseSafetyKit.sanitizeData(childData) ?? [:]
 
                         guard let name = FirebaseSafetyKit.getString(from: sanitizedData, forKey: "name") else { return nil }
                         let age = FirebaseSafetyKit.getInt(from: sanitizedData, forKey: "age") ?? 0
                         let id = FirebaseSafetyKit.getString(from: sanitizedData, forKey: "id") ?? UUID().uuidString
-                        let interests = FirebaseSafetyKit.getStringArray(from: sanitizedData, forKey: "interests")
+                        let gender = FirebaseSafetyKit.getString(from: sanitizedData, forKey: "gender")
+                        let interests = FirebaseSafetyKit.getStringArray(from: sanitizedData, forKey: "interests") ?? []
+                        let parentID = FirebaseSafetyKit.getString(from: sanitizedData, forKey: "parentID") ?? userID
 
-                        return Child(id: id, name: name, age: age, interests: interests)
+                        return PlaydateChild(id: id, name: name, age: age, gender: gender, interests: interests, parentID: parentID)
                     }
                 }
 
@@ -282,7 +284,7 @@ class AuthViewModel: ObservableObject {
             return
         }
 
-        let newChild = Child(name: name, age: age, interests: interests)
+        let newChild = PlaydateChild(name: name, age: age, interests: interests ?? [], parentID: id)
 
         if user.children == nil {
             user.children = [newChild]
@@ -316,7 +318,7 @@ class AuthViewModel: ObservableObject {
             return
         }
 
-        let updatedChild = Child(id: childID, name: name, age: age, interests: interests)
+        let updatedChild = PlaydateChild(id: childID, name: name, age: age, interests: interests ?? [], parentID: id)
         children[index] = updatedChild
         user.children = children
 

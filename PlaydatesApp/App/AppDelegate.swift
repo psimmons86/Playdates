@@ -32,11 +32,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             FirebaseApp.configure()
             print("✅ Firebase configured successfully")
             
-            // Configure App Check
+            // Disable App Check for development
             print("📱 Configuring Firebase App Check")
+            #if DEBUG
+            // Use debug provider in development
+            let providerFactory = AppCheckDebugProviderFactory()
+            AppCheck.setAppCheckProviderFactory(providerFactory)
+            print("✅ Firebase App Check configured with DEBUG provider")
+            #else
+            // Use real providers in production
             let providerFactory = AppCheckProviderFactory()
             AppCheck.setAppCheckProviderFactory(providerFactory)
-            print("✅ Firebase App Check configured successfully")
+            print("✅ Firebase App Check configured with production provider")
+            #endif
             
             // Apply additional Firebase configuration
             applyFirebaseSettings()
@@ -62,7 +70,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         // Set longer timeouts
         let settings = db.settings
-        settings.dispatchQueue = DispatchQueue(label: "com.example.firestore", qos: .userInitiated)
+        settings.dispatchQueue = DispatchQueue(label: "com.example.playdates.firestore", qos: .userInitiated)
         db.settings = settings
         
         // Log Firebase SDK versions in debug mode for troubleshooting

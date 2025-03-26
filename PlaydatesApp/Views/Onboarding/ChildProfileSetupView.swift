@@ -1,7 +1,7 @@
 import SwiftUI
 import FirebaseFirestoreSwift
 
-// Using the Child model from User.swift
+// Using the PlaydateChild model from User.swift
 // We'll create a wrapper to handle string-based age during input
 struct ChildInput: Identifiable {
     var id = UUID().uuidString
@@ -11,19 +11,19 @@ struct ChildInput: Identifiable {
     
     init() {}
     
-    // Convert to the app's Child model
-    func toChild() -> Child {
+    // Convert to the app's PlaydateChild model
+    func toChild(parentID: String) -> PlaydateChild {
         let ageInt = Int(ageString) ?? 0
-        return Child(id: id, name: name, age: ageInt, interests: interests.isEmpty ? nil : interests)
+        return PlaydateChild(id: id, name: name, age: ageInt, interests: interests, parentID: parentID)
     }
     
-    // Create from the app's Child model
-    static func from(_ child: Child) -> ChildInput {
+    // Create from the app's PlaydateChild model
+    static func from(_ child: PlaydateChild) -> ChildInput {
         var input = ChildInput()
-        input.id = child.id
+        input.id = child.id ?? UUID().uuidString
         input.name = child.name
         input.ageString = String(child.age)
-        input.interests = child.interests ?? []
+        input.interests = child.interests
         return input
     }
 }
@@ -137,11 +137,11 @@ struct ChildProfileSetupView: View {
                             isLoading = true
                             errorMessage = nil
                             
-                            // Convert ChildInput to Child models
-                            let children = childInputs.map { $0.toChild() }
-                            
                             // Check if we have a current user
-                            if var user = authViewModel.currentUser {
+                            if var user = authViewModel.currentUser, let userID = user.id {
+                                // Convert ChildInput to PlaydateChild models
+                                let children = childInputs.map { $0.toChild(parentID: userID) }
+                                
                                 // Update the user's children
                                 user.children = children
                                 
