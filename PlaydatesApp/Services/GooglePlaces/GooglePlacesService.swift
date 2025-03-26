@@ -346,6 +346,11 @@ class GooglePlacesService {
                 }
                 
                 do {
+                    // Log the raw response for debugging
+                    if let jsonString = String(data: data, encoding: .utf8) {
+                        print("Debug: Google Places Text Search API raw response: \(jsonString)")
+                    }
+                    
                     // Parse the JSON response
                     let decoder = JSONDecoder()
                     let response = try decoder.decode(PlacesResponse.self, from: data)
@@ -360,6 +365,11 @@ class GooglePlacesService {
                     }
                     
                     print("Debug: Google Places Text Search API returned \(response.results.count) results")
+                    
+                    // Print details of each result for debugging
+                    for (index, result) in response.results.enumerated() {
+                        print("Debug: Result \(index): \(result.name), ID: \(result.placeId), Address: \(result.vicinity ?? "N/A")")
+                    }
                     
                     // Always update UI on the main thread
                     DispatchQueue.main.async {

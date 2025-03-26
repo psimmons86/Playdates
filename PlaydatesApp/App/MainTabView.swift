@@ -979,18 +979,26 @@ struct LocationPickerContent: View {
             switch result {
             case .success(let places):
                 // Convert places to locations
-                self.searchResults = places.map { place in
-                    Location(
-                        id: place.placeId,
-                        name: place.name,
-                        address: place.vicinity,
-                        latitude: place.geometry.location.lat,
-                        longitude: place.geometry.location.lng
-                    )
+                if places.isEmpty {
+                    self.errorMessage = "No locations found for '\(self.searchText)'"
+                } else {
+                    print("Debug: Found \(places.count) places")
+                    self.searchResults = places.map { place in
+                        let location = Location(
+                            id: place.placeId,
+                            name: place.name,
+                            address: place.vicinity ?? place.name,
+                            latitude: place.geometry.location.lat,
+                            longitude: place.geometry.location.lng
+                        )
+                        print("Debug: Mapped location: \(location.name), \(location.address)")
+                        return location
+                    }
                 }
                 
             case .failure(let error):
                 self.errorMessage = "Error searching for locations: \(error.localizedDescription)"
+                print("Debug: Search error: \(error.localizedDescription)")
             }
         }
     }
