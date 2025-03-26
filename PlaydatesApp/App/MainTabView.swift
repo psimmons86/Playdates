@@ -3,6 +3,7 @@ import Foundation
 import CoreLocation
 import MapKit
 import Combine
+import UIKit
 
 // Main tab view that contains all the tabs
 struct MainTabView: View {
@@ -270,7 +271,27 @@ struct ProfileView: View {
                                     .multilineTextAlignment(.center)
                                 
                                 Button(action: {
-                                    // Action to add child
+                                    // Navigate to ChildProfileSetupView
+                                    let childSetupView = ChildProfileSetupView(
+                                        onComplete: {
+                                            // Refresh user data after adding child
+                                            if let userId = authViewModel.user?.id {
+                                                authViewModel.fetchUserProfile(for: userId)
+                                            }
+                                        },
+                                        onSkip: {
+                                            // Do nothing on skip
+                                        }
+                                    )
+                                    
+                                    // Create a UIHostingController to present the view
+                                    let hostingController = UIHostingController(rootView: childSetupView)
+                                    
+                                    // Get the current UIViewController
+                                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                                       let rootViewController = windowScene.windows.first?.rootViewController {
+                                        rootViewController.present(hostingController, animated: true)
+                                    }
                                 }) {
                                     Text("Add Child")
                                         .font(.subheadline)
