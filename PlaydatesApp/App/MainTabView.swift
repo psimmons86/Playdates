@@ -12,8 +12,8 @@ struct MainTabView: View {
     @EnvironmentObject var locationManager: LocationManager
     
     // Create the view models here instead of passing them in
-    @StateObject private var activityViewModel = ActivityViewModel()
-    @StateObject private var playdateViewModel = PlaydateViewModel()
+    @StateObject private var activityViewModel = ActivityViewModel.shared
+    @StateObject private var playdateViewModel = PlaydateViewModel.shared
     @StateObject private var friendshipViewModel = FriendshipViewModel()
     
     var body: some View {

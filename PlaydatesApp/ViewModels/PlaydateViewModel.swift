@@ -5,6 +5,9 @@ import Combine
 import CoreLocation
 
 class PlaydateViewModel: ObservableObject {
+    // Shared instance for use across the app
+    static let shared = PlaydateViewModel()
+    
     @Published var playdates: [Playdate] = []
     @Published var userPlaydates: [Playdate] = []
     @Published var nearbyPlaydates: [Playdate] = []
