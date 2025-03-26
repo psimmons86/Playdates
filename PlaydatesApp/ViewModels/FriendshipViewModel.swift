@@ -4,6 +4,9 @@ import FirebaseFirestore
 import Combine
 import SwiftUI
 
+// Type alias to resolve ambiguity
+typealias FriendshipChatMessage = ChatMessage
+
 // MARK: - Support Models
 
 // FriendRequest used by FriendshipViewModel
@@ -266,7 +269,7 @@ class FriendshipViewModel: ObservableObject {
             
             if let error = error {
                 self.error = error.localizedDescription
-                completion(.failure(error))
+                completion(.failure(error as Error))
                 return
             }
             
@@ -324,7 +327,7 @@ class FriendshipViewModel: ObservableObject {
             
             if let error = error {
                 self.error = error.localizedDescription
-                completion(.failure(error))
+                completion(.failure(error as Error))
                 return
             }
             
@@ -335,7 +338,7 @@ class FriendshipViewModel: ObservableObject {
     // MARK: - Chat Methods
     
     /// Fetches the chat history between the current user and a friend
-    func fetchChatHistory(userID: String, friendID: String, completion: @escaping (Result<[ChatMessage], Error>) -> Void) {
+    func fetchChatHistory(userID: String, friendID: String, completion: @escaping (Result<[FriendshipChatMessage], Error>) -> Void) {
         isLoading = true
         
         // Create a unique chat ID for the conversation
@@ -363,7 +366,7 @@ class FriendshipViewModel: ObservableObject {
                 }
                 
                 // Map documents to ChatMessage objects
-                let messages = documents.compactMap { document -> ChatMessage? in
+                let messages = documents.compactMap { document -> FriendshipChatMessage? in
                     let data = document.data()
                     
                     // Safely extract data
@@ -405,7 +408,7 @@ class FriendshipViewModel: ObservableObject {
         to recipientID: String,
         text: String,
         imageURL: String? = nil,
-        completion: @escaping (Result<ChatMessage, Error>) -> Void
+        completion: @escaping (Result<FriendshipChatMessage, Error>) -> Void
     ) {
         // Create a unique chat ID for the conversation
         let chatID = getChatID(userID: senderID, friendID: recipientID)
@@ -431,7 +434,7 @@ class FriendshipViewModel: ObservableObject {
             
             if let error = error {
                 self.error = error.localizedDescription
-                completion(.failure(error))
+                completion(.failure(error as Error))
                 return
             }
             
@@ -445,7 +448,7 @@ class FriendshipViewModel: ObservableObject {
             )
             
             // Create ChatMessage object for return
-            let message = ChatMessage(
+            let message = FriendshipChatMessage(
                 id: messageRef.documentID,
                 text: text,
                 isFromCurrentUser: true,

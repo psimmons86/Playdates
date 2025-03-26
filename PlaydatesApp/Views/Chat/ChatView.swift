@@ -7,7 +7,7 @@ import Combine
 struct ChatView: View {
     let recipient: User
     @State private var messageText = ""
-    @State private var messages: [ChatMessage] = []
+    @State private var messages: [UIChatMessage] = []
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
@@ -64,7 +64,7 @@ struct ChatView: View {
                 }
                 .padding(12)
                 .background(Color.white)
-                .cornerRadius(16, corners: [.topLeft, .topRight])
+                .cornerRadius(16)
                 .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: -2)
             }
             .navigationTitle(recipient.name)
@@ -83,10 +83,10 @@ struct ChatView: View {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             messages = [
-                ChatMessage(id: "1", text: "Hi there! Would you like to arrange a playdate?", isFromCurrentUser: false, timestamp: Date(timeIntervalSinceNow: -86400)),
-                ChatMessage(id: "2", text: "That sounds great! When would work for you?", isFromCurrentUser: true, timestamp: Date(timeIntervalSinceNow: -86000)),
-                ChatMessage(id: "3", text: "How about this weekend at the park?", isFromCurrentUser: false, timestamp: Date(timeIntervalSinceNow: -85000)),
-                ChatMessage(id: "4", text: "Perfect! We're free on Saturday afternoon.", isFromCurrentUser: true, timestamp: Date(timeIntervalSinceNow: -84000))
+                UIChatMessage(id: "1", text: "Hi there! Would you like to arrange a playdate?", isFromCurrentUser: false, timestamp: Date(timeIntervalSinceNow: -86400)),
+                UIChatMessage(id: "2", text: "That sounds great! When would work for you?", isFromCurrentUser: true, timestamp: Date(timeIntervalSinceNow: -86000)),
+                UIChatMessage(id: "3", text: "How about this weekend at the park?", isFromCurrentUser: false, timestamp: Date(timeIntervalSinceNow: -85000)),
+                UIChatMessage(id: "4", text: "Perfect! We're free on Saturday afternoon.", isFromCurrentUser: true, timestamp: Date(timeIntervalSinceNow: -84000))
             ]
         }
     }
@@ -95,7 +95,7 @@ struct ChatView: View {
         guard !messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         
         // Create a new message
-        let newMessage = ChatMessage(
+        let newMessage = UIChatMessage(
             id: UUID().uuidString,
             text: messageText,
             isFromCurrentUser: true,
@@ -129,7 +129,7 @@ struct ChatView: View {
             
             let randomReply = replies.randomElement() ?? "Ok"
             
-            let replyMessage = ChatMessage(
+            let replyMessage = UIChatMessage(
                 id: UUID().uuidString,
                 text: randomReply,
                 isFromCurrentUser: false,
@@ -141,7 +141,8 @@ struct ChatView: View {
     }
 }
 
-struct ChatMessage: Identifiable {
+// Renamed to avoid conflict with the model in ChatMessage.swift
+struct UIChatMessage: Identifiable {
     let id: String
     let text: String
     let isFromCurrentUser: Bool
@@ -150,7 +151,7 @@ struct ChatMessage: Identifiable {
 }
 
 struct MessageBubble: View {
-    let message: ChatMessage
+    let message: UIChatMessage
     
     var body: some View {
         HStack {

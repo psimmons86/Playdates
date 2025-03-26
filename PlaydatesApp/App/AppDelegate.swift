@@ -1,5 +1,19 @@
 import UIKit
 import Firebase
+import FirebaseAppCheck
+
+// Provider factory class for Firebase App Check
+class AppCheckProviderFactory: NSObject, FirebaseAppCheck.AppCheckProviderFactory {
+    func createProvider(with app: FirebaseApp) -> AppCheckProvider? {
+        if #available(iOS 14.0, *) {
+            // Use App Attest on iOS 14+
+            return AppAttestProvider(app: app)
+        } else {
+            // Fall back to DeviceCheck on older iOS versions
+            return DeviceCheckProvider(app: app)
+        }
+    }
+}
 
 // Remove @UIApplicationMain since we're using @main in PlaydatesApp.swift
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -17,6 +31,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             print("📱 Configuring Firebase")
             FirebaseApp.configure()
             print("✅ Firebase configured successfully")
+            
+            // Configure App Check
+            print("📱 Configuring Firebase App Check")
+            let providerFactory = AppCheckProviderFactory()
+            AppCheck.setAppCheckProviderFactory(providerFactory)
+            print("✅ Firebase App Check configured successfully")
             
             // Apply additional Firebase configuration
             applyFirebaseSettings()

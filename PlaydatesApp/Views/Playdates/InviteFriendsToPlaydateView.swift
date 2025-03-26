@@ -1,6 +1,7 @@
 import SwiftUI
 
 /// View for inviting friends to a playdate
+@available(iOS 17.0, *)
 struct InviteFriendsToPlaydateView: View {
     let playdate: Playdate
     let friends: [User]
@@ -97,6 +98,7 @@ struct InviteFriendsToPlaydateView: View {
 }
 
 /// Row for an individual friend in the invite list
+@available(iOS 17.0, *)
 struct FriendInviteRow: View {
     let friend: User
     let onInvite: () -> Void

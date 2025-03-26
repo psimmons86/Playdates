@@ -44,6 +44,7 @@ public struct ProfileImageView: View {
     }
 }
 
+@available(iOS 17.0, *)
 #Preview {
     VStack(spacing: 20) {
         ProfileImageView(imageURL: nil, size: 60)

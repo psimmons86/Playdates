@@ -37,7 +37,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.KidsActivities
         PRODUCT_NAME: Playdates
         TARGETED_DEVICE_FAMILY: "1,2"  # "1" for iPhone, "2" for iPad, "1,2" for Universal
-        CURRENT_PROJECT_VERSION: 1
+        CURRENT_PROJECT_VERSION: "3.0.0"
         DEVELOPMENT_TEAM: "$(DEVELOPMENT_TEAM)"
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: "iPhone Developer"
@@ -47,8 +47,8 @@ targets:
         CFBundleName: Playdates
         CFBundleDisplayName: Playdates
         CFBundleIdentifier: com.example.KidsActivities
-        CFBundleVersion: 1
-        CFBundleShortVersionString: 1.0.0
+        CFBundleVersion: "3.0.0"
+        CFBundleShortVersionString: "3.0.0"
         UILaunchStoryboardName: LaunchScreen
         CFBundleIconName: AppIcon
         UIApplicationSceneManifest:
@@ -59,6 +59,15 @@ targets:
                 UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).SceneDelegate
         NSLocationWhenInUseUsageDescription: "Playdates needs your location to find activities and playdates near you."
         UIBackgroundModes: [location]
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        "UISupportedInterfaceOrientations~ipad":
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
     fileGroups:
       - PlaydatesApp/App
       - PlaydatesApp/Models

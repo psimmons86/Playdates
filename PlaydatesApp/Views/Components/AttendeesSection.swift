@@ -1,6 +1,7 @@
 import SwiftUI
 
 /// Section showing playdate attendees
+@available(iOS 17.0, *)
 struct AttendeesSection: View {
     let attendees: [User]
     let isLoading: Bool
@@ -56,6 +57,7 @@ struct AttendeesSection: View {
 }
 
 /// Individual attendee item
+@available(iOS 17.0, *)
 struct AttendeeItem: View {
     let attendee: User
     

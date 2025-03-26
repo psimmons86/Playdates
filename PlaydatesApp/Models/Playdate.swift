@@ -3,14 +3,6 @@ import FirebaseFirestoreSwift
 import FirebaseFirestore
 import CoreLocation
 
-/// Status of a playdate
-enum PlaydateStatus: String, Codable {
-    case planned
-    case inProgress
-    case completed
-    case cancelled
-}
-
 struct Playdate: Identifiable, Codable {
     @DocumentID var id: String?
     var hostID: String

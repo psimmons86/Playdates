@@ -5,6 +5,7 @@ import SwiftUI
 @available(iOS 17.0, *)
 struct PlaydateHeaderView: View {
     let playdate: Playdate
+    let host: User?
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -38,6 +39,18 @@ struct PlaydateHeaderView: View {
                             .foregroundColor(ColorTheme.lightText)
                     }
                 }
+            }
+            
+            // Host info if available
+            if let host = host {
+                HStack {
+                    Text("Hosted by:")
+                        .foregroundColor(ColorTheme.lightText)
+                    Text(host.name)
+                        .fontWeight(.medium)
+                        .foregroundColor(ColorTheme.darkPurple)
+                }
+                .padding(.top, 4)
             }
             
             // Status badge - using helper function to determine status

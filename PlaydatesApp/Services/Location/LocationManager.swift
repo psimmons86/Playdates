@@ -38,6 +38,19 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         locationManager.distanceFilter = 100
         
         authorizationStatus = locationManager.authorizationStatus
+        
+        // Initialize with default location (San Francisco)
+        let defaultLocation = CLLocation(latitude: 37.7749, longitude: -122.4194)
+        self.location = defaultLocation
+        
+        // Request location immediately if authorized
+        if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {
+            print("Debug: Location already authorized, starting updates")
+            locationManager.startUpdatingLocation()
+        } else {
+            print("Debug: Location not authorized, requesting permission")
+            requestPermission()
+        }
     }
     
     func requestPermission() {
@@ -69,22 +82,31 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         authorizationStatus = manager.authorizationStatus
+        print("Debug: LocationManager authorization status: \(authorizationStatus.rawValue)")
         
         switch manager.authorizationStatus {
         case .authorizedWhenInUse, .authorizedAlways:
+            print("Debug: Location authorized, starting updates")
             locationManager.startUpdatingLocation()
         case .denied, .restricted:
             errorMessage = "Location access is denied. Please enable it in Settings."
+            print("Debug: Location access denied or restricted")
         case .notDetermined:
+            print("Debug: Location authorization not determined, requesting")
             locationManager.requestWhenInUseAuthorization()
         @unknown default:
+            print("Debug: Unknown location authorization status")
             break
         }
     }
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let location = locations.last else { return }
+        guard let location = locations.last else { 
+            print("Debug: No location in didUpdateLocations")
+            return 
+        }
         
+        print("Debug: Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude)")
         self.location = location
         self.region = MKCoordinateRegion(
             center: location.coordinate,
@@ -93,6 +115,9 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         
         // Use safe geocoding method from MainTabView extension
         safeReverseGeocode(location: location)
+        
+        // Update current location availability status
+        print("Debug: Current location available: true")
     }
     
     // Add this method to throttle reverse geocoding requests

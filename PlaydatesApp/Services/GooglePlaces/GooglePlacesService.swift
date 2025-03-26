@@ -8,7 +8,7 @@ import FirebaseFirestore
  */
 class GooglePlacesService {
     // The API key for Google Places API
-    private let apiKey = "AIzaSyBLEgfEKCQbkMR4kCgy77bGOJVcTwPv7iI"
+    private let apiKey = "AIzaSyAizodPXBx6YTkwV09flC0tKwwHSXP5ESI"
     
     // Base URL for Google Places API
     private let baseURL = "https://maps.googleapis.com/maps/api/place"
@@ -63,11 +63,15 @@ class GooglePlacesService {
         let roundedLng = round(location.coordinate.longitude * 10) / 10
         let cacheKey = "\(roundedLat),\(roundedLng)|\(radius)|\(activityType.lowercased())"
         
+        print("Debug: Searching for activities near \(location.coordinate.latitude),\(location.coordinate.longitude)")
+        print("Debug: Activity type: \(activityType), mapped to: \(mapActivityTypeToPlaceType(activityType))")
+        
         // Check cache first
         if let cachedResults = cache.placeSearchCache[cacheKey],
            let lastTime = cache.lastSearchTime,
            Date().timeIntervalSince(lastTime) < cache.searchThrottleInterval {
             // Cache hit - return cached results
+            print("Debug: Returning \(cachedResults.count) cached results for \(activityType)")
             DispatchQueue.main.async {
                 completion(.success(cachedResults))
             }
@@ -78,11 +82,15 @@ class GooglePlacesService {
         // Construct the URL for the Nearby Search request
         var components = URLComponents(string: "\(baseURL)/nearbysearch/json")!
         
+        // Enhance search with better parameters
+        let placeType = mapActivityTypeToPlaceType(activityType)
+        let enhancedKeyword = enhanceKeywordForFamilyFriendly(activityType)
+        
         components.queryItems = [
             URLQueryItem(name: "location", value: "\(location.coordinate.latitude),\(location.coordinate.longitude)"),
             URLQueryItem(name: "radius", value: "\(radius)"),
-            URLQueryItem(name: "type", value: mapActivityTypeToPlaceType(activityType)),
-            URLQueryItem(name: "keyword", value: activityType),
+            URLQueryItem(name: "type", value: placeType),
+            URLQueryItem(name: "keyword", value: enhancedKeyword),
             URLQueryItem(name: "key", value: apiKey)
         ]
         
@@ -114,14 +122,24 @@ class GooglePlacesService {
                 }
                 
                 do {
+                    // Log the raw response for debugging
+                    if let jsonString = String(data: data, encoding: .utf8) {
+                        print("Debug: Google Places API raw response: \(jsonString)")
+                    }
+                    
                     // Parse the JSON response
                     let decoder = JSONDecoder()
                     let response = try decoder.decode(PlacesResponse.self, from: data)
                     
+                    print("Debug: Google Places API status: \(response.status)")
+                    
                     // Check if the request was successful
                     guard response.status == "OK" || response.status == "ZERO_RESULTS" else {
+                        print("Debug: Google Places API error status: \(response.status)")
                         throw NSError(domain: "GooglePlacesService", code: 3, userInfo: [NSLocalizedDescriptionKey: "API Error: \(response.status)"])
                     }
+                    
+                    print("Debug: Google Places API returned \(response.results.count) results")
                     
                     // Map the results to ActivityPlace objects
                     let activities = response.results.map { result -> ActivityPlace in
@@ -131,6 +149,8 @@ class GooglePlacesService {
                             latitude: result.geometry.location.lat,
                             longitude: result.geometry.location.lng
                         )
+                        
+                        print("Debug: Found place: \(result.name) at \(result.geometry.location.lat), \(result.geometry.location.lng)")
                         
                         return ActivityPlace(
                             id: result.placeId,
@@ -147,6 +167,7 @@ class GooglePlacesService {
                     self.cache.placeSearchCache[cacheKey] = activities
                     self.cache.lastSearchTime = Date()
                     
+                    // Always update UI on the main thread
                     DispatchQueue.main.async {
                         completion(.success(activities))
                     }
@@ -221,17 +242,27 @@ class GooglePlacesService {
                 }
                 
                 do {
+                    // Log the raw response for debugging
+                    if let jsonString = String(data: data, encoding: .utf8) {
+                        print("Debug: Google Places Details API raw response: \(jsonString)")
+                    }
+                    
                     // Parse the JSON response
                     let decoder = JSONDecoder()
                     let response = try decoder.decode(PlaceDetailsResponse.self, from: data)
                     
+                    print("Debug: Google Places Details API status: \(response.status)")
+                    
                     // Check if the request was successful
                     guard response.status == "OK" else {
+                        print("Debug: Google Places Details API error status: \(response.status)")
                         throw NSError(domain: "GooglePlacesService", code: 3, userInfo: [NSLocalizedDescriptionKey: "API Error: \(response.status)"])
                     }
                     
                     // Map the result to an ActivityPlace object
                     let result = response.result
+                    print("Debug: Got details for place: \(result.name)")
+                    
                     let location = Location(
                         name: result.name,
                         address: result.formattedAddress ?? "",
@@ -253,6 +284,7 @@ class GooglePlacesService {
                     self.cache.placeDetailsCache[placeId] = place
                     self.cache.lastDetailsRequestTime = Date()
                     
+                    // Always update UI on the main thread
                     DispatchQueue.main.async {
                         completion(.success(place))
                     }
@@ -338,6 +370,31 @@ class GooglePlacesService {
     }
     
     /**
+     Enhance keyword for family-friendly activities
+     
+     - Parameter activityType: The app's activity type
+     - Returns: Enhanced keyword for better search results
+     */
+    private func enhanceKeywordForFamilyFriendly(_ activityType: String) -> String {
+        // If the activity type is generic, add "family friendly" or "kids"
+        let lowercased = activityType.lowercased()
+        
+        if lowercased == "family_friendly" {
+            return "family activities kids"
+        }
+        
+        // For specific activities, enhance with family-friendly terms
+        if ["park", "playground", "museum", "zoo", "aquarium", "library", 
+            "swimming", "pool", "sports", "amusement", "theme park", "art", 
+            "bowling", "movie", "cinema"].contains(where: lowercased.contains) {
+            return "\(lowercased) family kids"
+        }
+        
+        // For other types, just add "family" to the search
+        return "\(lowercased) family"
+    }
+    
+    /**
      Map activity types from the app's terminology to Google Places API types.
      
      - Parameter activityType: The app's activity type
@@ -368,6 +425,17 @@ class GooglePlacesService {
             return "bowling_alley"
         case "movie", "cinema":
             return "movie_theater"
+        case "restaurant", "food", "dining":
+            return "restaurant"
+        case "cafe", "coffee":
+            return "cafe"
+        case "ice cream":
+            return "ice_cream"
+        case "shopping":
+            return "shopping_mall"
+        case "family_friendly":
+            // For generic family-friendly search, use a broader type
+            return "tourist_attraction"
         default:
             // For other types, just use the original term as a keyword
             return "point_of_interest"

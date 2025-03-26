@@ -44,20 +44,51 @@ class ActivitySearchViewModel: ObservableObject {
             return
         }
         
-        guard let location = locationManager.location else {
-            error = "Location not available. Please enable location services."
-            print("Debug: Location is nil when searching")
+        // Check if location services are authorized
+        let authStatus = locationManager.authorizationStatus
+        print("Debug: LocationManager authorization status: \(authStatus.rawValue)")
+        
+        if authStatus == .denied || authStatus == .restricted {
+            error = "Location access is denied. Please enable location services in Settings to search for nearby activities."
+            print("Debug: Location access denied or restricted")
             return
         }
         
+        // Check if we have a valid location
+        guard let location = locationManager.location else {
+            // If location is nil but we're authorized, it might be that location services
+            // haven't returned a location yet. Use a default location as fallback.
+            let defaultLocation = CLLocation(latitude: 37.7749, longitude: -122.4194) // San Francisco
+            
+            error = "Your current location is not available yet. Using San Francisco as a default location for search."
+            print("Debug: Location is nil when trying to fetch nearby activities")
+            print("Debug: Using default location for search: \(defaultLocation.coordinate.latitude), \(defaultLocation.coordinate.longitude)")
+            
+            // Continue with the default location
+            performSearch(with: defaultLocation)
+            return
+        }
+        
+        print("Debug: Current location available: true")
         print("Debug: Searching for '\(searchQuery)' at location: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+        
+        // Perform the search with the actual location
+        performSearch(with: location)
+    }
+    
+    /**
+     Perform the actual search with a given location
+     */
+    private func performSearch(with location: CLLocation) {
         isLoading = true
         error = nil
         
+        // Use a larger radius to ensure we get results
         placesService.searchNearbyActivities(
             location: location,
+            radius: 50000, // 50km radius to ensure we get results
             activityType: searchQuery
-        ) { [weak self] (result: Result<[ActivityPlace], Error>) in // Added explicit type annotation
+        ) { [weak self] (result: Result<[ActivityPlace], Error>) in
             guard let self = self else { return }
             
             self.isLoading = false
@@ -67,12 +98,35 @@ class ActivitySearchViewModel: ObservableObject {
                 print("Debug: Received \(activities.count) activities from API")
                 self.activities = activities
                 if activities.isEmpty {
-                    self.error = "No activities found for '\(self.searchQuery)'. Try a different search term."
+                    self.error = "No activities found for '\(self.searchQuery)'. Try a different search term or increase search area."
                     print("Debug: API returned empty activities array")
                 }
             case .failure(let error):
                 print("Debug: API error: \(error.localizedDescription)")
-                self.error = "Failed to search activities: \(error.localizedDescription)"
+                
+                // Provide more helpful error messages based on error type
+                let nsError = error as NSError
+                print("Debug: Error domain: \(nsError.domain), code: \(nsError.code)")
+                
+                // Always update UI on the main thread
+                DispatchQueue.main.async {
+                    if nsError.domain == NSURLErrorDomain {
+                        switch nsError.code {
+                        case NSURLErrorNotConnectedToInternet:
+                            self.error = "No internet connection. Please check your network settings and try again."
+                        case NSURLErrorTimedOut:
+                            self.error = "Request timed out. Please try again."
+                        case NSURLErrorCancelled:
+                            self.error = "Request was cancelled. Please try again."
+                        default:
+                            self.error = "Network error: \(nsError.localizedDescription)"
+                        }
+                    } else if nsError.domain == "GooglePlacesService" {
+                        self.error = "Google Places API error: \(nsError.localizedDescription)"
+                    } else {
+                        self.error = "Failed to search activities: \(nsError.localizedDescription)"
+                    }
+                }
             }
         }
     }
