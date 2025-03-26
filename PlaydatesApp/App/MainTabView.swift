@@ -240,6 +240,9 @@ struct NewPlaydateView: View {
     @State private var date = Date()
     @State private var location = ""
     
+    @State private var showingLocationPicker = false
+    @State private var selectedLocation: Location?
+    
     var body: some View {
         NavigationView {
             Form {
@@ -250,13 +253,31 @@ struct NewPlaydateView: View {
                     
                     DatePicker("Date", selection: $date, displayedComponents: [.date, .hourAndMinute])
                     
-                    TextField("Location", text: $location)
+                    // Location picker button
+                    Button(action: {
+                        showingLocationPicker = true
+                    }) {
+                        HStack {
+                            Text(selectedLocation?.name ?? "Select Location")
+                                .foregroundColor(selectedLocation == nil ? .gray : .primary)
+                            Spacer()
+                            Image(systemName: "mappin.and.ellipse")
+                                .foregroundColor(ColorTheme.primary)
+                        }
+                    }
+                    
+                    if let location = selectedLocation {
+                        Text(location.address)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 
                 Section {
                     Button(action: {
                         // Create playdate
                         guard let userID = authViewModel.user?.id ?? Auth.auth().currentUser?.uid else { return }
+                        guard let location = selectedLocation else { return }
                         
                         let playdate = Playdate(
                             id: nil, // Let Firestore generate the ID
@@ -264,7 +285,7 @@ struct NewPlaydateView: View {
                             title: title,
                             description: description,
                             activityType: "playdate",
-                            location: Location(name: location, address: location, latitude: 37.7749, longitude: -122.4194),
+                            location: location,
                             startDate: date,
                             endDate: date.addingTimeInterval(7200), // 2 hours later
                             attendeeIDs: [userID],
@@ -289,7 +310,7 @@ struct NewPlaydateView: View {
                                 self.title = ""
                                 self.description = ""
                                 self.date = Date()
-                                self.location = ""
+                                self.selectedLocation = nil
                             }
                         }
                     }) {
@@ -300,10 +321,13 @@ struct NewPlaydateView: View {
                             .foregroundColor(.white)
                             .cornerRadius(8)
                     }
-                    .disabled(title.isEmpty || location.isEmpty)
+                    .disabled(title.isEmpty || selectedLocation == nil)
                 }
             }
             .navigationTitle("Create Playdate")
+            .sheet(isPresented: $showingLocationPicker) {
+                LocationPickerView(selectedLocation: $selectedLocation, isPresented: $showingLocationPicker)
+            }
         }
     }
 }

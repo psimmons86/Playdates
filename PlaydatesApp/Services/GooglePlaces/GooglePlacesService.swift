@@ -300,6 +300,80 @@ class GooglePlacesService {
     }
     
     /**
+     Search for places based on a text query.
+     
+     - Parameters:
+        - query: The text query to search for
+        - completion: Callback with search results or error
+     */
+    func searchPlaces(
+        query: String,
+        completion: @escaping (Result<[Place], Error>) -> Void
+    ) {
+        // Construct the URL for the Text Search request
+        var components = URLComponents(string: "\(baseURL)/textsearch/json")!
+        
+        components.queryItems = [
+            URLQueryItem(name: "query", value: query),
+            URLQueryItem(name: "key", value: apiKey)
+        ]
+        
+        guard let url = components.url else {
+            completion(.failure(NSError(domain: "GooglePlacesService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
+            return
+        }
+        
+        print("Debug: Making Places Text Search API request to URL: \(url)")
+        
+        // Throttle the request if needed
+        throttleIfNeeded {
+            // Create and execute the request
+            let task = URLSession.shared.dataTask(with: url) { data, response, error in
+                if let error = error {
+                    DispatchQueue.main.async {
+                        completion(.failure(error))
+                    }
+                    return
+                }
+                
+                guard let data = data else {
+                    DispatchQueue.main.async {
+                        completion(.failure(NSError(domain: "GooglePlacesService", code: 2, userInfo: [NSLocalizedDescriptionKey: "No data received"])))
+                    }
+                    return
+                }
+                
+                do {
+                    // Parse the JSON response
+                    let decoder = JSONDecoder()
+                    let response = try decoder.decode(PlacesResponse.self, from: data)
+                    
+                    print("Debug: Google Places Text Search API status: \(response.status)")
+                    
+                    // Check if the request was successful
+                    guard response.status == "OK" || response.status == "ZERO_RESULTS" else {
+                        print("Debug: Google Places Text Search API error status: \(response.status)")
+                        throw NSError(domain: "GooglePlacesService", code: 3, userInfo: [NSLocalizedDescriptionKey: "API Error: \(response.status)"])
+                    }
+                    
+                    print("Debug: Google Places Text Search API returned \(response.results.count) results")
+                    
+                    // Always update UI on the main thread
+                    DispatchQueue.main.async {
+                        completion(.success(response.results))
+                    }
+                } catch {
+                    DispatchQueue.main.async {
+                        completion(.failure(error))
+                    }
+                }
+            }
+            
+            task.resume()
+        }
+    }
+    
+    /**
      Get a photo URL for a given photo reference.
      
      - Parameters:
