@@ -2,6 +2,9 @@ import SwiftUI
 import Combine
 import CoreLocation
 
+// Import the CreatePlaydateFromActivityView
+@_exported import struct PlaydatesApp.CreatePlaydateFromActivityView
+
 public struct ExploreView: View {
     @ObservedObject var activityViewModel = ActivityViewModel.shared
     @State private var selectedCategory: String? = nil
