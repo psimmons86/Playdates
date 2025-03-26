@@ -1,17 +1,21 @@
 import SwiftUI
 
-enum OnboardingStep {
+public enum OnboardingStep {
     case welcome
     case onboarding
     case childProfileSetup
     case completed
 }
 
-struct OnboardingCoordinator: View {
+public struct OnboardingCoordinator: View {
     @State private var currentStep: OnboardingStep = .welcome
     var onComplete: () -> Void
     
-    var body: some View {
+    public init(onComplete: @escaping () -> Void) {
+        self.onComplete = onComplete
+    }
+    
+    public var body: some View {
         ZStack {
             switch currentStep {
             case .welcome:

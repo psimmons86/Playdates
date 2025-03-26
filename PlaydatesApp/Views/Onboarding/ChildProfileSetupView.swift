@@ -9,6 +9,8 @@ struct ChildInput: Identifiable {
     var ageString: String = ""
     var interests: [String] = []
     
+    init() {}
+    
     // Convert to the app's Child model
     func toChild() -> Child {
         let ageInt = Int(ageString) ?? 0
@@ -17,20 +19,25 @@ struct ChildInput: Identifiable {
     
     // Create from the app's Child model
     static func from(_ child: Child) -> ChildInput {
-        ChildInput(
-            id: child.id,
-            name: child.name,
-            ageString: String(child.age),
-            interests: child.interests ?? []
-        )
+        var input = ChildInput()
+        input.id = child.id
+        input.name = child.name
+        input.ageString = String(child.age)
+        input.interests = child.interests ?? []
+        return input
     }
 }
 
 struct ChildProfileSetupView: View {
     @State private var childInputs: [ChildInput] = [ChildInput()]
     @State private var isLoading = false
-    var onComplete: () -> Void
-    var onSkip: () -> Void
+    private var onComplete: () -> Void
+    private var onSkip: () -> Void
+    
+    init(onComplete: @escaping () -> Void, onSkip: @escaping () -> Void) {
+        self.onComplete = onComplete
+        self.onSkip = onSkip
+    }
     
     let interestOptions = [
         "Sports", "Arts & Crafts", "Music", "Reading", 

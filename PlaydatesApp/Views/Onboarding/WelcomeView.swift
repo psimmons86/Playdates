@@ -1,10 +1,15 @@
 import SwiftUI
 
-struct WelcomeView: View {
-    var onGetStarted: () -> Void
-    var onSignIn: () -> Void
+public struct WelcomeView: View {
+    private var onGetStarted: () -> Void
+    private var onSignIn: () -> Void
     
-    var body: some View {
+    public init(onGetStarted: @escaping () -> Void, onSignIn: @escaping () -> Void) {
+        self.onGetStarted = onGetStarted
+        self.onSignIn = onSignIn
+    }
+    
+    public var body: some View {
         ZStack {
             ColorTheme.background.edgesIgnoringSafeArea(.all)
             

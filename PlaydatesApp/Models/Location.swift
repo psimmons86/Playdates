@@ -1,7 +1,8 @@
 import Foundation
 import CoreLocation
 
-struct Location: Codable, Equatable {
+struct Location: Codable, Equatable, Identifiable {
+    var id = UUID().uuidString
     var name: String
     var address: String
     var latitude: Double
@@ -13,7 +14,8 @@ struct Location: Codable, Equatable {
     }
 
     // Full initializer with all parameters
-    init(name: String, address: String, latitude: Double, longitude: Double) {
+    init(id: String = UUID().uuidString, name: String, address: String, latitude: Double, longitude: Double) {
+        self.id = id
         self.name = name
         self.address = address
         self.latitude = latitude
@@ -21,7 +23,8 @@ struct Location: Codable, Equatable {
     }
 
     // Convenience initializer that only requires coordinates
-    init(latitude: Double, longitude: Double) {
+    init(id: String = UUID().uuidString, latitude: Double, longitude: Double) {
+        self.id = id
         self.name = "Unknown Location"
         self.address = "Unknown Address"
         self.latitude = latitude
@@ -31,6 +34,9 @@ struct Location: Codable, Equatable {
     // Custom decoder
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        // Decode ID with fallback
+        id = try container.decodeIfPresent(String.self, forKey: .id) ?? UUID().uuidString
 
         // Decode name safely
         if let nameString = try? container.decode(String.self, forKey: .name) {
@@ -76,6 +82,7 @@ struct Location: Codable, Equatable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
 
+        try container.encode(id, forKey: .id)
         try container.encode(name, forKey: .name)
         try container.encode(address, forKey: .address)
         try container.encode(latitude, forKey: .latitude)
@@ -83,6 +90,7 @@ struct Location: Codable, Equatable {
     }
 
     enum CodingKeys: String, CodingKey {
+        case id
         case name
         case address
         case latitude
@@ -91,7 +99,8 @@ struct Location: Codable, Equatable {
 
     // Implement Equatable
     static func == (lhs: Location, rhs: Location) -> Bool {
-        return lhs.latitude == rhs.latitude &&
+        return lhs.id == rhs.id &&
+               lhs.latitude == rhs.latitude &&
                lhs.longitude == rhs.longitude &&
                lhs.name == rhs.name &&
                lhs.address == rhs.address

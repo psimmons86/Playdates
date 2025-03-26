@@ -1,15 +1,18 @@
 import SwiftUI
 
-// MARK: - Profile Image View
-
-/// A reusable view for displaying a user's profile image
-struct ProfileImageView: View {
+@available(iOS 17.0, *)
+public struct ProfileImageView: View {
     let imageURL: String?
     let size: CGFloat
     
-    var body: some View {
-        if let imageURL = imageURL, !imageURL.isEmpty {
-            AsyncImage(url: URL(string: imageURL)) { phase in
+    public init(imageURL: String?, size: CGFloat) {
+        self.imageURL = imageURL
+        self.size = size
+    }
+    
+    public var body: some View {
+        if let imageURL = imageURL, !imageURL.isEmpty, let url = URL(string: imageURL) {
+            AsyncImage(url: url) { phase in
                 switch phase {
                 case .empty:
                     ProgressView()
@@ -41,24 +44,11 @@ struct ProfileImageView: View {
     }
 }
 
-// MARK: - Preview Provider
-
-struct SharedComponents_Previews: PreviewProvider {
-    static var previews: some View {
-        VStack(spacing: 20) {
-            // Profile image with URL
-            ProfileImageView(
-                imageURL: "https://example.com/profile.jpg",
-                size: 60
-            )
-            
-            // Profile image without URL
-            ProfileImageView(
-                imageURL: nil,
-                size: 40
-            )
-        }
-        .padding()
-        .previewLayout(.sizeThatFits)
+#Preview {
+    VStack(spacing: 20) {
+        ProfileImageView(imageURL: nil, size: 60)
+        ProfileImageView(imageURL: "https://example.com/invalid.jpg", size: 60)
+        ProfileImageView(imageURL: "https://example.com/valid.jpg", size: 60)
     }
+    .padding()
 }

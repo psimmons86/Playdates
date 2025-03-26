@@ -2,21 +2,21 @@ import Foundation
 import FirebaseFirestoreSwift
 import FirebaseFirestore
 
-struct User: Identifiable, Codable {
-    @DocumentID var id: String?
-    var name: String
-    var email: String
-    var profileImageURL: String?
-    var bio: String?
+public struct User: Identifiable, Codable {
+    @DocumentID public var id: String?
+    public var name: String
+    public var email: String
+    public var profileImageURL: String?
+    public var bio: String?
     // Use StoredOnHeap for potentially large arrays and collections
-    @StoredOnHeap var children: [Child]?
-    @StoredOnHeap var friendIDs: [String]?
-    @StoredOnHeap var friendRequestIDs: [String]?
-    var createdAt: Date
-    var lastActive: Date
+    @StoredOnHeap public var children: [Child]?
+    @StoredOnHeap public var friendIDs: [String]?
+    @StoredOnHeap public var friendRequestIDs: [String]?
+    public var createdAt: Date
+    public var lastActive: Date
 
     // Custom initializer to ensure all properties are properly initialized
-    init(id: String?, name: String, email: String, profileImageURL: String? = nil, bio: String? = nil,
+    public init(id: String?, name: String, email: String, profileImageURL: String? = nil, bio: String? = nil,
          children: [Child]? = nil, friendIDs: [String]? = nil, friendRequestIDs: [String]? = nil,
          createdAt: Date, lastActive: Date) {
         self.id = id
@@ -45,7 +45,7 @@ struct User: Identifiable, Codable {
     }
 
     // Custom decoder implementation to handle type mismatches
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         // Decode ID
@@ -73,7 +73,7 @@ struct User: Identifiable, Codable {
     }
     
     // Custom encoder implementation to handle property wrappers
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         
         try container.encodeIfPresent(id, forKey: .id)
@@ -130,14 +130,14 @@ struct User: Identifiable, Codable {
 }
 
 // Child is also heap-stored using the StoredOnHeap wrapper when used
-struct Child: Identifiable, Codable {
-    var id = UUID().uuidString
-    var name: String
-    var age: Int
-    @StoredOnHeap var interests: [String]?
+public struct Child: Identifiable, Codable {
+    public var id = UUID().uuidString
+    public var name: String
+    public var age: Int
+    @StoredOnHeap public var interests: [String]?
 
     // Custom initializer
-    init(id: String = UUID().uuidString, name: String, age: Int, interests: [String]? = nil) {
+    public init(id: String = UUID().uuidString, name: String, age: Int, interests: [String]? = nil) {
         self.id = id
         self.name = name
         self.age = age
@@ -152,7 +152,7 @@ struct Child: Identifiable, Codable {
     }
 
     // Custom decoder implementation
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         // Decode id with fallback
@@ -184,7 +184,7 @@ struct Child: Identifiable, Codable {
     }
     
     // Custom encoder implementation to handle property wrappers
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         
         try container.encode(id, forKey: .id)

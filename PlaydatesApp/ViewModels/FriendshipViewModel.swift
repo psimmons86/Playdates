@@ -2,10 +2,335 @@ import Foundation
 import Firebase
 import FirebaseFirestore
 import Combine
+import SwiftUI
 
-// MARK: - Extend FriendshipViewModel with Chat and Invitation Functionality
+// MARK: - Support Models
 
-extension FriendshipViewModel {
+// FriendRequest used by FriendshipViewModel
+struct FriendRequestModel: Identifiable, Codable {
+    var id: String?
+    let senderID: String
+    let receiverID: String
+    let status: RequestStatus
+    let createdAt: Date
+    
+    enum RequestStatus: String, Codable {
+        case pending
+        case accepted
+        case declined
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case senderID
+        case receiverID
+        case status
+        case createdAt
+    }
+    
+    init(id: String? = nil, senderID: String, receiverID: String, status: RequestStatus = .pending, createdAt: Date = Date()) {
+        self.id = id
+        self.senderID = senderID
+        self.receiverID = receiverID
+        self.status = status
+        self.createdAt = createdAt
+    }
+}
+
+// MARK: - FriendshipViewModel Class Definition
+
+class FriendshipViewModel: ObservableObject {
+    @Published var friends: [User] = []
+    @Published var friendRequests: [FriendRequestModel] = []
+    @Published var isLoading: Bool = false
+    @Published var error: String?
+    
+    let db = Firestore.firestore()
+    
+    // MARK: - Friend Management Methods
+    
+    /// Fetch all friends for a user
+    func fetchFriends(for userID: String) {
+        isLoading = true
+        
+        db.collection("friendships")
+            .whereField("participants", arrayContains: userID)
+            .getDocuments { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                self.isLoading = false
+                
+                if let error = error {
+                    self.error = error.localizedDescription
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    self.friends = []
+                    return
+                }
+                
+                // Get friend IDs from friendships
+                let friendIDs = documents.compactMap { document -> String? in
+                    let data = document.data()
+                    guard let participants = data["participants"] as? [String] else { return nil }
+                    // Return the ID that is not the current user's ID
+                    return participants.first { $0 != userID }
+                }
+                
+                // Fetch user details for each friend ID
+                self.fetchUserDetails(for: friendIDs)
+            }
+    }
+    
+    /// Fetch user details for a list of user IDs
+    private func fetchUserDetails(for userIDs: [String]) {
+        guard !userIDs.isEmpty else {
+            self.friends = []
+            return
+        }
+        
+        // Create a dispatch group to wait for all fetches to complete
+        let group = DispatchGroup()
+        var fetchedUsers: [User] = []
+        
+        for userID in userIDs {
+            group.enter()
+            
+            db.collection("users").document(userID).getDocument { snapshot, error in
+                defer { group.leave() }
+                
+                if let error = error {
+                    print("Error fetching user details: \(error.localizedDescription)")
+                    return
+                }
+                
+                guard let data = snapshot?.data(),
+                      let name = data["name"] as? String,
+                      let email = data["email"] as? String else {
+                    return
+                }
+                
+                // Create a User object
+                let user = User(
+                    id: userID,
+                    name: name,
+                    email: email,
+                    profileImageURL: data["profileImageURL"] as? String,
+                    createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+                    lastActive: (data["lastActive"] as? Timestamp)?.dateValue() ?? Date()
+                )
+                
+                fetchedUsers.append(user)
+            }
+        }
+        
+        // When all fetches are complete, update the friends array
+        group.notify(queue: .main) { [weak self] in
+            self?.friends = fetchedUsers
+        }
+    }
+    
+    /// Fetch friend requests for a user
+    func fetchFriendRequests(for userID: String) {
+        isLoading = true
+        
+        db.collection("friendRequests")
+            .whereField("recipientID", isEqualTo: userID)
+            .whereField("status", isEqualTo: "pending")
+            .getDocuments { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                self.isLoading = false
+                
+                if let error = error {
+                    self.error = error.localizedDescription
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    self.friendRequests = []
+                    return
+                }
+                
+                // Map documents to FriendRequest objects
+                self.friendRequests = documents.compactMap { document -> FriendRequestModel? in
+                    let data = document.data()
+                    
+                    guard let senderID = data["senderID"] as? String,
+                          let recipientID = data["recipientID"] as? String,
+                          let statusString = data["status"] as? String else {
+                        return nil
+                    }
+                    
+                    let status: FriendRequestModel.RequestStatus
+                    switch statusString {
+                    case "accepted":
+                        status = .accepted
+                    case "declined":
+                        status = .declined
+                    default:
+                        status = .pending
+                    }
+                    
+                    let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+                    
+                    return FriendRequestModel(
+                        id: document.documentID,
+                        senderID: senderID,
+                        receiverID: recipientID,
+                        status: status,
+                        createdAt: createdAt
+                    )
+                }
+            }
+    }
+    
+    /// Send a friend request to another user
+    func sendFriendRequest(from senderID: String, to recipientID: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        isLoading = true
+        
+        // Check if a friendship already exists
+        db.collection("friendships")
+            .whereField("participants", arrayContains: senderID)
+            .getDocuments { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    self.isLoading = false
+                    self.error = error.localizedDescription
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    self.createFriendRequest(from: senderID, to: recipientID, completion: completion)
+                    return
+                }
+                
+                // Check if they are already friends
+                let alreadyFriends = documents.contains { document in
+                    guard let participants = document.data()["participants"] as? [String] else { return false }
+                    return participants.contains(recipientID)
+                }
+                
+                if alreadyFriends {
+                    self.isLoading = false
+                    let error = NSError(domain: "FriendshipViewModel", code: 1, userInfo: [NSLocalizedDescriptionKey: "You are already friends with this user"])
+                    self.error = error.localizedDescription
+                    completion(.failure(error))
+                    return
+                }
+                
+                // Check if a request already exists
+                self.db.collection("friendRequests")
+                    .whereField("senderID", isEqualTo: senderID)
+                    .whereField("recipientID", isEqualTo: recipientID)
+                    .getDocuments { [weak self] snapshot, error in
+                        guard let self = self else { return }
+                        
+                        if let error = error {
+                            self.isLoading = false
+                            self.error = error.localizedDescription
+                            completion(.failure(error))
+                            return
+                        }
+                        
+                        if let documents = snapshot?.documents, !documents.isEmpty {
+                            self.isLoading = false
+                            let error = NSError(domain: "FriendshipViewModel", code: 2, userInfo: [NSLocalizedDescriptionKey: "You have already sent a friend request to this user"])
+                            self.error = error.localizedDescription
+                            completion(.failure(error))
+                            return
+                        }
+                        
+                        // Create the friend request
+                        self.createFriendRequest(from: senderID, to: recipientID, completion: completion)
+                    }
+            }
+    }
+    
+    /// Create a friend request in Firestore
+    private func createFriendRequest(from senderID: String, to recipientID: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        let requestData: [String: Any] = [
+            "senderID": senderID,
+            "recipientID": recipientID,
+            "status": "pending",
+            "createdAt": Timestamp(date: Date())
+        ]
+        
+        db.collection("friendRequests").document().setData(requestData) { [weak self] error in
+            guard let self = self else { return }
+            
+            self.isLoading = false
+            
+            if let error = error {
+                self.error = error.localizedDescription
+                completion(.failure(error))
+                return
+            }
+            
+            completion(.success(()))
+        }
+    }
+    
+    /// Respond to a friend request (accept or decline)
+    func respondToFriendRequest(request: FriendRequestModel, accept: Bool, completion: @escaping (Result<Void, Error>) -> Void) {
+        isLoading = true
+        
+        guard let requestID = request.id else {
+            self.isLoading = false
+            let error = NSError(domain: "FriendshipViewModel", code: 3, userInfo: [NSLocalizedDescriptionKey: "Invalid request ID"])
+            self.error = error.localizedDescription
+            completion(.failure(error))
+            return
+        }
+        
+        // Update the request status
+        db.collection("friendRequests").document(requestID).updateData([
+            "status": accept ? "accepted" : "declined",
+            "updatedAt": Timestamp(date: Date())
+        ]) { [weak self] error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                self.isLoading = false
+                self.error = error.localizedDescription
+                completion(.failure(error))
+                return
+            }
+            
+            if accept {
+                // Create a friendship document
+                self.createFriendship(between: request.senderID, and: request.receiverID, completion: completion)
+            } else {
+                self.isLoading = false
+                completion(.success(()))
+            }
+        }
+    }
+    
+    /// Create a friendship between two users
+    private func createFriendship(between userID1: String, and userID2: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        let friendshipData: [String: Any] = [
+            "participants": [userID1, userID2],
+            "createdAt": Timestamp(date: Date())
+        ]
+        
+        db.collection("friendships").document().setData(friendshipData) { [weak self] error in
+            guard let self = self else { return }
+            
+            self.isLoading = false
+            
+            if let error = error {
+                self.error = error.localizedDescription
+                completion(.failure(error))
+                return
+            }
+            
+            completion(.success(()))
+        }
+    }
     
     // MARK: - Chat Methods
     
@@ -39,41 +364,35 @@ extension FriendshipViewModel {
                 
                 // Map documents to ChatMessage objects
                 let messages = documents.compactMap { document -> ChatMessage? in
-                    do {
-                        let data = document.data()
-                        
-                        // Safely extract data
-                        guard let id = document.documentID as String?,
-                              let senderID = data["senderID"] as? String,
-                              let text = data["text"] as? String else {
-                            return nil
-                        }
-                        
-                        // Handle timestamp
-                        let timestamp: Date
-                        if let timestampValue = data["timestamp"] as? Timestamp {
-                            timestamp = timestampValue.dateValue()
-                        } else {
-                            timestamp = Date()
-                        }
-                        
-                        // Handle optional image URL
-                        let imageURL = data["imageURL"] as? String
-                        
-                        // Determine if message is from current user
-                        let isFromCurrentUser = senderID == userID
-                        
-                        return ChatMessage(
-                            id: id,
-                            text: text,
-                            isFromCurrentUser: isFromCurrentUser,
-                            timestamp: timestamp,
-                            imageURL: imageURL
-                        )
-                    } catch {
-                        print("Error parsing chat message: \(error.localizedDescription)")
+                    let data = document.data()
+                    
+                    // Safely extract data
+                    guard let senderID = data["senderID"] as? String,
+                          let text = data["text"] as? String else {
                         return nil
                     }
+                    
+                    // Handle timestamp
+                    let timestamp: Date
+                    if let timestampValue = data["timestamp"] as? Timestamp {
+                        timestamp = timestampValue.dateValue()
+                    } else {
+                        timestamp = Date()
+                    }
+                    
+                    // Handle optional image URL
+                    let imageURL = data["imageURL"] as? String
+                    
+                    // Determine if message is from current user
+                    let isFromCurrentUser = senderID == userID
+                    
+                    return ChatMessage(
+                        id: document.documentID,
+                        text: text,
+                        isFromCurrentUser: isFromCurrentUser,
+                        timestamp: timestamp,
+                        imageURL: imageURL
+                    )
                 }
                 
                 completion(.success(messages))
@@ -413,23 +732,4 @@ extension FriendshipViewModel {
             completion(.success(()))
         }
     }
-}
-
-// MARK: - Additional Models for Social Features
-
-struct PlaydateInvitation: Identifiable {
-    let id: String?
-    let playdateID: String
-    let senderID: String
-    let recipientID: String
-    let status: InvitationStatus
-    let message: String?
-    let createdAt: Date
-    let updatedAt: Date
-}
-
-enum InvitationStatus: String {
-    case pending
-    case accepted
-    case declined
 }

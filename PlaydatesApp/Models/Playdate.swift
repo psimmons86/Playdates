@@ -1,6 +1,15 @@
 import Foundation
 import FirebaseFirestoreSwift
+import FirebaseFirestore
 import CoreLocation
+
+/// Status of a playdate
+enum PlaydateStatus: String, Codable {
+    case planned
+    case inProgress
+    case completed
+    case cancelled
+}
 
 struct Playdate: Identifiable, Codable {
     @DocumentID var id: String?
@@ -183,71 +192,5 @@ struct Playdate: Identifiable, Codable {
 
         // Return empty array if key doesn't exist or has null value
         return []
-    }
-}
-
-enum PlaydateStatus: String, Codable {
-    case planned
-    case inProgress
-    case completed
-    case cancelled
-}
-
-struct Comment: Identifiable, Codable {
-    var id = UUID().uuidString
-    var userID: String
-    var text: String
-    var createdAt: Date
-
-    // Custom initializer
-    init(id: String = UUID().uuidString, userID: String, text: String, createdAt: Date = Date()) {
-        self.id = id
-        self.userID = userID
-        self.text = text
-        self.createdAt = createdAt
-    }
-
-    // Custom decoder
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-
-        // Decode ID with fallback
-        id = try container.decodeIfPresent(String.self, forKey: .id) ?? UUID().uuidString
-
-        // Decode userID safely
-        if let userString = try? container.decode(String.self, forKey: .userID) {
-            userID = userString
-        } else if let userInt = try? container.decode(Int.self, forKey: .userID) {
-            userID = String(userInt)
-        } else {
-            userID = "unknown"
-        }
-
-        // Decode text safely
-        if let textString = try? container.decode(String.self, forKey: .text) {
-            text = textString
-        } else {
-            text = "No comment"
-        }
-
-        // Decode createdAt with fallback
-        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
-    }
-
-    // Explicit encoder implementation
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-
-        try container.encode(id, forKey: .id)
-        try container.encode(userID, forKey: .userID)
-        try container.encode(text, forKey: .text)
-        try container.encode(createdAt, forKey: .createdAt)
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case userID
-        case text
-        case createdAt
     }
 }

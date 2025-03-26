@@ -9,7 +9,7 @@ class ActivitySearchViewModel: ObservableObject {
     // Published properties for UI binding
     @Published var searchQuery = ""
     @Published var activities: [ActivityPlace] = []
-    @Published var selectedActivity: ActivityPlaceDetail?
+    @Published var selectedActivity: ActivityPlace?
     @Published var isLoading = false
     @Published var error: String?
     
@@ -86,7 +86,7 @@ class ActivitySearchViewModel: ObservableObject {
         isLoading = true
         error = nil
         
-        placesService.getPlaceDetails(placeId: activity.id) { [weak self] (result: Result<ActivityPlaceDetail, Error>) in // Added explicit type annotation
+        placesService.getPlaceDetails(placeId: activity.id) { [weak self] (result: Result<ActivityPlace, Error>) in // Added explicit type annotation
             guard let self = self else { return }
             
             self.isLoading = false
@@ -157,59 +157,23 @@ class ActivitySearchViewModel: ObservableObject {
         }
         
         // Create a location from the activity
-        let location = Location(
-            name: activity.name,
-            address: activity.address ?? "Unknown address",
-            latitude: 0, // We need to get these from the original ActivityPlace
-            longitude: 0
+        // Create the playdate
+        let playdate = Playdate(
+            hostID: hostID,
+            title: title,
+            description: description,
+            activityType: searchQuery,
+            location: activity.location,
+            address: activity.location.address,
+            startDate: startDate,
+            endDate: endDate,
+            attendeeIDs: [hostID],
+            isPublic: true,
+            createdAt: Date()
         )
         
-        // Find the original activity to get coordinates
-        if let originalActivity = activities.first(where: { $0.id == activity.id }) {
-            let location = Location(
-                name: activity.name,
-                address: activity.address ?? "Unknown address",
-                latitude: originalActivity.location.latitude,
-                longitude: originalActivity.location.longitude
-            )
-            
-            // Create the playdate
-            let playdate = Playdate(
-                hostID: hostID,
-                title: title,
-                description: description,
-                activityType: searchQuery,
-                location: location,
-                address: activity.address,
-                startDate: startDate,
-                endDate: endDate,
-                attendeeIDs: [hostID],
-                isPublic: true,
-                createdAt: Date()
-            )
-            
-            // Use the PlaydateViewModel to create the playdate
-            let playdateViewModel = PlaydateViewModel()
-            playdateViewModel.createPlaydate(playdate, completion: completion)
-        } else {
-            // If we can't find the original activity, create a playdate without coordinates
-            let playdate = Playdate(
-                hostID: hostID,
-                title: title,
-                description: description,
-                activityType: searchQuery,
-                location: location,
-                address: activity.address,
-                startDate: startDate,
-                endDate: endDate,
-                attendeeIDs: [hostID],
-                isPublic: true,
-                createdAt: Date()
-            )
-            
-            // Use the PlaydateViewModel to create the playdate
-            let playdateViewModel = PlaydateViewModel()
-            playdateViewModel.createPlaydate(playdate, completion: completion)
-        }
+        // Use the PlaydateViewModel to create the playdate
+        let playdateViewModel = PlaydateViewModel()
+        playdateViewModel.createPlaydate(playdate, completion: completion)
     }
 }

@@ -1,9 +1,14 @@
 import SwiftUI
 
-struct OnboardingView: View {
+public struct OnboardingView: View {
     @State private var currentScreen = 0
-    var onComplete: () -> Void
-    var onSkip: () -> Void
+    private var onComplete: () -> Void
+    private var onSkip: () -> Void
+    
+    public init(onComplete: @escaping () -> Void, onSkip: @escaping () -> Void) {
+        self.onComplete = onComplete
+        self.onSkip = onSkip
+    }
     
     let screens = [
         OnboardingScreen(
@@ -23,7 +28,7 @@ struct OnboardingView: View {
         )
     ]
     
-    var body: some View {
+    public var body: some View {
         ZStack {
             ColorTheme.background.edgesIgnoringSafeArea(.all)
             
@@ -102,10 +107,16 @@ struct OnboardingView: View {
     }
 }
 
-struct OnboardingScreen {
-    let title: String
-    let description: String
-    let image: String
+public struct OnboardingScreen {
+    public let title: String
+    public let description: String
+    public let image: String
+    
+    public init(title: String, description: String, image: String) {
+        self.title = title
+        self.description = description
+        self.image = image
+    }
 }
 
 struct OnboardingIllustration: View {
