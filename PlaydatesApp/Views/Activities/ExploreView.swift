@@ -5,6 +5,9 @@ public struct ExploreView: View {
     @ObservedObject var activityViewModel = ActivityViewModel()
     @State private var selectedCategory: String? = nil
     @State private var searchText = ""
+    @State private var selectedDistance: Double = 10.0 // Default 10 miles
+    
+    private let distanceOptions: [Double] = [5.0, 10.0, 25.0, 50.0, 100.0] // In miles
     
     private let categories = [
         "Parks", "Museums", "Playgrounds", "Libraries", 
@@ -41,6 +44,25 @@ public struct ExploreView: View {
                     .padding(.horizontal)
                     .padding(.vertical, 12)
                 }
+                
+                // Distance selector
+                HStack {
+                    Text("Distance:")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    Picker("Distance", selection: $selectedDistance) {
+                        ForEach(distanceOptions, id: \.self) { distance in
+                            Text("\(Int(distance)) miles").tag(distance)
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .onChange(of: selectedDistance) { _ in
+                        fetchActivitiesForCategory()
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 8)
                 
                 // Break up complex expressions to help type checking
                 ScrollView {
@@ -93,10 +115,13 @@ public struct ExploreView: View {
         
         // Also fetch from Google Places if location is available
         if let location = LocationManager.shared.location {
-            // Pass the selected category to the fetchNearbyActivities method
+            // Convert miles to kilometers (1 mile = 1.60934 km)
+            let radiusInKm = selectedDistance * 1.60934
+            
+            // Pass the selected category and distance to the fetchNearbyActivities method
             activityViewModel.fetchNearbyActivities(
                 location: location,
-                radiusInKm: 50.0,
+                radiusInKm: radiusInKm,
                 activityType: selectedCategory
             )
         }
@@ -244,6 +269,37 @@ struct ExploreActivityCard: View {  // Renamed from ActivityCard
                     .foregroundColor(.secondary)
                     .lineLimit(1)
                 
+                // Distance from user
+                if let userLocation = LocationManager.shared.location {
+                    let activityLocation = CLLocation(
+                        latitude: activity.location.latitude,
+                        longitude: activity.location.longitude
+                    )
+                    let distanceInMeters = userLocation.distance(from: activityLocation)
+                    let distanceInMiles = distanceInMeters / 1609.34 // Convert meters to miles
+                    
+                    HStack {
+                        Image(systemName: "location")
+                            .foregroundColor(.blue)
+                            .font(.system(size: 12))
+                        
+                        // Format distance based on how far away it is
+                        if distanceInMiles < 0.1 {
+                            Text("Nearby")
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                        } else if distanceInMiles < 10 {
+                            Text(String(format: "%.1f miles away", distanceInMiles))
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                        } else {
+                            Text(String(format: "%.0f miles away", distanceInMiles))
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
+                
                 // Rating if available
                 if let rating = activity.rating {
                     HStack(spacing: 4) {
@@ -264,7 +320,7 @@ struct ExploreActivityCard: View {  // Renamed from ActivityCard
                 Spacer()
             }
             .padding()
-            .frame(height: 180)
+            .frame(height: 200) // Increased height to accommodate distance
             .background(Color(.systemBackground))
             .cornerRadius(12)
             .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
@@ -381,12 +437,40 @@ struct ExploreActivityDetailView: View {  // Renamed from ActivityDetailView
             Text("Location")
                 .font(.headline)
             
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(activity.location.name)
                     .fontWeight(.medium)
                 
                 Text(activity.location.address)
                     .foregroundColor(.secondary)
+                
+                // Distance from user
+                if let userLocation = LocationManager.shared.location {
+                    let activityLocation = CLLocation(
+                        latitude: activity.location.latitude,
+                        longitude: activity.location.longitude
+                    )
+                    let distanceInMeters = userLocation.distance(from: activityLocation)
+                    let distanceInMiles = distanceInMeters / 1609.34 // Convert meters to miles
+                    
+                    HStack {
+                        Image(systemName: "location.circle.fill")
+                            .foregroundColor(.blue)
+                        
+                        // Format distance based on how far away it is
+                        if distanceInMiles < 0.1 {
+                            Text("Nearby")
+                                .foregroundColor(.blue)
+                        } else if distanceInMiles < 10 {
+                            Text(String(format: "%.1f miles from your location", distanceInMiles))
+                                .foregroundColor(.blue)
+                        } else {
+                            Text(String(format: "%.0f miles from your location", distanceInMiles))
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    .padding(.top, 4)
+                }
             }
             
             // Map placeholder
