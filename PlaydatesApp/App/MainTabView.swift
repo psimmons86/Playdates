@@ -144,16 +144,6 @@ struct HomeView: View {
                 activityViewModel.fetchActivities()
                 activityViewModel.fetchPopularActivities()
                 playdateViewModel.fetchPlaydates()
-                
-                // Add some mock data if no activities are found
-                if activityViewModel.activities.isEmpty {
-                    addMockActivities()
-                }
-                
-                // Add some mock playdates if none are found
-                if playdateViewModel.playdates.isEmpty {
-                    addMockPlaydates()
-                }
             }
         }
     }

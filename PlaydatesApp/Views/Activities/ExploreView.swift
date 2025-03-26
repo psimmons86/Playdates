@@ -4,6 +4,7 @@ import CoreLocation
 
 public struct ExploreView: View {
     @ObservedObject var activityViewModel = ActivityViewModel.shared
+    @ObservedObject var playdateViewModel = PlaydateViewModel.shared
     @State private var selectedCategory: String? = nil
     @State private var searchText = ""
     @State private var selectedDistance: Double = 10.0 // Default 10 miles
@@ -323,7 +324,7 @@ struct ExploreActivityCard: View {  // Renamed from ActivityCard
     
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            NavigationLink(destination: ExploreActivityDetailView(activity: activity)) {  // Renamed
+            NavigationLink(destination: ExploreActivityDetailView(activity: activity).environmentObject(PlaydateViewModel.shared)) {  // Renamed
                 VStack(alignment: .leading) {
                     // Activity icon
                     activityIcon
@@ -448,7 +449,7 @@ struct ExploreActivityCard: View {  // Renamed from ActivityCard
 struct ExploreActivityDetailView: View {  // Renamed from ActivityDetailView
     let activity: Activity
     @ObservedObject var viewModel = ActivityViewModel.shared
-    @ObservedObject var playdateViewModel = PlaydateViewModel()
+    @EnvironmentObject var playdateViewModel: PlaydateViewModel
     @ObservedObject var authViewModel = AuthViewModel()
     @State private var showingCreatePlaydateSheet = false
     @State private var isCreatingPlaydate = false
@@ -545,6 +546,7 @@ struct ExploreActivityDetailView: View {  // Renamed from ActivityDetailView
                     playdateCreationError = nil
                 }
             )
+            .environmentObject(playdateViewModel)
             .navigationTitle("Create Playdate")
             .navigationBarItems(trailing: Button("Cancel") {
                 showingCreatePlaydateSheet = false
@@ -788,7 +790,7 @@ struct CreatePlaydateFromActivityView: View {
     var onPlaydateCreated: (Playdate) -> Void
     
     @ObservedObject private var authViewModel = AuthViewModel()
-    @ObservedObject private var playdateViewModel = PlaydateViewModel()
+    @EnvironmentObject var playdateViewModel: PlaydateViewModel
     
     @State private var title: String = ""
     @State private var description: String = ""
