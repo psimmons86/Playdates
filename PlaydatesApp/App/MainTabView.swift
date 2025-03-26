@@ -4,6 +4,7 @@ import CoreLocation
 import MapKit
 import Combine
 import UIKit
+import Firebase
 
 // Main tab view that contains all the tabs
 struct MainTabView: View {
@@ -141,8 +142,96 @@ struct HomeView: View {
             .navigationTitle("Home")
             .onAppear {
                 activityViewModel.fetchActivities()
+                activityViewModel.fetchPopularActivities()
                 playdateViewModel.fetchPlaydates()
+                
+                // Add some mock data if no activities are found
+                if activityViewModel.activities.isEmpty {
+                    addMockActivities()
+                }
+                
+                // Add some mock playdates if none are found
+                if playdateViewModel.playdates.isEmpty {
+                    addMockPlaydates()
+                }
             }
+        }
+    }
+    
+    // Helper function to add mock activities if none are found
+    private func addMockActivities() {
+        let mockActivities = [
+            Activity(
+                id: "mock1",
+                name: "Central Park Playground",
+                description: "A fun playground for kids of all ages",
+                type: .park,
+                location: Location(name: "Central Park", address: "123 Park Ave", latitude: 37.7749, longitude: -122.4194),
+                rating: 4.5,
+                reviewCount: 120,
+                isPublic: true
+            ),
+            Activity(
+                id: "mock2",
+                name: "Children's Museum",
+                description: "Interactive exhibits for children",
+                type: .museum,
+                location: Location(name: "Downtown Museum", address: "456 Museum St", latitude: 37.7749, longitude: -122.4194),
+                rating: 4.8,
+                reviewCount: 200,
+                isPublic: true
+            ),
+            Activity(
+                id: "mock3",
+                name: "Public Library Story Time",
+                description: "Weekly story time for kids",
+                type: .library,
+                location: Location(name: "Main Library", address: "789 Library Ave", latitude: 37.7749, longitude: -122.4194),
+                rating: 4.2,
+                reviewCount: 85,
+                isPublic: true
+            )
+        ]
+        
+        activityViewModel.activities = mockActivities
+        activityViewModel.popularActivities = mockActivities
+    }
+    
+    // Helper function to add mock playdates if none are found
+    private func addMockPlaydates() {
+        guard let userID = AuthViewModel().user?.id ?? Auth.auth().currentUser?.uid else { return }
+        
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+        let dayAfterTomorrow = Calendar.current.date(byAdding: .day, value: 2, to: Date()) ?? Date()
+        
+        let mockPlaydates = [
+            Playdate(
+                id: "mockPlaydate1",
+                hostID: userID,
+                title: "Park Playdate",
+                description: "Let's meet at the park for a fun afternoon",
+                activityType: "park",
+                location: Location(name: "Central Park", address: "123 Park Ave", latitude: 37.7749, longitude: -122.4194),
+                startDate: tomorrow,
+                endDate: Calendar.current.date(byAdding: .hour, value: 2, to: tomorrow) ?? tomorrow,
+                attendeeIDs: [userID],
+                isPublic: true
+            ),
+            Playdate(
+                id: "mockPlaydate2",
+                hostID: userID,
+                title: "Museum Trip",
+                description: "Exploring the children's museum",
+                activityType: "museum",
+                location: Location(name: "Children's Museum", address: "456 Museum St", latitude: 37.7749, longitude: -122.4194),
+                startDate: dayAfterTomorrow,
+                endDate: Calendar.current.date(byAdding: .hour, value: 3, to: dayAfterTomorrow) ?? dayAfterTomorrow,
+                attendeeIDs: [userID],
+                isPublic: true
+            )
+        ]
+        
+        playdateViewModel.playdates = mockPlaydates
         }
     }
 }
@@ -172,23 +261,33 @@ struct NewPlaydateView: View {
                 Section {
                     Button(action: {
                         // Create playdate
-                        guard let userID = authViewModel.user?.id else { return }
+                        guard let userID = authViewModel.user?.id ?? Auth.auth().currentUser?.uid else { return }
                         
                         let playdate = Playdate(
-                            id: nil,
+                            id: "local-\(UUID().uuidString)",
                             hostID: userID,
                             title: title,
                             description: description,
                             activityType: "playdate",
-                            location: nil,
-                            address: location,
+                            location: Location(name: location, address: location, latitude: 37.7749, longitude: -122.4194),
                             startDate: date,
                             endDate: date.addingTimeInterval(7200), // 2 hours later
                             attendeeIDs: [userID],
                             isPublic: true
                         )
                         
-                        playdateViewModel.createPlaydate(playdate) { _ in
+                        // Try to save to Firebase first
+                        playdateViewModel.createPlaydate(playdate) { result in
+                            switch result {
+                            case .success(_):
+                                // Successfully saved to Firebase
+                                print("Playdate saved to Firebase")
+                            case .failure(let error):
+                                // Failed to save to Firebase, add to local array
+                                print("Failed to save to Firebase: \(error.localizedDescription)")
+                                playdateViewModel.playdates.append(playdate)
+                            }
+                            
                             // Reset form
                             title = ""
                             description = ""
