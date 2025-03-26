@@ -1,12 +1,13 @@
 import SwiftUI
+import PlaydatesApp
 
 struct GenerateAppIcon: View {
-    // App color scheme based on the theme
-    let primaryColor = Color(hex: "91DDCF") // Mint green
-    let secondaryColor = Color(hex: "F7F9F2") // Off-white
-    let accentColor = Color(hex: "E8C5E5") // Soft lavender
-    let highlightColor = Color(hex: "F19ED2") // Pink
-    let textColor = Color(hex: "5D4E6D") // Dark Purple
+    // App color scheme based on the ColorTheme
+    let primaryColor = ColorTheme.primary
+    let secondaryColor = ColorTheme.secondary
+    let accentColor = ColorTheme.accent
+    let highlightColor = ColorTheme.highlight
+    let textColor = ColorTheme.darkPurple
     
     var body: some View {
         ZStack {
@@ -121,32 +122,7 @@ struct GenerateAppIcon: View {
     }
 }
 
-// Helper extension to create colors from hex values
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3: // RGB (12-bit)
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: // RGB (24-bit)
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            (a, r, g, b) = (1, 1, 1, 0)
-        }
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue: Double(b) / 255,
-            opacity: Double(a) / 255
-        )
-    }
-}
+// Using ColorTheme for colors instead of local hex implementation
 
 // Preview provider
 struct GenerateAppIcon_Previews: PreviewProvider {
