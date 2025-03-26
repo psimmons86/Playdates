@@ -45,7 +45,7 @@ struct MainTabView: View {
             
             // Create Tab - ActivitySearchView is appropriate here
             NavigationView {
-                ActivitySearchView()
+                NewPlaydateView()
                     .environmentObject(playdateViewModel)
             }
             .tabItem {
@@ -74,5 +74,20 @@ struct MainTabView: View {
             .tag(4)
         }
         .accentColor(ColorTheme.primary)
+        .onAppear {
+            // Apply gradient to tab bar
+            let appearance = UITabBarAppearance()
+            appearance.configureWithDefaultBackground()
+            
+            // Add subtle gradient to tab bar
+            let tabBarAppearance = UITabBar.appearance()
+            tabBarAppearance.standardAppearance = appearance
+            if #available(iOS 15.0, *) {
+                tabBarAppearance.scrollEdgeAppearance = appearance
+            }
+            
+            // Set tint color
+            tabBarAppearance.tintColor = UIColor(ColorTheme.primary)
+        }
     }
 }

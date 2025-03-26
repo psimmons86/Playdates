@@ -4,132 +4,148 @@ import Foundation
 struct FeaturedActivityCard: View {
     let activity: Activity
     
+    @State private var isAnimating = false
+    
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            // Background image or color
-            Rectangle()
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            activityColor(for: activity.type).opacity(0.7),
-                            activityColor(for: activity.type)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+            // Gradient background
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    activityColor,
+                    activityColor.opacity(0.7),
+                    activityColor.opacity(0.5)
+                ]),
+                startPoint: isAnimating ? .topLeading : .bottomTrailing,
+                endPoint: isAnimating ? .bottomTrailing : .topLeading
+            )
+            .onAppear {
+                withAnimation(Animation.easeInOut(duration: 4).repeatForever(autoreverses: true)) {
+                    isAnimating = true
+                }
+            }
+            
+            // Decorative elements
+            ZStack {
+                // Floating circles
+                ForEach(0..<3) { i in
+                    Circle()
+                        .fill(Color.white.opacity(0.2))
+                        .frame(width: CGFloat([60, 40, 30][i]))
+                        .offset(
+                            x: CGFloat([120, -80, 60][i]),
+                            y: CGFloat([-40, 60, -80][i])
+                        )
+                        .blur(radius: 3)
+                }
+                
+                // Activity icon
+                Image(systemName: activityIcon)
+                    .font(.system(size: 80))
+                    .foregroundColor(.white.opacity(0.3))
+                    .offset(x: 100, y: -30)
+                    .rotationEffect(.degrees(isAnimating ? 10 : -10))
+                    .animation(
+                        Animation.easeInOut(duration: 4)
+                            .repeatForever(autoreverses: true),
+                        value: isAnimating
                     )
-                )
-                .cornerRadius(16)
+            }
             
             // Content overlay
             VStack(alignment: .leading, spacing: 8) {
-                // Activity type badge
-                HStack(spacing: 4) {
-                    Image(systemName: activityIcon(for: activity.type))
-                        .font(.system(size: 12))
-                        .foregroundColor(.white)
-                    
-                    Text(activity.type.rawValue.capitalized)
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(Color.black.opacity(0.3))
-                .cornerRadius(12)
+                // Title
+                Text(activity.name)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
                 
-                Spacer()
-                
-                // Activity details
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(activity.name)
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
+                // Location
+                HStack {
+                    Image(systemName: "mappin.and.ellipse")
+                        .foregroundColor(.white.opacity(0.9))
                     
                     Text(activity.location.name)
                         .font(.subheadline)
                         .foregroundColor(.white.opacity(0.9))
-                    
-                    // Rating
-                    if let rating = activity.rating {
-                        HStack(spacing: 2) {
-                            ForEach(0..<5) { i in
-                                Image(systemName: i < Int(rating) ? "star.fill" : "star")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(i < Int(rating) ? .yellow : .white.opacity(0.5))
-                            }
-                            
-                            Text(String(format: "%.1f", rating))
-                                .font(.caption)
-                                .foregroundColor(.white.opacity(0.9))
-                                .padding(.leading, 4)
+                }
+                
+                // Rating
+                if let rating = activity.rating {
+                    HStack(spacing: 4) {
+                        ForEach(1...5, id: \.self) { star in
+                            Image(systemName: star <= Int(rating) ? "star.fill" : "star")
+                                .foregroundColor(.white)
                         }
+                        
+                        Text(String(format: "%.1f", rating))
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white)
                     }
                 }
+                
+                // Featured badge
+                Text("FEATURED")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.3))
+                    .foregroundColor(.white)
+                    .cornerRadius(4)
             }
-            .padding(16)
+            .padding(20)
         }
-        .frame(height: 180)
+        .frame(height: 200)
         .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-        .padding(.horizontal)
+        .shadow(color: activityColor.opacity(0.5), radius: 10, x: 0, y: 5)
     }
     
-    private func activityColor(for type: ActivityType) -> Color {
-        switch type {
-        case .park:
-            return Color.green
-        case .museum:
-            return Color.orange
-        case .playground:
-            return Color.blue
-        case .swimmingPool:
-            return Color.cyan
-        case .zoo:
-            return Color.brown
-        default:
-            return ColorTheme.primary
-        }
-    }
-    
-    private func activityIcon(for type: ActivityType) -> String {
-        switch type {
+    // Helper to determine activity icon
+    private var activityIcon: String {
+        switch activity.type {
         case .park:
             return "leaf.fill"
         case .museum:
             return "building.columns.fill"
         case .playground:
             return "figure.play"
+        case .library:
+            return "book.fill"
         case .swimmingPool:
-            return "drop.fill"
+            return "figure.pool.swim"
+        case .sportingEvent:
+            return "sportscourt.fill"
         case .zoo:
             return "pawprint.fill"
+        case .aquarium:
+            return "drop.fill"
+        case .movieTheater:
+            return "film.fill"
+        case .themePark:
+            return "ferriswheel"
         default:
-            return "star.fill"
+            return "mappin.circle.fill"
         }
     }
-}
-
-struct FeaturedActivityCard_Previews: PreviewProvider {
-    static var previews: some View {
-        let mockActivity = Activity(
-            id: "mock-id",
-            name: "Central Park",
-            description: "A beautiful park in the heart of the city",
-            type: .park,
-            location: Location(
-                id: "loc-1",
-                name: "Central Park",
-                address: "New York, NY",
-                latitude: 40.7812,
-                longitude: -73.9665
-            ),
-            rating: 4.5
-        )
-        
-        FeaturedActivityCard(activity: mockActivity)
-            .previewLayout(.sizeThatFits)
-            .padding()
+    
+    // Helper to determine activity color
+    private var activityColor: Color {
+        switch activity.type {
+        case .park:
+            return Color(red: 0.02, green: 0.84, blue: 0.63)
+        case .museum, .library:
+            return ColorTheme.accent
+        case .playground, .zoo:
+            return ColorTheme.highlight
+        case .swimmingPool, .aquarium:
+            return Color(red: 0.07, green: 0.54, blue: 0.7)
+        case .sportingEvent, .themePark:
+            return Color(red: 0.94, green: 0.28, blue: 0.44)
+        case .movieTheater:
+            return Color(red: 0.46, green: 0.47, blue: 0.93)
+        default:
+            return ColorTheme.primary
+        }
     }
 }
