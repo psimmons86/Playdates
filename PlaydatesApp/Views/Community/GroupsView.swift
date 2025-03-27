@@ -2,7 +2,7 @@ import SwiftUI
 
 struct GroupsView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @EnvironmentObject var viewModel: GroupViewModel
+    @StateObject private var viewModel = GroupViewModel.shared
     @State private var showingCreateGroupSheet = false
     @State private var searchText = ""
     @State private var selectedGroupType: GroupType?
@@ -28,10 +28,10 @@ struct GroupsView: View {
     }
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                ColorTheme.background.edgesIgnoringSafeArea(.all)
-                
+        ZStack {
+            ColorTheme.background.edgesIgnoringSafeArea(.all)
+            
+            ScrollView {
                 VStack(spacing: 0) {
                     // Search and filter bar
                     VStack(spacing: 12) {
@@ -52,182 +52,215 @@ struct GroupsView: View {
                                 }
                             }
                         }
-                        .padding(10)
+                        .padding(12)
                         .background(Color.white)
-                        .cornerRadius(10)
+                        .cornerRadius(12)
                         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
                         
                         // Group type filter
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 10) {
-                                GroupTypeFilterButton(
-                                    type: nil,
-                                    selectedType: $selectedGroupType,
-                                    label: "All"
+                                CategoryButton(
+                                    title: "All",
+                                    isSelected: selectedGroupType == nil,
+                                    action: { selectedGroupType = nil }
                                 )
                                 
-                                GroupTypeFilterButton(
-                                    type: .neighborhood,
-                                    selectedType: $selectedGroupType,
-                                    label: "Neighborhood"
+                                CategoryButton(
+                                    title: "Neighborhood",
+                                    isSelected: selectedGroupType == .neighborhood,
+                                    action: { selectedGroupType = .neighborhood }
                                 )
                                 
-                                GroupTypeFilterButton(
-                                    type: .ageBased,
-                                    selectedType: $selectedGroupType,
-                                    label: "Age-Based"
+                                CategoryButton(
+                                    title: "Age-Based",
+                                    isSelected: selectedGroupType == .ageBased,
+                                    action: { selectedGroupType = .ageBased }
                                 )
                                 
-                                GroupTypeFilterButton(
-                                    type: .interestBased,
-                                    selectedType: $selectedGroupType,
-                                    label: "Interest-Based"
+                                CategoryButton(
+                                    title: "Interest",
+                                    isSelected: selectedGroupType == .interestBased,
+                                    action: { selectedGroupType = .interestBased }
                                 )
                                 
-                                GroupTypeFilterButton(
-                                    type: .school,
-                                    selectedType: $selectedGroupType,
-                                    label: "School"
-                                )
-                                
-                                GroupTypeFilterButton(
-                                    type: .other,
-                                    selectedType: $selectedGroupType,
-                                    label: "Other"
+                                CategoryButton(
+                                    title: "School",
+                                    isSelected: selectedGroupType == .school,
+                                    action: { selectedGroupType = .school }
                                 )
                             }
-                            .padding(.horizontal, 5)
                         }
                     }
-                    .padding()
-                    .background(Color.white)
-                    .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
                     
                     if viewModel.isLoading {
-                        Spacer()
                         ProgressView()
                             .scaleEffect(1.2)
-                        Spacer()
+                            .padding(.top, 40)
                     } else if filteredGroups.isEmpty {
-                        Spacer()
-                        EmptyGroupsView(showingCreateGroupSheet: $showingCreateGroupSheet)
-                        Spacer()
+                        // Empty state
+                        SectionBox(title: "Your Groups") {
+                            EmptyStateBox(
+                                icon: "person.3",
+                                title: "No Groups Yet",
+                                message: "Join existing groups or create your own to connect with other parents",
+                                buttonTitle: "Create a Group",
+                                buttonAction: {
+                                    showingCreateGroupSheet = true
+                                }
+                            )
+                        }
+                        
+                        // Recommended groups
+                        SectionBox(
+                            title: "Recommended Groups",
+                            viewAllAction: {
+                                // View all recommended groups
+                            }
+                        ) {
+                            if viewModel.recommendedGroups.isEmpty {
+                                Text("No recommended groups yet")
+                                    .font(.subheadline)
+                                    .foregroundColor(ColorTheme.lightText)
+                                    .padding(.vertical, 20)
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 16) {
+                                        ForEach(viewModel.recommendedGroups) { group in
+                                            NavigationLink(destination: GroupDetailView(group: group)) {
+                                                EnhancedGroupCard(group: group)
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Nearby groups
+                        SectionBox(
+                            title: "Nearby Groups",
+                            viewAllAction: {
+                                // View all nearby groups
+                            }
+                        ) {
+                            if viewModel.nearbyGroups.isEmpty {
+                                Text("No nearby groups found")
+                                    .font(.subheadline)
+                                    .foregroundColor(ColorTheme.lightText)
+                                    .padding(.vertical, 20)
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 16) {
+                                        ForEach(viewModel.nearbyGroups) { group in
+                                            NavigationLink(destination: GroupDetailView(group: group)) {
+                                                EnhancedGroupCard(group: group)
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     } else {
-                        // Groups list
-                        ScrollView {
+                        // User's groups
+                        SectionBox(
+                            title: "Your Groups",
+                            viewAllAction: filteredGroups.count > 3 ? {
+                                // View all user groups
+                            } : nil
+                        ) {
                             LazyVStack(spacing: 16) {
                                 ForEach(filteredGroups) { group in
                                     NavigationLink(destination: GroupDetailView(group: group)) {
-                                        GroupCard(group: group)
+                                        EnhancedGroupCard(group: group)
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                 }
                             }
-                            .padding()
+                        }
+                        
+                        // Recommended groups
+                        if !viewModel.recommendedGroups.isEmpty {
+                            SectionBox(
+                                title: "Recommended For You",
+                                viewAllAction: {
+                                    // View all recommended groups
+                                }
+                            ) {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 16) {
+                                        ForEach(viewModel.recommendedGroups) { group in
+                                            NavigationLink(destination: GroupDetailView(group: group)) {
+                                                CompactGroupCard(group: group)
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-            }
-            .navigationTitle("My Groups")
-            .navigationBarItems(trailing: Button(action: {
-                showingCreateGroupSheet = true
-            }) {
-                Image(systemName: "plus")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(ColorTheme.primary)
-            })
-            .sheet(isPresented: $showingCreateGroupSheet) {
-                CreateGroupView()
-            }
-            .onAppear {
-                if let userID = authViewModel.currentUser?.id {
-                    viewModel.fetchUserGroups(userID: userID)
-                }
-            }
-            .alert(isPresented: Binding<Bool>(
-                get: { viewModel.errorMessage != nil },
-                set: { if !$0 { viewModel.errorMessage = nil } }
-            )) {
-                Alert(
-                    title: Text("Error"),
-                    message: Text(viewModel.errorMessage ?? "An unknown error occurred"),
-                    dismissButton: .default(Text("OK"))
-                )
+                .padding(.vertical)
             }
         }
-    }
-}
-
-struct GroupTypeFilterButton: View {
-    let type: GroupType?
-    @Binding var selectedType: GroupType?
-    let label: String
-    
-    var body: some View {
-        Button(action: {
-            if selectedType == type {
-                selectedType = nil // Deselect if already selected
-            } else {
-                selectedType = type // Select new type
-            }
+        .navigationBarItems(trailing: Button(action: {
+            showingCreateGroupSheet = true
         }) {
-            Text(label)
-                .font(.system(size: 14, weight: .medium))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(selectedType == type ? ColorTheme.primary : Color.white)
-                .foregroundColor(selectedType == type ? .white : ColorTheme.text)
-                .cornerRadius(20)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(selectedType == type ? ColorTheme.primary : ColorTheme.lightText.opacity(0.3), lineWidth: 1)
-                )
+            Image(systemName: "plus")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(ColorTheme.primary)
+        })
+        .sheet(isPresented: $showingCreateGroupSheet) {
+            CreateGroupView()
+        }
+        .onAppear {
+            if let userID = authViewModel.currentUser?.id {
+                viewModel.fetchUserGroups(userID: userID)
+            }
+        }
+        .alert(isPresented: Binding<Bool>(
+            get: { viewModel.errorMessage != nil },
+            set: { if !$0 { viewModel.errorMessage = nil } }
+        )) {
+            Alert(
+                title: Text("Error"),
+                message: Text(viewModel.errorMessage ?? "An unknown error occurred"),
+                dismissButton: .default(Text("OK"))
+            )
         }
     }
 }
 
-struct GroupCard: View {
+struct EnhancedGroupCard: View {
     let group: Group
+    @State private var isAnimating = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Group header with image
+        VStack(alignment: .leading, spacing: 0) {
+            // Header with image and gradient
             ZStack(alignment: .bottomLeading) {
-                if let imageURL = group.coverImageURL {
-                    AsyncImage(url: URL(string: imageURL)) { phase in
-                        switch phase {
-                        case .empty:
-                            Rectangle()
-                                .fill(ColorTheme.secondaryLight)
-                                .aspectRatio(2.5, contentMode: .fit)
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(2.5, contentMode: .fit)
-                        case .failure:
-                            Rectangle()
-                                .fill(ColorTheme.secondaryLight)
-                                .aspectRatio(2.5, contentMode: .fit)
-                                .overlay(
-                                    Image(systemName: "photo")
-                                        .foregroundColor(ColorTheme.lightText)
-                                )
-                        @unknown default:
-                            Rectangle()
-                                .fill(ColorTheme.secondaryLight)
-                                .aspectRatio(2.5, contentMode: .fit)
-                        }
-                    }
-                } else {
-                    // Default background for groups without images
-                    Rectangle()
-                        .fill(LinearGradient(
-                            gradient: Gradient(colors: [ColorTheme.primary.opacity(0.7), ColorTheme.accent]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ))
-                        .aspectRatio(2.5, contentMode: .fit)
-                }
+                // Background gradient based on group type
+                Rectangle()
+                    .fill(groupTypeGradient)
+                    .frame(height: 100)
+                
+                // Group icon
+                Image(systemName: groupTypeIcon)
+                    .font(.system(size: 40))
+                    .foregroundColor(.white.opacity(0.3))
+                    .offset(x: 100, y: -20)
+                    .rotationEffect(.degrees(isAnimating ? 5 : -5))
+                    .animation(
+                        Animation.easeInOut(duration: 3)
+                            .repeatForever(autoreverses: true),
+                        value: isAnimating
+                    )
                 
                 // Group type badge
                 Text(group.groupType.rawValue.capitalized)
@@ -235,30 +268,32 @@ struct GroupCard: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(Color.white.opacity(0.9))
-                    .foregroundColor(ColorTheme.primary)
+                    .foregroundColor(groupTypeColor)
                     .cornerRadius(16)
                     .padding(12)
             }
-            .cornerRadius(12)
+            .cornerRadius(12, corners: [.topLeft, .topRight])
             
             // Group info
             VStack(alignment: .leading, spacing: 8) {
                 Text(group.name)
                     .font(.headline)
-                    .foregroundColor(ColorTheme.text)
+                    .foregroundColor(ColorTheme.darkPurple)
                 
                 Text(group.description)
                     .font(.subheadline)
                     .foregroundColor(ColorTheme.lightText)
                     .lineLimit(2)
                 
+                Divider()
+                
                 HStack {
                     // Member count
                     HStack(spacing: 4) {
                         Image(systemName: "person.2")
-                            .font(.system(size: 12))
+                            .font(.system(size: 14))
                         Text("\(group.memberIDs.count) members")
-                            .font(.system(size: 12))
+                            .font(.system(size: 14))
                     }
                     .foregroundColor(ColorTheme.lightText)
                     
@@ -266,273 +301,237 @@ struct GroupCard: View {
                     
                     // Privacy badge
                     HStack(spacing: 4) {
-                        Image(systemName: group.privacyType == .public ? "globe" : (group.privacyType == .private ? "lock" : "envelope"))
-                            .font(.system(size: 12))
+                        Image(systemName: privacyIcon)
+                            .font(.system(size: 14))
                         Text(group.privacyType.rawValue.capitalized)
-                            .font(.system(size: 12))
+                            .font(.system(size: 14))
                     }
                     .foregroundColor(ColorTheme.lightText)
                 }
             }
-            .padding(.horizontal, 4)
+            .padding(16)
+            .frame(height: 120)
+            .background(Color.white)
         }
-        .padding(12)
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
-    }
-}
-
-struct EmptyGroupsView: View {
-    @Binding var showingCreateGroupSheet: Bool
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "person.3")
-                .font(.system(size: 60))
-                .foregroundColor(ColorTheme.lightText)
-            
-            Text("No Groups Yet")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(ColorTheme.text)
-            
-            Text("Join existing groups or create your own to connect with other parents in your community")
-                .font(.body)
-                .foregroundColor(ColorTheme.lightText)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-            
-            VStack(spacing: 12) {
-                Button(action: {
-                    showingCreateGroupSheet = true
-                }) {
-                    HStack {
-                        Image(systemName: "plus.circle")
-                        Text("Create a Group")
-                    }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(ColorTheme.primary)
-                    .cornerRadius(12)
-                }
-                
-                Button(action: {
-                    // Navigate to discover groups
-                }) {
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                        Text("Discover Groups")
-                    }
-                    .font(.headline)
-                    .foregroundColor(ColorTheme.primary)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(ColorTheme.primary, lineWidth: 1)
-                    )
-                }
-            }
-            .padding(.horizontal, 32)
-            .padding(.top, 12)
-        }
-        .padding()
-    }
-}
-
-struct CreateGroupView: View {
-    @Environment(\.presentationMode) var presentationMode
-    @EnvironmentObject var authViewModel: AuthViewModel
-    @StateObject private var viewModel = GroupViewModel.shared
-    
-    @State private var groupName = ""
-    @State private var groupDescription = ""
-    @State private var groupType: GroupType = .neighborhood
-    @State private var privacyType: GroupPrivacyType = .public
-    @State private var tags = ""
-    
-    var body: some View {
-        NavigationView {
-            ZStack {
-                ColorTheme.background.edgesIgnoringSafeArea(.all)
-                
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        // Group name
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Group Name")
-                                .font(.headline)
-                                .foregroundColor(ColorTheme.text)
-                            
-                            TextField("Enter group name", text: $groupName)
-                                .padding()
-                                .background(Color.white)
-                                .cornerRadius(10)
-                                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                        }
-                        
-                        // Group description
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Description")
-                                .font(.headline)
-                                .foregroundColor(ColorTheme.text)
-                            
-                            TextEditor(text: $groupDescription)
-                                .frame(minHeight: 100)
-                                .padding(10)
-                                .background(Color.white)
-                                .cornerRadius(10)
-                                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                        }
-                        
-                        // Group type
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Group Type")
-                                .font(.headline)
-                                .foregroundColor(ColorTheme.text)
-                            
-                            Picker("Group Type", selection: $groupType) {
-                                Text("Neighborhood").tag(GroupType.neighborhood)
-                                Text("Age-Based").tag(GroupType.ageBased)
-                                Text("Interest-Based").tag(GroupType.interestBased)
-                                Text("School").tag(GroupType.school)
-                                Text("Other").tag(GroupType.other)
-                            }
-                            .pickerStyle(SegmentedPickerStyle())
-                        }
-                        
-                        // Privacy settings
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Privacy")
-                                .font(.headline)
-                                .foregroundColor(ColorTheme.text)
-                            
-                            Picker("Privacy", selection: $privacyType) {
-                                Text("Public").tag(GroupPrivacyType.public)
-                                Text("Private").tag(GroupPrivacyType.private)
-                                Text("Invite Only").tag(GroupPrivacyType.inviteOnly)
-                            }
-                            .pickerStyle(SegmentedPickerStyle())
-                            
-                            Text(privacyDescription)
-                                .font(.caption)
-                                .foregroundColor(ColorTheme.lightText)
-                                .padding(.top, 4)
-                        }
-                        
-                        // Tags
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Tags (comma separated)")
-                                .font(.headline)
-                                .foregroundColor(ColorTheme.text)
-                            
-                            TextField("e.g. toddlers, outdoor activities, downtown", text: $tags)
-                                .padding()
-                                .background(Color.white)
-                                .cornerRadius(10)
-                                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-                        }
-                        
-                        // Create button
-                        Button(action: createGroup) {
-                            Text("Create Group")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(isFormValid ? ColorTheme.primary : ColorTheme.lightText)
-                                .cornerRadius(12)
-                        }
-                        .disabled(!isFormValid)
-                        .padding(.top, 16)
-                    }
-                    .padding()
-                }
-            }
-            .navigationTitle("Create Group")
-            .navigationBarItems(leading: Button("Cancel") {
-                presentationMode.wrappedValue.dismiss()
-            })
-            .alert(isPresented: Binding<Bool>(
-                get: { viewModel.errorMessage != nil },
-                set: { if !$0 { viewModel.errorMessage = nil } }
-            )) {
-                Alert(
-                    title: Text("Error"),
-                    message: Text(viewModel.errorMessage ?? "An unknown error occurred"),
-                    dismissButton: .default(Text("OK"))
-                )
-            }
+        .frame(width: 300)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .onAppear {
+            isAnimating = true
         }
     }
     
-    private var isFormValid: Bool {
-        !groupName.isEmpty && !groupDescription.isEmpty
+    private var groupTypeIcon: String {
+        switch group.groupType {
+        case .neighborhood:
+            return "house.fill"
+        case .school:
+            return "book.fill"
+        case .ageBased:
+            return "figure.2.and.child.holdinghands"
+        case .interestBased:
+            return "star.fill"
+        case .other:
+            return "person.3.fill"
+        }
     }
     
-    private var privacyDescription: String {
-        switch privacyType {
+    private var privacyIcon: String {
+        switch group.privacyType {
         case .public:
-            return "Anyone can find and join this group"
+            return "globe"
         case .private:
-            return "Group is visible but members must be approved"
+            return "lock"
         case .inviteOnly:
-            return "Group is hidden and members must be invited"
+            return "envelope"
         }
     }
     
-    private func createGroup() {
-        guard let currentUser = authViewModel.currentUser, let userID = currentUser.id else {
-            viewModel.errorMessage = "You must be logged in to create a group"
-            return
+    private var groupTypeColor: Color {
+        switch group.groupType {
+        case .neighborhood:
+            return Color.blue
+        case .school:
+            return Color.purple
+        case .ageBased:
+            return Color.green
+        case .interestBased:
+            return Color.orange
+        case .other:
+            return ColorTheme.primary
         }
-        
-        let tagArray = tags.split(separator: ",").map { String($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
-        
-        let newGroup = Group(
-            name: groupName,
-            description: groupDescription,
-            groupType: groupType,
-            privacyType: privacyType,
-            memberIDs: [userID],
-            adminIDs: [userID],
-            tags: tagArray,
-            createdBy: userID,
-            allowMemberPosts: true,
-            requirePostApproval: privacyType != .public,
-            allowEvents: true,
-            allowResourceSharing: true
-        )
-        
-        viewModel.createGroup(group: newGroup) { result in
-            switch result {
-            case .success(_):
-                presentationMode.wrappedValue.dismiss()
-            case .failure(let error):
-                viewModel.errorMessage = error.localizedDescription
-            }
+    }
+    
+    private var groupTypeGradient: LinearGradient {
+        switch group.groupType {
+        case .neighborhood:
+            return LinearGradient(
+                gradient: Gradient(colors: [Color.blue.opacity(0.7), Color.blue]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .school:
+            return LinearGradient(
+                gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.purple]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .ageBased:
+            return LinearGradient(
+                gradient: Gradient(colors: [Color.green.opacity(0.7), Color.green]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .interestBased:
+            return LinearGradient(
+                gradient: Gradient(colors: [Color.orange.opacity(0.7), Color.orange]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .other:
+            return LinearGradient(
+                gradient: Gradient(colors: [ColorTheme.primary.opacity(0.7), ColorTheme.primary]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         }
     }
 }
 
-// This is a placeholder for the group detail view
-struct GroupDetailView: View {
+struct CompactGroupCard: View {
     let group: Group
     
     var body: some View {
-        Text("Group Detail View for \(group.name)")
-            .navigationTitle(group.name)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                // Group icon with background
+                ZStack {
+                    Circle()
+                        .fill(groupTypeGradient)
+                        .frame(width: 50, height: 50)
+                    
+                    Image(systemName: groupTypeIcon)
+                        .font(.system(size: 24))
+                        .foregroundColor(.white)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(group.name)
+                        .font(.headline)
+                        .foregroundColor(ColorTheme.darkPurple)
+                    
+                    Text("\(group.memberIDs.count) members")
+                        .font(.subheadline)
+                        .foregroundColor(ColorTheme.lightText)
+                }
+            }
+            
+            Divider()
+            
+            Text(group.description)
+                .font(.subheadline)
+                .foregroundColor(ColorTheme.text)
+                .lineLimit(2)
+            
+            Button(action: {
+                // Join group action
+            }) {
+                Text("Join Group")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(groupTypeColor)
+                    .cornerRadius(8)
+            }
+        }
+        .padding(16)
+        .frame(width: 220, height: 200)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 3)
+    }
+    
+    private var groupTypeIcon: String {
+        switch group.groupType {
+        case .neighborhood:
+            return "house.fill"
+        case .school:
+            return "book.fill"
+        case .ageBased:
+            return "figure.2.and.child.holdinghands"
+        case .interestBased:
+            return "star.fill"
+        case .other:
+            return "person.3.fill"
+        }
+    }
+    
+    private var groupTypeColor: Color {
+        switch group.groupType {
+        case .neighborhood:
+            return Color.blue
+        case .school:
+            return Color.purple
+        case .ageBased:
+            return Color.green
+        case .interestBased:
+            return Color.orange
+        case .other:
+            return ColorTheme.primary
+        }
+    }
+    
+    private var groupTypeGradient: LinearGradient {
+        switch group.groupType {
+        case .neighborhood:
+            return LinearGradient(
+                gradient: Gradient(colors: [Color.blue.opacity(0.7), Color.blue]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .school:
+            return LinearGradient(
+                gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.purple]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .ageBased:
+            return LinearGradient(
+                gradient: Gradient(colors: [Color.green.opacity(0.7), Color.green]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .interestBased:
+            return LinearGradient(
+                gradient: Gradient(colors: [Color.orange.opacity(0.7), Color.orange]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .other:
+            return LinearGradient(
+                gradient: Gradient(colors: [ColorTheme.primary.opacity(0.7), ColorTheme.primary]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
     }
 }
 
-struct GroupsView_Previews: PreviewProvider {
-    static var previews: some View {
-        GroupsView()
-            .environmentObject(AuthViewModel())
+// Extension to apply rounded corners to specific corners
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(RoundedCorner(radius: radius, corners: corners))
+    }
+}
+
+struct RoundedCorner: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
+        return Path(path.cgPath)
     }
 }

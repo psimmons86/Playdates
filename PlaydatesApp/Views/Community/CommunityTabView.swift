@@ -3,156 +3,32 @@ import SwiftUI
 struct CommunityTabView: View {
     @State private var selectedTab = 0
     @State private var isAnimating = false
-    @EnvironmentObject var authViewModel: AuthViewModel
-    @EnvironmentObject var groupViewModel: GroupViewModel
-    @EnvironmentObject var resourceViewModel: ResourceViewModel
-    @EnvironmentObject var communityEventViewModel: CommunityEventViewModel
     
     var body: some View {
-        ZStack {
-            ColorTheme.background.edgesIgnoringSafeArea(.all)
+        VStack(spacing: 0) {
+            // Enhanced header for Community tab
+            EnhancedCommunityHeader(isAnimating: $isAnimating)
             
-            VStack(spacing: 0) {
-                // Enhanced header
-                CommunityHeader(isAnimating: $isAnimating)
-                    .padding(.bottom, 16)
+            // Custom tab bar
+            CommunityTabBar(selectedTab: $selectedTab)
+            
+            // Tab content
+            TabView(selection: $selectedTab) {
+                GroupsView()
+                    .tag(0)
                 
-                // Custom tab bar
-                CommunityTabBar(selectedTab: $selectedTab)
+                CommunityEventsView()
+                    .tag(1)
                 
-                // Tab content
-                TabView(selection: $selectedTab) {
-                    GroupsView()
-                        .environmentObject(groupViewModel)
-                        .tag(0)
-                    
-                    CommunityEventsView()
-                        .environmentObject(communityEventViewModel)
-                        .tag(1)
-                    
-                    ResourceSharingView()
-                        .environmentObject(resourceViewModel)
-                        .tag(2)
-                }
-                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                ResourceSharingView()
+                    .tag(2)
             }
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
         }
-        .navigationBarTitle("Community", displayMode: .inline)
         .onAppear {
             isAnimating = true
-            
-            // Load mock data for testing
-            groupViewModel.addMockData()
-            resourceViewModel.addMockData()
-            communityEventViewModel.addMockData()
         }
-    }
-}
-
-struct CommunityHeader: View {
-    @Binding var isAnimating: Bool
-    @EnvironmentObject var authViewModel: AuthViewModel
-    
-    var body: some View {
-        ZStack {
-            // Enhanced gradient background
-            ZStack {
-                // Base gradient
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        ColorTheme.primary,
-                        ColorTheme.accent,
-                        ColorTheme.highlight
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .frame(height: 160)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                
-                // Overlay gradient for depth
-                RadialGradient(
-                    gradient: Gradient(colors: [
-                        Color.white.opacity(0.3),
-                        Color.clear
-                    ]),
-                    center: .topLeading,
-                    startRadius: 0,
-                    endRadius: 300
-                )
-                .frame(height: 160)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                
-                // Subtle pattern overlay
-                ZStack {
-                    ForEach(0..<10) { i in
-                        Circle()
-                            .fill(Color.white.opacity(0.05))
-                            .frame(width: 20, height: 20)
-                            .offset(
-                                x: CGFloat.random(in: -150...150),
-                                y: CGFloat.random(in: -60...60)
-                            )
-                    }
-                }
-                .frame(height: 160)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-            }
-            .padding(.horizontal)
-            
-            // Decorative elements
-            ZStack {
-                // Floating circles
-                HStack(spacing: 0) {
-                    ForEach(0..<3) { i in
-                        Circle()
-                            .fill(Color.white.opacity(0.2))
-                            .frame(width: 30, height: 30)
-                            .offset(x: isAnimating ? 0 : -10, y: isAnimating ? 0 : 5)
-                            .animation(
-                                Animation.easeInOut(duration: 2)
-                                    .repeatForever(autoreverses: true)
-                                    .delay(Double(i) * 0.2),
-                                value: isAnimating
-                            )
-                    }
-                }
-                .offset(x: -80, y: -40)
-                
-                // Floating shapes
-                ForEach(0..<2) { i in
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.white.opacity(0.2))
-                        .frame(width: 25, height: 25)
-                        .rotationEffect(.degrees(isAnimating ? 45 : 0))
-                        .offset(
-                            x: CGFloat([70, -70][i]),
-                            y: CGFloat([20, -30][i])
-                        )
-                        .animation(
-                            Animation.easeInOut(duration: 2.5)
-                                .repeatForever(autoreverses: true)
-                                .delay(Double(i) * 0.5),
-                            value: isAnimating
-                        )
-                }
-            }
-            
-            // Content
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Community")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                
-                Text("Connect with other parents and families")
-                    .font(.headline)
-                    .foregroundColor(.white.opacity(0.9))
-            }
-            .padding(.horizontal, 30)
-        }
-        .padding(.horizontal)
-        .padding(.top, 16)
+        .navigationBarTitle("Community", displayMode: .inline)
     }
 }
 
@@ -182,10 +58,9 @@ struct CommunityTabBar: View {
                 action: { selectedTab = 2 }
             )
         }
-        .padding(.horizontal)
         .padding(.vertical, 8)
         .background(Color.white)
-        .cornerRadius(16)
+        .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
         .padding(.horizontal)
         .padding(.bottom, 8)
@@ -200,91 +75,199 @@ struct CommunityTabButton: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
+            VStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 18))
+                    .font(.system(size: 22))
                 
                 Text(title)
-                    .font(.system(size: 12))
+                    .font(.system(size: 12, weight: .medium))
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .padding(.vertical, 10)
             .foregroundColor(isSelected ? ColorTheme.primary : ColorTheme.lightText)
             .background(
-                ZStack {
-                    if isSelected {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(ColorTheme.primary.opacity(0.1))
-                            .matchedGeometryEffect(id: "background", in: NamespaceWrapper.namespace)
-                    }
-                }
+                isSelected ? 
+                    Color.white.opacity(0.1) : 
+                    Color.clear
+            )
+            .overlay(
+                Rectangle()
+                    .fill(isSelected ? ColorTheme.primary : Color.clear)
+                    .frame(height: 3)
+                    .offset(y: 20),
+                alignment: .bottom
             )
         }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 
-// Namespace wrapper for matched geometry effect
-struct NamespaceWrapper {
-    @Namespace static var namespace
-}
-
-// Update MainTabView to include the CommunityTabView
-extension MainTabView {
-    static func updated() -> some View {
-        TabView {
-            // Home Tab
-            NavigationView {
-                HomeView()
+// Enhanced header similar to the HomeView's header
+struct EnhancedCommunityHeader: View {
+    @Binding var isAnimating: Bool
+    
+    var body: some View {
+        ZStack {
+            // Enhanced gradient background
+            ZStack {
+                // Base gradient
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        ColorTheme.accent,
+                        ColorTheme.primary,
+                        ColorTheme.highlight.opacity(0.8)
+                    ]),
+                    startPoint: .topTrailing,
+                    endPoint: .bottomLeading
+                )
+                .frame(height: 160)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                
+                // Overlay gradient for depth
+                RadialGradient(
+                    gradient: Gradient(colors: [
+                        Color.white.opacity(0.3),
+                        Color.clear
+                    ]),
+                    center: .topTrailing,
+                    startRadius: 0,
+                    endRadius: 300
+                )
+                .frame(height: 160)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                
+                // Subtle pattern overlay
+                ZStack {
+                    ForEach(0..<15) { i in
+                        Circle()
+                            .fill(Color.white.opacity(0.05))
+                            .frame(width: 20, height: 20)
+                            .offset(
+                                x: CGFloat.random(in: -150...150),
+                                y: CGFloat.random(in: -60...60)
+                            )
+                    }
+                }
+                .frame(height: 160)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
             }
-            .tabItem {
-                Label("Home", systemImage: "house.fill")
+            .padding(.horizontal)
+            
+            // Decorative elements
+            ZStack {
+                // Floating circles
+                ForEach(0..<3) { i in
+                    Circle()
+                        .fill(Color.white.opacity(0.2))
+                        .frame(width: CGFloat([40, 30, 20][i]))
+                        .offset(
+                            x: CGFloat([120, -60, 40][i]),
+                            y: CGFloat([-40, 50, -20][i])
+                        )
+                        .blur(radius: 2)
+                }
+                
+                // Group icon
+                Image(systemName: "person.3.fill")
+                    .font(.system(size: 40))
+                    .foregroundColor(.white.opacity(0.3))
+                    .offset(x: -80, y: 0)
+                    .rotationEffect(.degrees(isAnimating ? 5 : -5))
+                    .animation(
+                        Animation.easeInOut(duration: 4)
+                            .repeatForever(autoreverses: true),
+                        value: isAnimating
+                    )
+                
+                // Calendar icon
+                Image(systemName: "calendar")
+                    .font(.system(size: 35))
+                    .foregroundColor(.white.opacity(0.3))
+                    .offset(x: 0, y: -20)
+                    .rotationEffect(.degrees(isAnimating ? -5 : 5))
+                    .animation(
+                        Animation.easeInOut(duration: 4)
+                            .repeatForever(autoreverses: true),
+                        value: isAnimating
+                    )
+                
+                // Resource icon
+                Image(systemName: "cube.box.fill")
+                    .font(.system(size: 35))
+                    .foregroundColor(.white.opacity(0.3))
+                    .offset(x: 80, y: 0)
+                    .rotationEffect(.degrees(isAnimating ? 7 : -7))
+                    .animation(
+                        Animation.easeInOut(duration: 4)
+                            .repeatForever(autoreverses: true),
+                        value: isAnimating
+                    )
             }
             
-            // Explore Tab
-            NavigationView {
-                ExploreView()
+            // Community content
+            VStack(alignment: .leading, spacing: 12) {
+                // Welcome content
+                Text("Connect & Share")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                
+                Text("Join groups, find events, and share resources")
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.9))
+                
+                // Community stats
+                HStack(spacing: 15) {
+                    CommunityStat(
+                        icon: "person.3",
+                        value: "15",
+                        title: "Groups"
+                    )
+                    
+                    CommunityStat(
+                        icon: "calendar",
+                        value: "8",
+                        title: "Events"
+                    )
+                    
+                    CommunityStat(
+                        icon: "cube.box",
+                        value: "24",
+                        title: "Resources"
+                    )
+                }
+                .padding(.top, 4)
             }
-            .tabItem {
-                Label("Explore", systemImage: "map.fill")
-            }
-            
-            // Create Tab
-            NavigationView {
-                NewPlaydateView()
-            }
-            .tabItem {
-                Label("Create", systemImage: "plus.circle.fill")
-            }
-            
-            // Community Tab (New)
-            NavigationView {
-                CommunityTabView()
-            }
-            .tabItem {
-                Label("Community", systemImage: "person.3.fill")
-            }
-            
-            // Profile Tab
-            NavigationView {
-                ProfileView()
-            }
-            .tabItem {
-                Label("Profile", systemImage: "person.fill")
-            }
+            .padding(.horizontal, 30)
+            .padding(.vertical, 20)
         }
-        .accentColor(ColorTheme.primary)
+        .padding(.bottom, 15)
     }
 }
 
-struct CommunityTabView_Previews: PreviewProvider {
-    static var previews: some View {
-        NavigationView {
-            CommunityTabView()
+struct CommunityStat: View {
+    let icon: String
+    let value: String
+    let title: String
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .foregroundColor(.white)
+                
+                Text(value)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+            }
+            
+            Text(title)
+                .font(.system(size: 11))
+                .foregroundColor(.white.opacity(0.8))
         }
-        .environmentObject(AuthViewModel())
-        .environmentObject(GroupViewModel.shared)
-        .environmentObject(ResourceViewModel.shared)
-        .environmentObject(CommunityEventViewModel.shared)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(Color.white.opacity(0.2))
+        .cornerRadius(10)
     }
 }

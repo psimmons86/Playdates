@@ -2,66 +2,17 @@ import SwiftUI
 
 struct ResourceSharingView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @EnvironmentObject var viewModel: ResourceViewModel
+    @StateObject private var viewModel = ResourceViewModel.shared
     @State private var showingCreateResourceSheet = false
+    @State private var showingFilterSheet = false
     @State private var searchText = ""
     @State private var selectedResourceType: ResourceType?
-    @State private var showingFilterSheet = false
-    
-    private var filteredResources: [SharedResource] {
-        // Get base resources from view model
-        let baseResources = viewModel.filteredResources
-        
-        // Apply additional filters if needed
-        return applyAdditionalFilters(baseResources)
-    }
-    
-    // Break down the filtering logic into a separate function
-    private func applyAdditionalFilters(_ resources: [SharedResource]) -> [SharedResource] {
-        var result = resources
-        
-        // Apply search filter if needed
-        if !searchText.isEmpty && viewModel.searchQuery != searchText {
-            result = applySearchFilter(result, query: searchText.lowercased())
-        }
-        
-        // Apply resource type filter if needed
-        if let resourceType = selectedResourceType, 
-           !viewModel.selectedResourceTypes.contains(resourceType) {
-            result = applyResourceTypeFilter(result, type: resourceType)
-        }
-        
-        return result
-    }
-    
-    // Helper method to apply search filter
-    private func applySearchFilter(_ resources: [SharedResource], query: String) -> [SharedResource] {
-        return resources.filter { resource in
-            // Check title match
-            let titleMatch = resource.title.lowercased().contains(query)
-            
-            // Check description match
-            let descriptionMatch = resource.description.lowercased().contains(query)
-            
-            // Check tags match
-            let tagMatch = resource.tags.contains { tag in
-                tag.lowercased().contains(query)
-            }
-            
-            return titleMatch || descriptionMatch || tagMatch
-        }
-    }
-    
-    // Helper method to apply resource type filter
-    private func applyResourceTypeFilter(_ resources: [SharedResource], type: ResourceType) -> [SharedResource] {
-        return resources.filter { $0.resourceType == type }
-    }
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                ColorTheme.background.edgesIgnoringSafeArea(.all)
-                
+        ZStack {
+            ColorTheme.background.edgesIgnoringSafeArea(.all)
+            
+            ScrollView {
                 VStack(spacing: 0) {
                     // Search and filter bar
                     VStack(spacing: 12) {
@@ -85,234 +36,359 @@ struct ResourceSharingView: View {
                                         .foregroundColor(ColorTheme.lightText)
                                 }
                             }
+                            
+                            Divider()
+                                .frame(height: 20)
+                            
+                            Button(action: {
+                                showingFilterSheet = true
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "line.3.horizontal.decrease")
+                                    Text("Filter")
+                                }
+                                .font(.subheadline)
+                                .foregroundColor(ColorTheme.primary)
+                            }
                         }
-                        .padding(10)
+                        .padding(12)
                         .background(Color.white)
-                        .cornerRadius(10)
+                        .cornerRadius(12)
                         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
                         
                         // Resource type filter
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 10) {
-                                ResourceTypeFilterButton(
-                                    type: nil,
-                                    selectedType: $selectedResourceType,
-                                    label: "All"
+                                CategoryButton(
+                                    title: "All",
+                                    isSelected: selectedResourceType == nil,
+                                    action: { selectedResourceType = nil }
                                 )
                                 
-                                ResourceTypeFilterButton(
-                                    type: .physicalItem,
-                                    selectedType: $selectedResourceType,
-                                    label: "Items"
+                                CategoryButton(
+                                    title: "Items",
+                                    isSelected: selectedResourceType == .physicalItem,
+                                    action: { selectedResourceType = .physicalItem }
                                 )
                                 
-                                ResourceTypeFilterButton(
-                                    type: .recommendation,
-                                    selectedType: $selectedResourceType,
-                                    label: "Recommendations"
+                                CategoryButton(
+                                    title: "Recs",
+                                    isSelected: selectedResourceType == .recommendation,
+                                    action: { selectedResourceType = .recommendation }
                                 )
                                 
-                                ResourceTypeFilterButton(
-                                    type: .educationalResource,
-                                    selectedType: $selectedResourceType,
-                                    label: "Educational"
+                                CategoryButton(
+                                    title: "Educational",
+                                    isSelected: selectedResourceType == .educationalResource,
+                                    action: { selectedResourceType = .educationalResource }
                                 )
                                 
-                                ResourceTypeFilterButton(
-                                    type: .classifiedAd,
-                                    selectedType: $selectedResourceType,
-                                    label: "Classifieds"
+                                CategoryButton(
+                                    title: "Services",
+                                    isSelected: selectedResourceType == .serviceProvider,
+                                    action: { selectedResourceType = .serviceProvider }
                                 )
                                 
-                                ResourceTypeFilterButton(
-                                    type: .carpoolOffer,
-                                    selectedType: $selectedResourceType,
-                                    label: "Carpools"
-                                )
-                                
-                                ResourceTypeFilterButton(
-                                    type: .serviceProvider,
-                                    selectedType: $selectedResourceType,
-                                    label: "Services"
+                                CategoryButton(
+                                    title: "Carpool",
+                                    isSelected: selectedResourceType == .carpoolOffer,
+                                    action: { selectedResourceType = .carpoolOffer }
                                 )
                             }
-                            .padding(.horizontal, 5)
                         }
                     }
-                    .padding()
-                    .background(Color.white)
-                    .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+                    
+                    // Quick filter buttons
+                    HStack(spacing: 12) {
+                        FilterPillButton(
+                            title: "Free Only",
+                            isActive: viewModel.showFreeOnly,
+                            icon: "tag.fill",
+                            action: {
+                                viewModel.toggleFreeOnly()
+                            }
+                        )
+                        
+                        FilterPillButton(
+                            title: "Available Only",
+                            isActive: viewModel.showAvailableOnly,
+                            icon: "checkmark.circle.fill",
+                            action: {
+                                viewModel.toggleAvailableOnly()
+                            }
+                        )
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 16)
                     
                     if viewModel.isLoading {
-                        Spacer()
                         ProgressView()
                             .scaleEffect(1.2)
-                        Spacer()
-                    } else if filteredResources.isEmpty {
-                        Spacer()
-                        EmptyResourcesView(showingCreateResourceSheet: $showingCreateResourceSheet)
-                        Spacer()
+                            .padding(.top, 40)
+                    } else if viewModel.filteredResources.isEmpty {
+                        // Empty state
+                        SectionBox(title: "Resources") {
+                            EmptyStateBox(
+                                icon: "cube.box",
+                                title: "No Resources Yet",
+                                message: "Share items, recommendations, or services with other parents in your community",
+                                buttonTitle: "Share a Resource",
+                                buttonAction: {
+                                    showingCreateResourceSheet = true
+                                }
+                            )
+                        }
+                        
+                        // Options to browse
+                        SectionBox(
+                            title: "Browse Resources",
+                            viewAllAction: nil
+                        ) {
+                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                                ResourceTypeCard(
+                                    title: "Items to Borrow",
+                                    icon: "backpack.fill",
+                                    color: .blue,
+                                    description: "Kids gear, toys, books and more",
+                                    action: {
+                                        selectedResourceType = .physicalItem
+                                    }
+                                )
+                                
+                                ResourceTypeCard(
+                                    title: "Recommendations",
+                                    icon: "star.fill", 
+                                    color: .orange,
+                                    description: "Places, services and activities",
+                                    action: {
+                                        selectedResourceType = .recommendation
+                                    }
+                                )
+                                
+                                ResourceTypeCard(
+                                    title: "Educational",
+                                    icon: "book.fill", 
+                                    color: .purple,
+                                    description: "Learning resources and materials",
+                                    action: {
+                                        selectedResourceType = .educationalResource
+                                    }
+                                )
+                                
+                                ResourceTypeCard(
+                                    title: "Services",
+                                    icon: "person.fill.checkmark", 
+                                    color: ColorTheme.primary,
+                                    description: "Babysitters, tutors, and more",
+                                    action: {
+                                        selectedResourceType = .serviceProvider
+                                    }
+                                )
+                            }
+                        }
                     } else {
-                        // Resources list
-                        ScrollView {
+                        // Your resources
+                        if !viewModel.userResources.isEmpty {
+                            SectionBox(
+                                title: "Your Resources",
+                                viewAllAction: viewModel.userResources.count > 2 ? {
+                                    // View all user resources
+                                } : nil
+                            ) {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 16) {
+                                        ForEach(viewModel.userResources) { resource in
+                                            NavigationLink(destination: ResourceDetailView(resource: resource)) {
+                                                EnhancedResourceCard(resource: resource)
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Available resources
+                        SectionBox(
+                            title: "Resources Available",
+                            viewAllAction: viewModel.filteredResources.count > 5 ? {
+                                // View all resources
+                            } : nil
+                        ) {
                             LazyVStack(spacing: 16) {
-                                ForEach(filteredResources) { resource in
+                                ForEach(viewModel.filteredResources.prefix(5)) { resource in
                                     NavigationLink(destination: ResourceDetailView(resource: resource)) {
-                                        ResourceCard(resource: resource)
+                                        CompactResourceCard(resource: resource)
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                 }
                             }
-                            .padding()
+                        }
+                        
+                        // Free resources highlight
+                        if viewModel.filteredResources.contains(where: { $0.isFree }) {
+                            SectionBox(
+                                title: "Free Resources",
+                                viewAllAction: {
+                                    viewModel.toggleFreeOnly()
+                                }
+                            ) {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 16) {
+                                        ForEach(viewModel.filteredResources.filter { $0.isFree }.prefix(5)) { resource in
+                                            NavigationLink(destination: ResourceDetailView(resource: resource)) {
+                                                EnhancedResourceCard(resource: resource)
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-            }
-            .navigationTitle("Resource Sharing")
-            .navigationBarItems(
-                leading: Button(action: {
-                    showingFilterSheet = true
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "line.3.horizontal.decrease.circle")
-                        Text("Filter")
-                    }
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(ColorTheme.primary)
-                },
-                trailing: Button(action: {
-                    showingCreateResourceSheet = true
-                }) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(ColorTheme.primary)
-                }
-            )
-            .sheet(isPresented: $showingCreateResourceSheet) {
-                CreateResourceView()
-            }
-            .sheet(isPresented: $showingFilterSheet) {
-                ResourceFilterView()
-                    .environmentObject(viewModel)
-            }
-            .onAppear {
-                viewModel.fetchAvailableResources()
-                
-                if let userID = authViewModel.currentUser?.id {
-                    viewModel.fetchUserResources(userID: userID)
-                }
-            }
-            .onChange(of: selectedResourceType) { newValue in
-                if let type = newValue {
-                    viewModel.setResourceTypes([type])
-                } else {
-                    viewModel.setResourceTypes([])
-                }
-            }
-            .alert(isPresented: Binding<Bool>(
-                get: { viewModel.errorMessage != nil },
-                set: { if !$0 { viewModel.errorMessage = nil } }
-            )) {
-                Alert(
-                    title: Text("Error"),
-                    message: Text(viewModel.errorMessage ?? "An unknown error occurred"),
-                    dismissButton: .default(Text("OK"))
-                )
+                .padding(.vertical)
             }
         }
-    }
-}
-
-struct ResourceTypeFilterButton: View {
-    let type: ResourceType?
-    @Binding var selectedType: ResourceType?
-    let label: String
-    
-    var body: some View {
-        Button(action: {
-            if selectedType == type {
-                selectedType = nil // Deselect if already selected
-            } else {
-                selectedType = type // Select new type
-            }
+        .navigationBarItems(trailing: Button(action: {
+            showingCreateResourceSheet = true
         }) {
-            Text(label)
-                .font(.system(size: 14, weight: .medium))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(selectedType == type ? ColorTheme.primary : Color.white)
-                .foregroundColor(selectedType == type ? .white : ColorTheme.text)
-                .cornerRadius(20)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(selectedType == type ? ColorTheme.primary : ColorTheme.lightText.opacity(0.3), lineWidth: 1)
-                )
+            Image(systemName: "plus")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(ColorTheme.primary)
+        })
+        .sheet(isPresented: $showingCreateResourceSheet) {
+            CreateResourceView()
+        }
+        .sheet(isPresented: $showingFilterSheet) {
+            ResourceFilterView()
+        }
+        .onAppear {
+            viewModel.fetchAvailableResources()
+            
+            if let userID = authViewModel.currentUser?.id {
+                viewModel.fetchUserResources(userID: userID)
+            }
+        }
+        .onChange(of: selectedResourceType) { newValue in
+            if let type = newValue {
+                viewModel.setResourceTypes([type])
+            } else {
+                viewModel.setResourceTypes([])
+            }
         }
     }
 }
 
-struct ResourceCard: View {
-    let resource: SharedResource
+struct FilterPillButton: View {
+    let title: String
+    let isActive: Bool
+    let icon: String
+    let action: () -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Resource header with image
-            ZStack(alignment: .bottomLeading) {
-                if let imageURL = resource.coverImageURL {
-                    AsyncImage(url: URL(string: imageURL)) { phase in
-                        switch phase {
-                        case .empty:
-                            Rectangle()
-                                .fill(ColorTheme.background)
-                                .aspectRatio(2.5, contentMode: .fit)
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(2.5, contentMode: .fit)
-                        case .failure:
-                            Rectangle()
-                                .fill(ColorTheme.background)
-                                .aspectRatio(2.5, contentMode: .fit)
-                                .overlay(
-                                    Image(systemName: "photo")
-                                        .foregroundColor(ColorTheme.lightText)
-                                )
-                        @unknown default:
-                            Rectangle()
-                                .fill(ColorTheme.background)
-                                .aspectRatio(2.5, contentMode: .fit)
-                        }
-                    }
-                } else {
-                    // Default background for resources without images
-                    Rectangle()
-                        .fill(resourceTypeGradient)
-                        .aspectRatio(2.5, contentMode: .fit)
-                        .overlay(
-                            Image(systemName: resource.resourceType.icon)
-                                .font(.system(size: 30))
-                                .foregroundColor(.white)
-                                .offset(y: -10)
-                        )
-                }
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 12))
                 
-                // Resource type badge
-                Text(resource.resourceType.displayName)
-                    .font(.system(size: 12, weight: .medium))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.white.opacity(0.9))
-                    .foregroundColor(resourceTypeColor)
-                    .cornerRadius(16)
-                    .padding(12)
+                Text(title)
+                    .font(.subheadline)
             }
-            .cornerRadius(12)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(isActive ? ColorTheme.primary : Color.white)
+            .foregroundColor(isActive ? .white : ColorTheme.text)
+            .cornerRadius(20)
+            .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(isActive ? Color.clear : ColorTheme.lightText.opacity(0.3), lineWidth: 1)
+            )
+        }
+    }
+}
+
+struct EnhancedResourceCard: View {
+    let resource: SharedResource
+    @State private var isAnimating = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header with image and gradient
+            ZStack(alignment: .bottomLeading) {
+                // Background gradient based on resource type
+                Rectangle()
+                    .fill(resourceTypeGradient)
+                    .frame(height: 100)
+                
+                // Resource type icon
+                Image(systemName: resource.resourceType.icon)
+                    .font(.system(size: 40))
+                    .foregroundColor(.white.opacity(0.3))
+                    .offset(x: 100, y: -20)
+                    .rotationEffect(.degrees(isAnimating ? 5 : -5))
+                    .animation(
+                        Animation.easeInOut(duration: 3)
+                            .repeatForever(autoreverses: true),
+                        value: isAnimating
+                    )
+                
+                // Resource price and type
+                HStack {
+                    if resource.isFree {
+                        Text("FREE")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 4)
+                            .background(Color.white.opacity(0.3))
+                            .foregroundColor(.white)
+                            .cornerRadius(4)
+                    } else if let price = resource.price {
+                        HStack(spacing: 4) {
+                            Text("$\(String(format: "%.2f", price))")
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                            
+                            if resource.isNegotiable {
+                                Text("OBO")
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.8))
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 4)
+                        .background(Color.white.opacity(0.3))
+                        .cornerRadius(4)
+                    }
+                    
+                    Spacer()
+                    
+                    Text(resource.resourceType.displayName)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.white.opacity(0.3))
+                        .foregroundColor(.white)
+                        .cornerRadius(16)
+                }
+                .padding(12)
+            }
+            .cornerRadius(12, corners: [.topLeft, .topRight])
             
             // Resource info
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 Text(resource.title)
                     .font(.headline)
-                    .foregroundColor(ColorTheme.text)
+                    .foregroundColor(ColorTheme.darkPurple)
+                    .lineLimit(1)
                 
                 Text(resource.description)
                     .font(.subheadline)
@@ -320,20 +396,17 @@ struct ResourceCard: View {
                     .lineLimit(2)
                 
                 HStack {
-                    // Price or free
-                    if resource.isFree {
-                        Text("Free")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.green)
-                    } else if let price = resource.price {
-                        Text("$\(String(format: "%.2f", price))")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(ColorTheme.text)
-                        
-                        if resource.isNegotiable {
-                            Text("(Negotiable)")
+                    // Location if available
+                    if let location = resource.location {
+                        HStack(spacing: 4) {
+                            Image(systemName: "mappin.and.ellipse")
                                 .font(.system(size: 12))
                                 .foregroundColor(ColorTheme.lightText)
+                            
+                            Text(location.name)
+                                .font(.caption)
+                                .foregroundColor(ColorTheme.lightText)
+                                .lineLimit(1)
                         }
                     }
                     
@@ -342,39 +415,25 @@ struct ResourceCard: View {
                     // Status badge
                     HStack(spacing: 4) {
                         Circle()
-                            .fill(resource.isAvailable ? Color.green : Color.orange)
+                            .fill(resource.availabilityStatus == .available ? Color.green : Color.orange)
                             .frame(width: 8, height: 8)
                         
                         Text(resource.availabilityStatus.rawValue.capitalized)
-                            .font(.system(size: 12))
+                            .font(.caption)
                             .foregroundColor(ColorTheme.lightText)
                     }
                 }
             }
-            .padding(.horizontal, 4)
+            .padding(16)
+            .background(Color.white)
+            .cornerRadius(12, corners: [.bottomLeft, .bottomRight])
         }
-        .padding(12)
+        .frame(width: 250, height: 220)
         .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
-    }
-    
-    private var resourceTypeColor: Color {
-        switch resource.resourceType {
-        case .physicalItem:
-            return .blue
-        case .recommendation:
-            return .orange
-        case .educationalResource:
-            return .purple
-        case .classifiedAd:
-            return .green
-        case .carpoolOffer:
-            return .red
-        case .serviceProvider:
-            return ColorTheme.primary
-        case .other:
-            return ColorTheme.lightText
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .onAppear {
+            isAnimating = true
         }
     }
     
@@ -382,31 +441,31 @@ struct ResourceCard: View {
         switch resource.resourceType {
         case .physicalItem:
             return LinearGradient(
-                gradient: Gradient(colors: [.blue.opacity(0.7), .blue]),
+                gradient: Gradient(colors: [Color.blue.opacity(0.7), Color.blue]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         case .recommendation:
             return LinearGradient(
-                gradient: Gradient(colors: [.orange.opacity(0.7), .orange]),
+                gradient: Gradient(colors: [Color.orange.opacity(0.7), Color.orange]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         case .educationalResource:
             return LinearGradient(
-                gradient: Gradient(colors: [.purple.opacity(0.7), .purple]),
+                gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.purple]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         case .classifiedAd:
             return LinearGradient(
-                gradient: Gradient(colors: [.green.opacity(0.7), .green]),
+                gradient: Gradient(colors: [Color.green.opacity(0.7), Color.green]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         case .carpoolOffer:
             return LinearGradient(
-                gradient: Gradient(colors: [.red.opacity(0.7), .red]),
+                gradient: Gradient(colors: [Color.red.opacity(0.7), Color.red]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -426,135 +485,238 @@ struct ResourceCard: View {
     }
 }
 
-struct EmptyResourcesView: View {
-    @Binding var showingCreateResourceSheet: Bool
+struct CompactResourceCard: View {
+    let resource: SharedResource
     
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "cube.box")
-                .font(.system(size: 60))
-                .foregroundColor(ColorTheme.lightText)
-            
-            Text("No Resources Yet")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(ColorTheme.text)
-            
-            Text("Share items, recommendations, or services with other parents in your community")
-                .font(.body)
-                .foregroundColor(ColorTheme.lightText)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-            
-            VStack(spacing: 12) {
-                Button(action: {
-                    showingCreateResourceSheet = true
-                }) {
-                    HStack {
-                        Image(systemName: "plus.circle")
-                        Text("Share a Resource")
-                    }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(ColorTheme.primary)
-                    .cornerRadius(12)
-                }
+        HStack(spacing: 16) {
+            // Resource icon with type background
+            ZStack {
+                Circle()
+                    .fill(resourceTypeColor.opacity(0.2))
+                    .frame(width: 50, height: 50)
                 
-                Button(action: {
-                    // Navigate to browse resources
-                }) {
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                        Text("Browse Resources")
-                    }
+                Image(systemName: resource.resourceType.icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(resourceTypeColor)
+            }
+            
+            // Resource details
+            VStack(alignment: .leading, spacing: 4) {
+                Text(resource.title)
                     .font(.headline)
-                    .foregroundColor(ColorTheme.primary)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(ColorTheme.primary, lineWidth: 1)
-                    )
+                    .foregroundColor(ColorTheme.darkPurple)
+                    .lineLimit(1)
+                
+                Text(resource.description)
+                    .font(.subheadline)
+                    .foregroundColor(ColorTheme.lightText)
+                    .lineLimit(1)
+                
+                HStack {
+                    // Price
+                    if resource.isFree {
+                        Text("Free")
+                            .font(.subheadline)
+                            .foregroundColor(.green)
+                    } else if let price = resource.price {
+                        Text("$\(String(format: "%.2f", price))")
+                            .font(.subheadline)
+                            .foregroundColor(ColorTheme.text)
+                    }
+                    
+                    Spacer()
+                    
+                    // Location if available
+                    if let location = resource.location {
+                        Text(location.name)
+                            .font(.caption)
+                            .foregroundColor(ColorTheme.lightText)
+                            .lineLimit(1)
+                    }
                 }
             }
-            .padding(.horizontal, 32)
-            .padding(.top, 12)
+            
+            Spacer()
+            
+            // Availability indicator
+            Circle()
+                .fill(resource.isAvailable ? Color.green : Color.orange)
+                .frame(width: 12, height: 12)
         }
-        .padding()
+        .padding(12)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+    }
+    
+    private var resourceTypeColor: Color {
+        switch resource.resourceType {
+        case .physicalItem:
+            return Color.blue
+        case .recommendation:
+            return Color.orange
+        case .educationalResource:
+            return Color.purple
+        case .classifiedAd:
+            return Color.green
+        case .carpoolOffer:
+            return Color.red
+        case .serviceProvider:
+            return ColorTheme.primary
+        case .other:
+            return ColorTheme.lightText
+        }
     }
 }
 
+struct ResourceTypeCard: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let description: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 12) {
+                // Icon
+                Image(systemName: icon)
+                    .font(.system(size: 24))
+                    .foregroundColor(.white)
+                    .frame(width: 50, height: 50)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [color.opacity(0.7), color]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .cornerRadius(10)
+                
+                // Text
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(ColorTheme.darkPurple)
+                
+                Text(description)
+                    .font(.caption)
+                    .foregroundColor(ColorTheme.lightText)
+                    .lineLimit(2)
+                
+                Spacer()
+            }
+            .padding()
+            .frame(height: 150)
+            .background(Color.white)
+            .cornerRadius(12)
+            .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// Extension to add icon and displayName properties to ResourceType
+extension ResourceType {
+    var icon: String {
+        switch self {
+        case .physicalItem:
+            return "backpack.fill"
+        case .recommendation:
+            return "star.fill"
+        case .educationalResource:
+            return "book.fill"
+        case .classifiedAd:
+            return "tag.fill"
+        case .carpoolOffer:
+            return "car.fill"
+        case .serviceProvider:
+            return "person.fill.checkmark"
+        case .other:
+            return "square.grid.2x2.fill"
+        }
+    }
+    
+    var displayName: String {
+        switch self {
+        case .physicalItem:
+            return "Item"
+        case .recommendation:
+            return "Recommendation"
+        case .educationalResource:
+            return "Educational"
+        case .classifiedAd:
+            return "For Sale"
+        case .carpoolOffer:
+            return "Carpool"
+        case .serviceProvider:
+            return "Service"
+        case .other:
+            return "Other"
+        }
+    }
+}
+
+// Placeholder for filter view
 struct ResourceFilterView: View {
     @Environment(\.presentationMode) var presentationMode
-    @EnvironmentObject var viewModel: ResourceViewModel
-    
-    @State private var selectedResourceTypes: [ResourceType] = []
-    @State private var showFreeOnly: Bool = false
-    @State private var showAvailableOnly: Bool = true
+    @StateObject private var viewModel = ResourceViewModel.shared
     
     var body: some View {
         NavigationView {
             Form {
                 Section(header: Text("Resource Types")) {
                     ForEach(ResourceType.allCases, id: \.self) { type in
-                        Button(action: {
-                            if selectedResourceTypes.contains(type) {
-                                selectedResourceTypes.removeAll { $0 == type }
-                            } else {
-                                selectedResourceTypes.append(type)
+                        Toggle(isOn: Binding(
+                            get: { viewModel.selectedResourceTypes.contains(type) },
+                            set: { isSelected in
+                                if isSelected {
+                                    if !viewModel.selectedResourceTypes.contains(type) {
+                                        viewModel.selectedResourceTypes.append(type)
+                                    }
+                                } else {
+                                    viewModel.selectedResourceTypes.removeAll { $0 == type }
+                                }
+                                viewModel.applyFilters()
                             }
-                        }) {
+                        )) {
                             HStack {
                                 Image(systemName: type.icon)
-                                    .foregroundColor(selectedResourceTypes.contains(type) ? ColorTheme.primary : ColorTheme.lightText)
+                                    .foregroundColor(viewModel.selectedResourceTypes.contains(type) ? ColorTheme.primary : ColorTheme.lightText)
                                 
                                 Text(type.displayName)
-                                    .foregroundColor(ColorTheme.text)
-                                
-                                Spacer()
-                                
-                                if selectedResourceTypes.contains(type) {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(ColorTheme.primary)
-                                }
                             }
                         }
                     }
                 }
                 
                 Section(header: Text("Price")) {
-                    Toggle("Free Items Only", isOn: $showFreeOnly)
+                    Toggle("Free Items Only", isOn: Binding(
+                        get: { viewModel.showFreeOnly },
+                        set: { newValue in
+                            viewModel.showFreeOnly = newValue
+                            viewModel.applyFilters()
+                        }
+                    ))
                 }
                 
                 Section(header: Text("Availability")) {
-                    Toggle("Available Items Only", isOn: $showAvailableOnly)
+                    Toggle("Available Items Only", isOn: Binding(
+                        get: { viewModel.showAvailableOnly },
+                        set: { newValue in
+                            viewModel.showAvailableOnly = newValue
+                            viewModel.applyFilters()
+                        }
+                    ))
                 }
                 
                 Section {
-                    Button(action: applyFilters) {
-                        Text("Apply Filters")
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(ColorTheme.primary)
-                            .cornerRadius(8)
-                    }
-                    
-                    Button(action: resetFilters) {
+                    Button(action: {
+                        viewModel.resetFilters()
+                    }) {
                         Text("Reset Filters")
-                            .foregroundColor(ColorTheme.primary)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.white)
-                            .cornerRadius(8)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(ColorTheme.primary, lineWidth: 1)
-                            )
+                            .foregroundColor(.red)
+                            .frame(maxWidth: .infinity, alignment: .center)
                     }
                 }
             }
@@ -562,39 +724,11 @@ struct ResourceFilterView: View {
             .navigationBarItems(trailing: Button("Done") {
                 presentationMode.wrappedValue.dismiss()
             })
-            .onAppear {
-                // Initialize with current filter values
-                selectedResourceTypes = viewModel.selectedResourceTypes
-                showFreeOnly = viewModel.showFreeOnly
-                showAvailableOnly = viewModel.showAvailableOnly
-            }
         }
-    }
-    
-    private func applyFilters() {
-        viewModel.setResourceTypes(selectedResourceTypes)
-        
-        if viewModel.showFreeOnly != showFreeOnly {
-            viewModel.toggleFreeOnly()
-        }
-        
-        if viewModel.showAvailableOnly != showAvailableOnly {
-            viewModel.toggleAvailableOnly()
-        }
-        
-        presentationMode.wrappedValue.dismiss()
-    }
-    
-    private func resetFilters() {
-        selectedResourceTypes = []
-        showFreeOnly = false
-        showAvailableOnly = true
-        
-        viewModel.resetFilters()
     }
 }
 
-// Placeholder for the create resource view
+// Placeholder for create resource view
 struct CreateResourceView: View {
     @Environment(\.presentationMode) var presentationMode
     
@@ -609,19 +743,12 @@ struct CreateResourceView: View {
     }
 }
 
-// Placeholder for the resource detail view
+// Placeholder for resource detail view
 struct ResourceDetailView: View {
     let resource: SharedResource
     
     var body: some View {
         Text("Resource Detail View for \(resource.title)")
             .navigationTitle(resource.title)
-    }
-}
-
-struct ResourceSharingView_Previews: PreviewProvider {
-    static var previews: some View {
-        ResourceSharingView()
-            .environmentObject(AuthViewModel())
     }
 }

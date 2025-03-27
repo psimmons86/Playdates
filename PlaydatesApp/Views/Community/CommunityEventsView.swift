@@ -1,96 +1,221 @@
 import SwiftUI
 
+enum ActiveSheet: Identifiable {
+    case createEvent, filter
+    
+    var id: Int {
+        switch self {
+        case .createEvent: return 0
+        case .filter: return 1
+        }
+    }
+}
+
 struct CommunityEventsView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @EnvironmentObject var viewModel: CommunityEventViewModel
-    @State private var showingCreateEventSheet = false
-    @State private var showingFilterSheet = false
+    @StateObject private var viewModel = CommunityEventViewModel.shared
+    @State private var activeSheet: ActiveSheet?
+    @State private var searchText = ""
+    @State private var selectedCategory: EventCategory?
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                ColorTheme.background.edgesIgnoringSafeArea(.all)
-                
+        ZStack {
+            ColorTheme.background.edgesIgnoringSafeArea(.all)
+            
+            ScrollView {
                 VStack(spacing: 0) {
-                    // Calendar view mode selector
-                    CalendarViewModeSelector(selectedMode: $viewModel.calendarViewMode)
-                        .padding(.horizontal)
-                        .padding(.vertical, 8)
+                    // Search and filter
+                    VStack(spacing: 12) {
+                        // Search bar
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(ColorTheme.lightText)
+                            
+                            TextField("Search events", text: $searchText)
+                                .foregroundColor(ColorTheme.text)
+                            
+                            if !searchText.isEmpty {
+                                Button(action: {
+                                    searchText = ""
+                                }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(ColorTheme.lightText)
+                                }
+                            }
+                            
+                            Divider()
+                                .frame(height: 20)
+                            
+                            Button(action: {
+                                activeSheet = .filter
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "line.3.horizontal.decrease")
+                                    Text("Filter")
+                                }
+                                .font(.subheadline)
+                                .foregroundColor(ColorTheme.primary)
+                            }
+                        }
+                        .padding(12)
                         .background(Color.white)
+                        .cornerRadius(12)
                         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                        
+                        // Calendar view mode selector
+                        CalendarViewModeSelector(selectedMode: $viewModel.calendarViewMode)
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
                     
-                    // Calendar or event list based on selected mode
+                    // Event category filter
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 10) {
+                            CategoryButton(
+                                title: "All",
+                                isSelected: selectedCategory == nil,
+                                action: { selectedCategory = nil }
+                            )
+                            
+                            CategoryButton(
+                                title: "Playdates",
+                                isSelected: selectedCategory == .playdate,
+                                action: { selectedCategory = .playdate }
+                            )
+                            
+                            CategoryButton(
+                                title: "Workshops",
+                                isSelected: selectedCategory == .workshop,
+                                action: { selectedCategory = .workshop }
+                            )
+                            
+                            CategoryButton(
+                                title: "Education",
+                                isSelected: selectedCategory == .education,
+                                action: { selectedCategory = .education }
+                            )
+                            
+                            CategoryButton(
+                                title: "Outdoors",
+                                isSelected: selectedCategory == .outdoors,
+                                action: { selectedCategory = .outdoors }
+                            )
+                        }
+                        .padding(.horizontal)
+                    }
+                    .padding(.bottom, 16)
+                    
                     if viewModel.isLoading {
-                        Spacer()
                         ProgressView()
                             .scaleEffect(1.2)
-                        Spacer()
+                            .padding(.top, 40)
                     } else if viewModel.filteredEvents.isEmpty {
-                        Spacer()
-                        EmptyEventsView(showingCreateEventSheet: $showingCreateEventSheet)
-                        Spacer()
+                        // Empty state
+                        SectionBox(title: "Upcoming Events") {
+                            EmptyStateBox(
+                                icon: "calendar",
+                                title: "No Events Yet",
+                                message: "Create an event or find events happening in your community",
+                                buttonTitle: "Create Event",
+                                buttonAction: {
+                                    activeSheet = .createEvent
+                                }
+                            )
+                        }
+                        
+                        // Join upcoming events
+                        SectionBox(
+                            title: "Upcoming Community Events",
+                            viewAllAction: nil
+                        ) {
+                            if viewModel.upcomingEvents.isEmpty {
+                                Text("No upcoming events in your community")
+                                    .font(.subheadline)
+                                    .foregroundColor(ColorTheme.lightText)
+                                    .padding(.vertical, 20)
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 16) {
+                                        ForEach(viewModel.upcomingEvents) { event in
+                                            EnhancedEventCard(event: event)
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     } else {
-                        SwiftUI.Group {
-                            switch viewModel.calendarViewMode {
-                            case .day:
-                                DayCalendarView(events: viewModel.filteredEvents)
-                            case .week:
-                                WeekCalendarView(events: viewModel.filteredEvents)
-                            case .month:
-                                MonthCalendarView(events: viewModel.filteredEvents)
-                            case .agenda:
-                                AgendaView(events: viewModel.filteredEvents)
-                            case .map:
-                                MapEventsView(events: viewModel.filteredEvents)
+                        // Your events
+                        if !viewModel.userEvents.isEmpty {
+                            SectionBox(
+                                title: "Your Events",
+                                viewAllAction: viewModel.userEvents.count > 3 ? {
+                                    // View all user events
+                                } : nil
+                            ) {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 16) {
+                                        ForEach(viewModel.userEvents) { event in
+                                            EnhancedEventCard(event: event)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Calendar view
+                        SectionBox(title: "Event Calendar") {
+                            // Placeholder for calendar view - would be replaced with a real calendar component
+                            EventCalendarPlaceholder(viewMode: viewModel.calendarViewMode)
+                        }
+                        
+                        // Upcoming events
+                        SectionBox(
+                            title: "Upcoming Events",
+                            viewAllAction: viewModel.filteredEvents.count > 5 ? {
+                                // View all upcoming events
+                            } : nil
+                        ) {
+                            LazyVStack(spacing: 16) {
+                                ForEach(viewModel.filteredEvents.prefix(5)) { event in
+                                    CompactEventCard(event: event)
+                                }
                             }
                         }
                     }
                 }
+                .padding(.vertical)
             }
-            .navigationTitle("Community Events")
-            .navigationBarItems(
-                leading: Button(action: {
-                    showingFilterSheet = true
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "line.3.horizontal.decrease.circle")
-                        Text("Filter")
-                    }
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(ColorTheme.primary)
-                },
-                trailing: Button(action: {
-                    showingCreateEventSheet = true
-                }) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(ColorTheme.primary)
-                }
-            )
-            .sheet(isPresented: $showingCreateEventSheet) {
-                CreateEventView()
+        }
+        .navigationBarItems(trailing: Button(action: {
+            activeSheet = .createEvent
+        }) {
+            Image(systemName: "plus")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(ColorTheme.primary)
+        })
+        .sheet(item: $activeSheet) { item -> AnyView in
+            switch item {
+            case .createEvent:
+                return AnyView(CreateEventView())
+            case .filter:
+                return AnyView(EventFilterView())
             }
-            .sheet(isPresented: $showingFilterSheet) {
-                EventFilterView()
-                    .environmentObject(viewModel)
+        }
+        .onAppear {
+            viewModel.fetchUpcomingEvents()
+            
+            if let userID = authViewModel.currentUser?.id {
+                viewModel.fetchUserEvents(userID: userID)
             }
-            .onAppear {
-                viewModel.fetchUpcomingEvents()
-                
-                if let userID = authViewModel.currentUser?.id {
-                    viewModel.fetchUserEvents(userID: userID)
-                }
+        }
+        .onChange(of: selectedCategory) { newValue in
+            if let category = newValue {
+                viewModel.setCategories([category])
+            } else {
+                viewModel.setCategories([])
             }
-            .alert(isPresented: Binding<Bool>(
-                get: { viewModel.errorMessage != nil },
-                set: { if !$0 { viewModel.errorMessage = nil } }
-            )) {
-                Alert(
-                    title: Text("Error"),
-                    message: Text(viewModel.errorMessage ?? "An unknown error occurred"),
-                    dismissButton: .default(Text("OK"))
-                )
-            }
+            viewModel.applyFilters()
         }
     }
 }
@@ -99,45 +224,45 @@ struct CalendarViewModeSelector: View {
     @Binding var selectedMode: CalendarViewMode
     
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 16) {
-                CalendarModeButton(
-                    mode: .day,
-                    selectedMode: $selectedMode,
-                    icon: "calendar.day.timeline.left",
-                    label: "Day"
-                )
-                
-                CalendarModeButton(
-                    mode: .week,
-                    selectedMode: $selectedMode,
-                    icon: "calendar.day.timeline.leading",
-                    label: "Week"
-                )
-                
-                CalendarModeButton(
-                    mode: .month,
-                    selectedMode: $selectedMode,
-                    icon: "calendar",
-                    label: "Month"
-                )
-                
-                CalendarModeButton(
-                    mode: .agenda,
-                    selectedMode: $selectedMode,
-                    icon: "list.bullet",
-                    label: "Agenda"
-                )
-                
-                CalendarModeButton(
-                    mode: .map,
-                    selectedMode: $selectedMode,
-                    icon: "map",
-                    label: "Map"
-                )
-            }
-            .padding(.horizontal, 8)
+        HStack(spacing: 0) {
+            CalendarModeButton(
+                mode: .day,
+                selectedMode: $selectedMode,
+                icon: "calendar.day.timeline.left",
+                label: "Day"
+            )
+            
+            CalendarModeButton(
+                mode: .week,
+                selectedMode: $selectedMode,
+                icon: "calendar.day.timeline.leading",
+                label: "Week"
+            )
+            
+            CalendarModeButton(
+                mode: .month,
+                selectedMode: $selectedMode,
+                icon: "calendar",
+                label: "Month"
+            )
+            
+            CalendarModeButton(
+                mode: .agenda,
+                selectedMode: $selectedMode,
+                icon: "list.bullet",
+                label: "Agenda"
+            )
+            
+            CalendarModeButton(
+                mode: .map,
+                selectedMode: $selectedMode,
+                icon: "map",
+                label: "Map"
+            )
         }
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
 }
 
@@ -158,14 +283,11 @@ struct CalendarModeButton: View {
                 Text(label)
                     .font(.system(size: 12))
             }
-            .frame(width: 60)
-            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
             .foregroundColor(selectedMode == mode ? ColorTheme.primary : ColorTheme.lightText)
-            .background(
-                selectedMode == mode ?
-                    Color.white.shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2) :
-                    Color.clear
-            )
+            .background(selectedMode == mode ? Color.white : Color.clear)
+            .shadow(color: selectedMode == mode ? Color.black.opacity(0.1) : Color.clear, radius: 4, x: 0, y: 2)
             .cornerRadius(8)
             .overlay(
                 selectedMode == mode ?
@@ -177,500 +299,592 @@ struct CalendarModeButton: View {
     }
 }
 
-// Placeholder views for different calendar modes
-struct DayCalendarView: View {
-    let events: [CommunityEvent]
+struct EnhancedEventCard: View {
+    let event: CommunityEvent
+    @State private var isAnimating = false
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Today, \(formattedDate)")
-                    .font(.headline)
-                    .padding(.horizontal)
-                    .padding(.top)
+        VStack(alignment: .leading, spacing: 0) {
+            // Header with date info
+            ZStack(alignment: .bottomLeading) {
+                // Background gradient based on event category
+                Rectangle()
+                    .fill(categoryGradient)
+                    .frame(height: 100)
                 
-                ForEach(hoursOfDay, id: \.self) { hour in
-                    HourRow(hour: hour, events: eventsForHour(hour))
+                // Event themed icon
+                Image(systemName: categoryIcon)
+                    .font(.system(size: 40))
+                    .foregroundColor(.white.opacity(0.3))
+                    .offset(x: 120, y: -20)
+                    .rotationEffect(.degrees(isAnimating ? 5 : -5))
+                    .animation(
+                        Animation.easeInOut(duration: 3)
+                            .repeatForever(autoreverses: true),
+                        value: isAnimating
+                    )
+                
+                // Date box
+                HStack(spacing: 16) {
+                    // Day and month
+                    VStack(spacing: 0) {
+                        Text(formatDayOfWeek(event.startDate))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white.opacity(0.9))
+                        
+                        Text(formatDayOfMonth(event.startDate))
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                        
+                        Text(formatMonth(event.startDate))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                    .padding(8)
+                    .background(Color.white.opacity(0.2))
+                    .cornerRadius(8)
+                    
+                    // Time and category
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(formatTime(event.startDate))
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white)
+                        
+                        Text(event.category.rawValue.capitalized)
+                            .font(.caption)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(Color.white.opacity(0.3))
+                            .foregroundColor(.white)
+                            .cornerRadius(4)
+                    }
                 }
+                .padding(12)
             }
-        }
-    }
-    
-    private var formattedDate: String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        return formatter.string(from: Date())
-    }
-    
-    private var hoursOfDay: [Int] {
-        return Array(0..<24)
-    }
-    
-    private func eventsForHour(_ hour: Int) -> [CommunityEvent] {
-        let calendar = Calendar.current
-        return events.filter { event in
-            let eventHour = calendar.component(.hour, from: event.startDate)
-            return eventHour == hour
-        }
-    }
-}
-
-struct HourRow: View {
-    let hour: Int
-    let events: [CommunityEvent]
-    
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Hour label
-            Text(formattedHour)
-                .font(.system(size: 14, weight: .medium))
-                .frame(width: 50, alignment: .trailing)
-                .foregroundColor(ColorTheme.lightText)
+            .cornerRadius(12, corners: [.topLeft, .topRight])
             
-            // Divider
-            Rectangle()
-                .fill(ColorTheme.lightBackground)
-                .frame(width: 1)
-                .padding(.vertical, 4)
-            
-            // Events
-            if events.isEmpty {
-                Spacer()
-            } else {
-                VStack(spacing: 8) {
-                    ForEach(events) { event in
-                        EventCard(event: event)
+            // Event info
+            VStack(alignment: .leading, spacing: 10) {
+                Text(event.title)
+                    .font(.headline)
+                    .foregroundColor(ColorTheme.darkPurple)
+                
+                // Location
+                HStack {
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(.system(size: 14))
+                        .foregroundColor(ColorTheme.lightText)
+                    
+                    Text(event.location.name)
+                        .font(.subheadline)
+                        .foregroundColor(ColorTheme.lightText)
+                        .lineLimit(1)
+                }
+                
+                // Attendees
+                HStack {
+                    Image(systemName: "person.2")
+                        .font(.system(size: 14))
+                        .foregroundColor(ColorTheme.lightText)
+                    
+                    Text("\(event.attendeeIDs.count) attending")
+                        .font(.subheadline)
+                        .foregroundColor(ColorTheme.lightText)
+                    
+                    Spacer()
+                    
+                    if event.isAtMaxCapacity {
+                        Text("Full")
+                            .font(.caption)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(Color.red.opacity(0.2))
+                            .foregroundColor(.red)
+                            .cornerRadius(4)
+                    } else {
+                        Text("\(event.remainingSpots) spots left")
+                            .font(.caption)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(Color.green.opacity(0.2))
+                            .foregroundColor(.green)
+                            .cornerRadius(4)
                     }
                 }
             }
+            .padding(16)
+            .background(Color.white)
+            .cornerRadius(12, corners: [.bottomLeft, .bottomRight])
         }
-        .padding(.horizontal)
+        .frame(width: 300, height: 220)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .onAppear {
+            isAnimating = true
+        }
     }
     
-    private var formattedHour: String {
+    private var categoryIcon: String {
+        switch event.category {
+        case .playdate:
+            return "figure.2.and.child.holdinghands"
+        case .workshop:
+            return "hammer.fill"
+        case .education:
+            return "book.fill"
+        case .outdoors:
+            return "leaf.fill"
+        case .other:
+            return "calendar"
+        }
+    }
+    
+    private var categoryGradient: LinearGradient {
+        switch event.category {
+        case .playdate:
+            return LinearGradient(
+                gradient: Gradient(colors: [ColorTheme.primary.opacity(0.7), ColorTheme.primary]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .workshop:
+            return LinearGradient(
+                gradient: Gradient(colors: [Color.orange.opacity(0.7), Color.orange]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .education:
+            return LinearGradient(
+                gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.purple]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .outdoors:
+            return LinearGradient(
+                gradient: Gradient(colors: [Color.green.opacity(0.7), Color.green]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .other:
+            return LinearGradient(
+                gradient: Gradient(colors: [Color.blue.opacity(0.7), Color.blue]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+    
+    private func formatDayOfWeek(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "h a"
-        
-        let calendar = Calendar.current
-        var components = DateComponents()
-        components.hour = hour
-        
-        if let date = calendar.date(from: components) {
-            return formatter.string(from: date)
-        }
-        
-        return "\(hour)"
-    }
-}
-
-struct WeekCalendarView: View {
-    let events: [CommunityEvent]
-    
-    var body: some View {
-        Text("Week Calendar View - Coming Soon")
-            .foregroundColor(ColorTheme.lightText)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
-struct MonthCalendarView: View {
-    let events: [CommunityEvent]
-    
-    var body: some View {
-        Text("Month Calendar View - Coming Soon")
-            .foregroundColor(ColorTheme.lightText)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
-struct AgendaView: View {
-    let events: [CommunityEvent]
-    
-    var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 16) {
-                ForEach(groupedEvents.keys.sorted(), id: \.self) { date in
-                    if let dateEvents = groupedEvents[date] {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(formattedDate(date))
-                                .font(.headline)
-                                .foregroundColor(ColorTheme.text)
-                                .padding(.horizontal)
-                            
-                            ForEach(dateEvents) { event in
-                                EventCard(event: event)
-                                    .padding(.horizontal)
-                            }
-                        }
-                        .padding(.vertical, 8)
-                    }
-                }
-            }
-            .padding(.vertical)
-        }
+        formatter.dateFormat = "EEE"
+        return formatter.string(from: date)
     }
     
-    private var groupedEvents: [Date: [CommunityEvent]] {
-        let calendar = Calendar.current
-        var result: [Date: [CommunityEvent]] = [:]
-        
-        for event in events {
-            let components = calendar.dateComponents([.year, .month, .day], from: event.startDate)
-            if let date = calendar.date(from: components) {
-                if result[date] == nil {
-                    result[date] = []
-                }
-                result[date]?.append(event)
-            }
-        }
-        
-        // Sort events within each day
-        for (date, dateEvents) in result {
-            result[date] = dateEvents.sorted { $0.startDate < $1.startDate }
-        }
-        
-        return result
-    }
-    
-    private func formattedDate(_ date: Date) -> String {
+    private func formatDayOfMonth(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE, MMMM d"
+        formatter.dateFormat = "d"
+        return formatter.string(from: date)
+    }
+    
+    private func formatMonth(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM"
+        return formatter.string(from: date)
+    }
+    
+    private func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
         return formatter.string(from: date)
     }
 }
 
-struct MapEventsView: View {
-    let events: [CommunityEvent]
-    
-    var body: some View {
-        Text("Map View - Coming Soon")
-            .foregroundColor(ColorTheme.lightText)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
-struct EventCard: View {
+struct CompactEventCard: View {
     let event: CommunityEvent
     
     var body: some View {
-        NavigationLink(destination: EventDetailView(event: event)) {
-            HStack(spacing: 12) {
-                // Category icon
-                ZStack {
-                    Circle()
-                        .fill(categoryColor.opacity(0.2))
-                        .frame(width: 50, height: 50)
-                    
-                    Image(systemName: event.category.icon)
-                        .font(.system(size: 20))
-                        .foregroundColor(categoryColor)
-                }
+        HStack(spacing: 16) {
+            // Date box
+            VStack(spacing: 0) {
+                Text(formatDayOfMonth(event.startDate))
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
                 
-                // Event details
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(event.title)
-                        .font(.headline)
-                        .foregroundColor(ColorTheme.text)
-                        .lineLimit(1)
-                    
-                    Text(event.description)
-                        .font(.subheadline)
-                        .foregroundColor(ColorTheme.lightText)
-                        .lineLimit(1)
-                    
-                    HStack {
-                        // Time
-                        HStack(spacing: 4) {
-                            Image(systemName: "clock")
-                                .font(.system(size: 12))
-                            Text(formattedTime)
-                                .font(.system(size: 12))
-                        }
-                        .foregroundColor(ColorTheme.lightText)
-                        
-                        Spacer()
-                        
-                        // Attendee count
-                        HStack(spacing: 4) {
-                            Image(systemName: "person.2")
-                                .font(.system(size: 12))
-                            Text("\(event.attendeeIDs.count) attending")
-                                .font(.system(size: 12))
-                        }
-                        .foregroundColor(ColorTheme.lightText)
-                    }
-                }
-                
-                Spacer()
-                
-                // Chevron
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(ColorTheme.lightText)
+                Text(formatMonth(event.startDate))
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.9))
             }
-            .padding(12)
-            .background(Color.white)
-            .cornerRadius(12)
-            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+            .frame(width: 50, height: 50)
+            .background(categoryColor)
+            .cornerRadius(8)
+            
+            // Event details
+            VStack(alignment: .leading, spacing: 4) {
+                Text(event.title)
+                    .font(.headline)
+                    .foregroundColor(ColorTheme.darkPurple)
+                
+                Text(event.location.name)
+                    .font(.subheadline)
+                    .foregroundColor(ColorTheme.lightText)
+                
+                HStack {
+                    Text(formatTime(event.startDate))
+                        .font(.caption)
+                        .foregroundColor(ColorTheme.text)
+                    
+                    Spacer()
+                    
+                    Text("\(event.attendeeIDs.count) attending")
+                        .font(.caption)
+                        .foregroundColor(ColorTheme.lightText)
+                }
+            }
+            
+            Spacer()
+            
+            // Category indicator
+            Image(systemName: categoryIcon)
+                .foregroundColor(categoryColor)
+                .font(.system(size: 20))
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(12)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+    }
+    
+    private var categoryIcon: String {
+        switch event.category {
+        case .playdate:
+            return "figure.2.and.child.holdinghands"
+        case .workshop:
+            return "hammer.fill"
+        case .education:
+            return "book.fill"
+        case .outdoors:
+            return "leaf.fill"
+        case .other:
+            return "calendar"
+        }
     }
     
     private var categoryColor: Color {
         switch event.category {
-        case .holiday:
-            return .red
-        case .fundraiser:
-            return .green
-        case .workshop:
-            return .orange
         case .playdate:
             return ColorTheme.primary
-        case .sports:
-            return .blue
-        case .arts:
-            return .purple
+        case .workshop:
+            return Color.orange
         case .education:
-            return .yellow
+            return Color.purple
         case .outdoors:
-            return .green
+            return Color.green
         case .other:
-            return ColorTheme.lightText
+            return Color.blue
         }
     }
     
-    private var formattedTime: String {
+    private func formatDayOfMonth(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter.string(from: date)
+    }
+    
+    private func formatMonth(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM"
+        return formatter.string(from: date)
+    }
+    
+    private func formatTime(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
-        return formatter.string(from: event.startDate)
+        return formatter.string(from: date)
     }
 }
 
-struct EmptyEventsView: View {
-    @Binding var showingCreateEventSheet: Bool
+struct EventCalendarPlaceholder: View {
+    let viewMode: CalendarViewMode
     
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "calendar.badge.plus")
-                .font(.system(size: 60))
-                .foregroundColor(ColorTheme.lightText)
-            
-            Text("No Events Yet")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(ColorTheme.text)
-            
-            Text("Create or join community events to connect with other parents and families")
-                .font(.body)
-                .foregroundColor(ColorTheme.lightText)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-            
-            VStack(spacing: 12) {
-                Button(action: {
-                    showingCreateEventSheet = true
-                }) {
-                    HStack {
-                        Image(systemName: "plus.circle")
-                        Text("Create an Event")
-                    }
+        VStack(spacing: 16) {
+            // Calendar header
+            HStack {
+                Text("March 2025")
                     .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(ColorTheme.primary)
-                    .cornerRadius(12)
-                }
+                    .foregroundColor(ColorTheme.darkPurple)
                 
-                Button(action: {
-                    // Navigate to discover events
-                }) {
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                        Text("Discover Events")
+                Spacer()
+                
+                HStack(spacing: 20) {
+                    Button(action: {}) {
+                        Image(systemName: "chevron.left")
+                            .foregroundColor(ColorTheme.primary)
                     }
-                    .font(.headline)
-                    .foregroundColor(ColorTheme.primary)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(ColorTheme.primary, lineWidth: 1)
-                    )
+                    
+                    Button(action: {}) {
+                        Image(systemName: "chevron.right")
+                            .foregroundColor(ColorTheme.primary)
+                    }
                 }
             }
-            .padding(.horizontal, 32)
-            .padding(.top, 12)
+            
+            // Display different calendar views based on mode
+            switch viewMode {
+            case .day:
+                dayCalendarView
+            case .week:
+                weekCalendarView
+            case .month:
+                monthCalendarView
+            case .agenda:
+                agendaView
+            case .map:
+                mapView
+            }
         }
         .padding()
     }
-}
-
-struct EventFilterView: View {
-    @Environment(\.presentationMode) var presentationMode
-    @EnvironmentObject var viewModel: CommunityEventViewModel
     
-    @State private var selectedCategories: [EventCategory] = []
-    @State private var showFreeOnly: Bool = false
-    @State private var ageRangeValues: ClosedRange<Double> = 0...18
-    @State private var dateRange: ClosedRange<Date> = Date()...Date().addingTimeInterval(30 * 24 * 60 * 60) // 30 days
-    
-    var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Event Categories")) {
-                    ForEach(EventCategory.allCases, id: \.self) { category in
-                        Button(action: {
-                            if selectedCategories.contains(category) {
-                                selectedCategories.removeAll { $0 == category }
-                            } else {
-                                selectedCategories.append(category)
-                            }
-                        }) {
-                            HStack {
-                                Image(systemName: category.icon)
-                                    .foregroundColor(selectedCategories.contains(category) ? ColorTheme.primary : ColorTheme.lightText)
-                                
-                                Text(category.displayName)
-                                    .foregroundColor(ColorTheme.text)
-                                
-                                Spacer()
-                                
-                                if selectedCategories.contains(category) {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(ColorTheme.primary)
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                Section(header: Text("Price")) {
-                    Toggle("Free Events Only", isOn: $showFreeOnly)
-                }
-                
-                Section(header: Text("Age Range")) {
-                    VStack {
-                        HStack {
-                            Text("\(Int(ageRangeValues.lowerBound))")
-                                .foregroundColor(ColorTheme.text)
-                            
-                            Spacer()
-                            
-                            Text("\(Int(ageRangeValues.upperBound))")
-                                .foregroundColor(ColorTheme.text)
-                        }
+    // Day view
+    private var dayCalendarView: some View {
+        VStack(spacing: 8) {
+            Text("Thursday, March 27")
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(ColorTheme.text)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // Time slots
+            ForEach(8..<18) { hour in
+                HStack(alignment: .top, spacing: 12) {
+                    // Time
+                    Text("\(hour % 12 == 0 ? 12 : hour % 12):00 \(hour < 12 ? "AM" : "PM")")
                         .font(.caption)
-                        
-                        Slider(value: $ageRangeValues.lowerBound, in: 0...18, step: 1)
-                        Slider(value: $ageRangeValues.upperBound, in: 0...18, step: 1)
-                    }
-                }
-                
-                Section(header: Text("Date Range")) {
-                    DatePicker("Start Date", selection: $dateRange.lowerBound, displayedComponents: .date)
-                    DatePicker("End Date", selection: $dateRange.upperBound, displayedComponents: .date)
-                }
-                
-                Section {
-                    Button(action: applyFilters) {
-                        Text("Apply Filters")
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(ColorTheme.primary)
-                            .cornerRadius(8)
-                    }
+                        .foregroundColor(ColorTheme.lightText)
+                        .frame(width: 60, alignment: .leading)
                     
-                    Button(action: resetFilters) {
-                        Text("Reset Filters")
-                            .foregroundColor(ColorTheme.primary)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.white)
-                            .cornerRadius(8)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(ColorTheme.primary, lineWidth: 1)
-                            )
+                    // Time slot
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.1))
+                        .frame(height: 30)
+                        .cornerRadius(4)
+                }
+            }
+        }
+    }
+    
+    // Week view
+    private var weekCalendarView: some View {
+        VStack(spacing: 8) {
+            // Days of week
+            HStack(spacing: 0) {
+                ForEach(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], id: \.self) { day in
+                    Text(day)
+                        .font(.caption)
+                        .foregroundColor(day == "Thu" ? ColorTheme.primary : ColorTheme.lightText)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            
+            // Week grid
+            HStack(spacing: 0) {
+                ForEach(24..<31) { day in
+                    VStack(spacing: 4) {
+                        Text("\(day)")
+                            .font(.subheadline)
+                            .foregroundColor(day == 27 ? ColorTheme.primary : ColorTheme.text)
+                            .frame(width: 30, height: 30)
+                            .background(day == 27 ? ColorTheme.primary.opacity(0.1) : Color.clear)
+                            .cornerRadius(15)
+                        
+                        // Event indicators
+                        if [25, 27, 28].contains(day) {
+                            Circle()
+                                .fill(ColorTheme.primary)
+                                .frame(width: 6, height: 6)
+                        }
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
                 }
             }
-            .navigationTitle("Filter Events")
-            .navigationBarItems(trailing: Button("Done") {
-                presentationMode.wrappedValue.dismiss()
-            })
-            .onAppear {
-                // Initialize with current filter values
-                selectedCategories = viewModel.selectedCategories
-                showFreeOnly = viewModel.showFreeOnly
-                
-                if let ageRange = viewModel.ageRangeFilter {
-                    ageRangeValues = Double(ageRange.lowerBound)...Double(ageRange.upperBound)
+            .padding(8)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(8)
+        }
+    }
+    
+    // Month view
+    private var monthCalendarView: some View {
+        VStack(spacing: 16) {
+            // Days of week
+            HStack(spacing: 0) {
+                ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
+                    Text(day)
+                        .font(.caption)
+                        .foregroundColor(ColorTheme.lightText)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            
+            // Calendar grid
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
+                // Previous month
+                ForEach(24..<29) { day in
+                    Text("\(day)")
+                        .font(.caption)
+                        .foregroundColor(ColorTheme.lightText.opacity(0.5))
+                        .frame(height: 35)
                 }
                 
-                if let dateRangeFilter = viewModel.dateRangeFilter {
-                    dateRange = dateRangeFilter
+                // Current month
+                ForEach(1..<32) { day in
+                    ZStack {
+                        if day == 27 {
+                            Circle()
+                                .fill(ColorTheme.primary)
+                                .frame(width: 35, height: 35)
+                        }
+                        
+                        Text("\(day)")
+                            .font(.caption)
+                            .foregroundColor(day == 27 ? .white : ColorTheme.text)
+                        
+                        // Event indicators
+                        if [5, 10, 15, 20, 25, 27].contains(day) {
+                            Circle()
+                                .fill(day == 27 ? .white : ColorTheme.primary)
+                                .frame(width: 4, height: 4)
+                                .offset(y: 12)
+                        }
+                    }
+                    .frame(height: 35)
                 }
             }
         }
     }
     
-    private func applyFilters() {
-        viewModel.setCategories(selectedCategories)
-        
-        if viewModel.showFreeOnly != showFreeOnly {
-            viewModel.toggleFreeOnly()
-        }
-        
-        let intAgeRange = Int(ageRangeValues.lowerBound)...Int(ageRangeValues.upperBound)
-        viewModel.setAgeRange(intAgeRange)
-        
-        viewModel.setDateRange(dateRange)
-        
-        presentationMode.wrappedValue.dismiss()
-    }
-    
-    private func resetFilters() {
-        selectedCategories = []
-        showFreeOnly = false
-        ageRangeValues = 0...18
-        dateRange = Date()...Date().addingTimeInterval(30 * 24 * 60 * 60)
-        
-        viewModel.resetFilters()
-    }
-}
-
-// Placeholder for the create event view
-struct CreateEventView: View {
-    @Environment(\.presentationMode) var presentationMode
-    
-    var body: some View {
-        NavigationView {
-            Text("Create Event Form - Coming Soon")
-                .navigationTitle("Create Event")
-                .navigationBarItems(leading: Button("Cancel") {
-                    presentationMode.wrappedValue.dismiss()
-                })
+    // Agenda view
+    private var agendaView: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Today's events
+            Text("Today - March 27")
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(ColorTheme.text)
+            
+            eventListItem(time: "9:00 AM", title: "Playdate at Central Park", category: .playdate)
+            eventListItem(time: "2:00 PM", title: "Art Workshop", category: .workshop)
+            
+            Divider()
+            
+            // Tomorrow's events
+            Text("Tomorrow - March 28")
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(ColorTheme.text)
+            
+            eventListItem(time: "10:00 AM", title: "Swimming Lessons", category: .other)
+            eventListItem(time: "3:30 PM", title: "Story Time", category: .education)
         }
     }
-}
-
-// Placeholder for the event detail view
-struct EventDetailView: View {
-    let event: CommunityEvent
     
-    var body: some View {
-        Text("Event Detail View for \(event.title)")
-            .navigationTitle(event.title)
+    // Map view
+    private var mapView: some View {
+        ZStack {
+            Color.gray.opacity(0.2)
+                .frame(height: 200)
+                .cornerRadius(12)
+                .overlay(
+                    Text("Map View")
+                        .foregroundColor(ColorTheme.lightText)
+                )
+        }
+    }
+    
+    private func eventListItem(time: String, title: String, category: EventCategory) -> some View {
+        HStack(spacing: 12) {
+            // Time
+            Text(time)
+                .font(.caption)
+                .foregroundColor(ColorTheme.lightText)
+                .frame(width: 70, alignment: .leading)
+            
+            // Event dot
+            Circle()
+                .fill(getCategoryColor(category))
+                .frame(width: 8, height: 8)
+            
+            // Event title
+            Text(title)
+                .font(.subheadline)
+                .foregroundColor(ColorTheme.text)
+            
+            Spacer()
+            
+            // Category icon
+            Image(systemName: getCategoryIcon(category))
+                .font(.system(size: 14))
+                .foregroundColor(getCategoryColor(category))
+        }
+        .padding(10)
+        .background(Color.white)
+        .cornerRadius(8)
+        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+    }
+    
+    private func getCategoryColor(_ category: EventCategory) -> Color {
+        switch category {
+        case .playdate:
+            return ColorTheme.primary
+        case .workshop:
+            return Color.orange
+        case .education:
+            return Color.purple
+        case .outdoors:
+            return Color.green
+        case .other:
+            return Color.blue
+        }
+    }
+    
+    private func getCategoryIcon(_ category: EventCategory) -> String {
+        switch category {
+        case .playdate:
+            return "figure.2.and.child.holdinghands"
+        case .workshop:
+            return "hammer.fill"
+        case .education:
+            return "book.fill"
+        case .outdoors:
+            return "leaf.fill"
+        case .other:
+            return "calendar"
+        }
     }
 }
 
-struct CommunityEventsView_Previews: PreviewProvider {
-    static var previews: some View {
-        CommunityEventsView()
-            .environmentObject(AuthViewModel())
+// Add a computed property to CommunityEvent for remaining spots
+extension CommunityEvent {
+    var isAtMaxCapacity: Bool {
+        if let maxAttendees = maxAttendees {
+            return attendeeIDs.count >= maxAttendees
+        }
+        return false
+    }
+    
+    var remainingSpots: Int {
+        if let maxAttendees = maxAttendees {
+            let remaining = maxAttendees - attendeeIDs.count
+            return remaining > 0 ? remaining : 0
+        }
+        return 0 // Unlimited if maxAttendees is nil
     }
 }
