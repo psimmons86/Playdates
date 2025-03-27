@@ -17,6 +17,13 @@ class GroupViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     
+    init() {
+        // Load mock data for development
+        #if DEBUG
+        addMockData()
+        #endif
+    }
+    
     // Firestore references
     private let db = Firestore.firestore()
     private var groupsRef: CollectionReference {

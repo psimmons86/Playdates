@@ -16,6 +16,13 @@ class ResourceViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     
+    init() {
+        // Load mock data for development
+        #if DEBUG
+        addMockData()
+        #endif
+    }
+    
     // Filter state
     @Published var selectedResourceTypes: [ResourceType] = []
     @Published var showFreeOnly: Bool = false

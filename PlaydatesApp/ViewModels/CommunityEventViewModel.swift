@@ -16,6 +16,13 @@ class CommunityEventViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     
+    init() {
+        // Load mock data for development
+        #if DEBUG
+        addMockData()
+        #endif
+    }
+    
     // Filter state
     @Published var selectedCategories: [EventCategory] = []
     @Published var showFreeOnly: Bool = false
