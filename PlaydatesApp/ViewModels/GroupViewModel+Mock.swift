@@ -135,8 +135,8 @@ extension GroupViewModel {
                 content: "We're organizing a playdate at Central Park this Saturday at 2pm. Who's interested in joining?",
                 mediaURLs: [],
                 status: .published,
-                isPoll: true,
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 5), // 5 days ago
+                isPoll: true,
                 likedByIDs: [userIDs[0], userIDs[2], userIDs[4], userIDs[5]],
                 commentIDs: ["comment3", "comment4", "comment5"],
                 pollOptions: [
