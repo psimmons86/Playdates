@@ -25,8 +25,8 @@ extension GroupViewModel {
                 moderatorIDs: [userIDs[2]],
                 pendingMemberIDs: [],
                 tags: ["elementary school", "lake district", "parents"],
-                createdBy: userIDs[0],
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 30), // 30 days ago
+                createdBy: userIDs[0],
                 allowMemberPosts: true,
                 requirePostApproval: false,
                 allowEvents: true,
@@ -45,8 +45,8 @@ extension GroupViewModel {
                 moderatorIDs: [],
                 pendingMemberIDs: [],
                 tags: ["downtown", "urban families", "city center"],
-                createdBy: userIDs[1],
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 45), // 45 days ago
+                createdBy: userIDs[1],
                 allowMemberPosts: true,
                 requirePostApproval: false,
                 allowEvents: true,
@@ -65,8 +65,8 @@ extension GroupViewModel {
                 moderatorIDs: [userIDs[3], userIDs[4]],
                 pendingMemberIDs: [],
                 tags: ["toddlers", "1-3 years", "activities"],
-                createdBy: userIDs[2],
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 15), // 15 days ago
+                createdBy: userIDs[2],
                 allowMemberPosts: true,
                 requirePostApproval: true,
                 allowEvents: true,
@@ -85,8 +85,8 @@ extension GroupViewModel {
                 moderatorIDs: [],
                 pendingMemberIDs: [],
                 tags: ["outdoors", "hiking", "camping", "nature"],
-                createdBy: userIDs[0],
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 60), // 60 days ago
+                createdBy: userIDs[0],
                 allowMemberPosts: true,
                 requirePostApproval: false,
                 allowEvents: true,
@@ -105,8 +105,8 @@ extension GroupViewModel {
                 moderatorIDs: [userIDs[3]],
                 pendingMemberIDs: [],
                 tags: ["arts", "crafts", "creativity", "kids activities"],
-                createdBy: userIDs[1],
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 20), // 20 days ago
+                createdBy: userIDs[1],
                 allowMemberPosts: true,
                 requirePostApproval: false,
                 allowEvents: true,
@@ -122,11 +122,11 @@ extension GroupViewModel {
                 authorID: userIDs[0],
                 content: "Welcome to our Lake School Parents group! This is a space for us to connect, share resources, and organize playdates for our kids. Feel free to introduce yourselves!",
                 mediaURLs: [],
-                likedByIDs: [userIDs[1], userIDs[2], userIDs[3]],
-                commentIDs: ["comment1", "comment2"],
+                status: .published,
                 isPinned: true,
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 29), // 29 days ago
-                status: .published
+                likedByIDs: [userIDs[1], userIDs[2], userIDs[3]],
+                commentIDs: ["comment1", "comment2"]
             ),
             GroupPost(
                 id: "post2",
@@ -134,16 +134,16 @@ extension GroupViewModel {
                 authorID: userIDs[1],
                 content: "We're organizing a playdate at Central Park this Saturday at 2pm. Who's interested in joining?",
                 mediaURLs: [],
+                status: .published,
+                isPoll: true,
+                createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 5), // 5 days ago
                 likedByIDs: [userIDs[0], userIDs[2], userIDs[4], userIDs[5]],
                 commentIDs: ["comment3", "comment4", "comment5"],
-                isPoll: true,
                 pollOptions: [
                     PollOption(id: "option1", text: "We'll be there!", votedByIDs: [userIDs[0], userIDs[4]]),
                     PollOption(id: "option2", text: "Can't make it this time", votedByIDs: [userIDs[2]]),
                     PollOption(id: "option3", text: "Maybe, will confirm later", votedByIDs: [userIDs[5]])
-                ],
-                createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 5), // 5 days ago
-                status: .published
+                ]
             ),
             GroupPost(
                 id: "post3",
@@ -151,10 +151,10 @@ extension GroupViewModel {
                 authorID: userIDs[1],
                 content: "Has anyone tried the new playground on Main Street? Is it suitable for toddlers?",
                 mediaURLs: [],
-                likedByIDs: [userIDs[3], userIDs[5]],
-                commentIDs: ["comment6"],
+                status: .published,
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 3), // 3 days ago
-                status: .published
+                likedByIDs: [userIDs[3], userIDs[5]],
+                commentIDs: ["comment6"]
             ),
             GroupPost(
                 id: "post4",
@@ -162,10 +162,10 @@ extension GroupViewModel {
                 authorID: userIDs[2],
                 content: "Sharing a great activity for developing fine motor skills: Fill a container with dried beans or rice and hide small toys in it. Let your toddler use a spoon or their hands to find the toys!",
                 mediaURLs: [],
-                likedByIDs: [userIDs[0], userIDs[1], userIDs[3], userIDs[4], userIDs[5], userIDs[6]],
-                commentIDs: ["comment7", "comment8"],
+                status: .published,
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 10), // 10 days ago
-                status: .published
+                likedByIDs: [userIDs[0], userIDs[1], userIDs[3], userIDs[4], userIDs[5], userIDs[6]],
+                commentIDs: ["comment7", "comment8"]
             ),
             GroupPost(
                 id: "post5",
@@ -173,10 +173,10 @@ extension GroupViewModel {
                 authorID: userIDs[0],
                 content: "We had an amazing hike at Eagle Mountain last weekend. The trail was easy enough for our 5-year-old to manage. Highly recommend for families with young kids!",
                 mediaURLs: [],
-                likedByIDs: [userIDs[2], userIDs[4], userIDs[6], userIDs[8]],
-                commentIDs: ["comment9", "comment10"],
+                status: .published,
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 7), // 7 days ago
-                status: .published
+                likedByIDs: [userIDs[2], userIDs[4], userIDs[6], userIDs[8]],
+                commentIDs: ["comment9", "comment10"]
             )
         ]
         
