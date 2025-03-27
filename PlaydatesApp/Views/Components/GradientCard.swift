@@ -55,29 +55,29 @@ struct GradientCard<Content: View>: View {
 
 // Convenience extension for standard card styles
 extension GradientCard {
-    static func primary<Content: View>(@ViewBuilder content: () -> Content) -> GradientCard<Content> {
-        GradientCard(
+    static func primary<C: View>(@ViewBuilder content: () -> C) -> GradientCard<C> {
+        return GradientCard<C>(
             gradientColors: [ColorTheme.primary, ColorTheme.primary.opacity(0.8)],
             content: content
         )
     }
     
-    static func accent<Content: View>(@ViewBuilder content: () -> Content) -> GradientCard<Content> {
-        GradientCard(
+    static func accent<C: View>(@ViewBuilder content: () -> C) -> GradientCard<C> {
+        return GradientCard<C>(
             gradientColors: [ColorTheme.accent, ColorTheme.accent.opacity(0.8)],
             content: content
         )
     }
     
-    static func secondary<Content: View>(@ViewBuilder content: () -> Content) -> GradientCard<Content> {
-        GradientCard(
+    static func secondary<C: View>(@ViewBuilder content: () -> C) -> GradientCard<C> {
+        return GradientCard<C>(
             gradientColors: [ColorTheme.secondary, ColorTheme.secondary.opacity(0.8)],
             content: content
         )
     }
     
-    static func colorful<Content: View>(@ViewBuilder content: () -> Content) -> GradientCard<Content> {
-        GradientCard(
+    static func colorful<C: View>(@ViewBuilder content: () -> C) -> GradientCard<C> {
+        return GradientCard<C>(
             gradientColors: [ColorTheme.primary, ColorTheme.accent, ColorTheme.secondary],
             content: content
         )
@@ -87,7 +87,7 @@ extension GradientCard {
 struct GradientCard_Previews: PreviewProvider {
     static var previews: some View {
         VStack(spacing: 20) {
-            GradientCard.primary {
+            GradientCard<Text>.primary {
                 Text("Primary Card")
                     .font(.headline)
                     .foregroundColor(.white)
@@ -95,7 +95,7 @@ struct GradientCard_Previews: PreviewProvider {
                     .frame(height: 100)
             }
             
-            GradientCard.accent {
+            GradientCard<Text>.accent {
                 Text("Accent Card")
                     .font(.headline)
                     .foregroundColor(.white)
@@ -103,7 +103,7 @@ struct GradientCard_Previews: PreviewProvider {
                     .frame(height: 100)
             }
             
-            GradientCard.secondary {
+            GradientCard<Text>.secondary {
                 Text("Secondary Card")
                     .font(.headline)
                     .foregroundColor(.white)
@@ -111,7 +111,7 @@ struct GradientCard_Previews: PreviewProvider {
                     .frame(height: 100)
             }
             
-            GradientCard.colorful {
+            GradientCard<Text>.colorful {
                 Text("Colorful Card")
                     .font(.headline)
                     .foregroundColor(.white)

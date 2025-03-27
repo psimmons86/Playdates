@@ -1,6 +1,7 @@
 import Foundation
 import Firebase
 import FirebaseFirestore
+import FirebaseAuth
 import Combine
 import SwiftUI
 
@@ -193,9 +194,10 @@ class FriendshipViewModel: ObservableObject {
     func sendFriendRequest(from senderID: String, to recipientID: String, completion: @escaping (Result<Void, Error>) -> Void) {
         isLoading = true
         
-        // Check if a friendship already exists
-        db.collection("friendships")
-            .whereField("participants", arrayContains: senderID)
+        // Check if a friendship or request already exists
+        db.collection("friendRequests")
+            .whereField("senderID", isEqualTo: senderID)
+            .whereField("recipientID", isEqualTo: recipientID)
             .getDocuments { [weak self] snapshot, error in
                 guard let self = self else { return }
                 
@@ -206,29 +208,17 @@ class FriendshipViewModel: ObservableObject {
                     return
                 }
                 
-                guard let documents = snapshot?.documents else {
-                    self.createFriendRequest(from: senderID, to: recipientID, completion: completion)
-                    return
-                }
-                
-                // Check if they are already friends
-                let alreadyFriends = documents.contains { document in
-                    guard let participants = document.data()["participants"] as? [String] else { return false }
-                    return participants.contains(recipientID)
-                }
-                
-                if alreadyFriends {
+                if let documents = snapshot?.documents, !documents.isEmpty {
                     self.isLoading = false
-                    let error = NSError(domain: "FriendshipViewModel", code: 1, userInfo: [NSLocalizedDescriptionKey: "You are already friends with this user"])
+                    let error = NSError(domain: "FriendshipViewModel", code: 2, userInfo: [NSLocalizedDescriptionKey: "You have already sent a friend request to this user"])
                     self.error = error.localizedDescription
                     completion(.failure(error))
                     return
                 }
                 
-                // Check if a request already exists
-                self.db.collection("friendRequests")
-                    .whereField("senderID", isEqualTo: senderID)
-                    .whereField("recipientID", isEqualTo: recipientID)
+                // Also check if they are already friends
+                self.db.collection("friendships")
+                    .whereField("participants", arrayContains: senderID)
                     .getDocuments { [weak self] snapshot, error in
                         guard let self = self else { return }
                         
@@ -239,16 +229,42 @@ class FriendshipViewModel: ObservableObject {
                             return
                         }
                         
-                        if let documents = snapshot?.documents, !documents.isEmpty {
+                        // Check if they are already friends
+                        let alreadyFriends = (snapshot?.documents ?? []).contains { document in
+                            guard let participants = document.data()["participants"] as? [String] else { return false }
+                            return participants.contains(recipientID)
+                        }
+                        
+                        if alreadyFriends {
                             self.isLoading = false
-                            let error = NSError(domain: "FriendshipViewModel", code: 2, userInfo: [NSLocalizedDescriptionKey: "You have already sent a friend request to this user"])
+                            let error = NSError(domain: "FriendshipViewModel", code: 1, userInfo: [NSLocalizedDescriptionKey: "You are already friends with this user"])
                             self.error = error.localizedDescription
                             completion(.failure(error))
                             return
                         }
                         
                         // Create the friend request
-                        self.createFriendRequest(from: senderID, to: recipientID, completion: completion)
+                        let requestData: [String: Any] = [
+                            "senderID": senderID,
+                            "recipientID": recipientID,
+                            "status": "pending",
+                            "createdAt": Timestamp(date: Date())
+                        ]
+                        
+                        self.db.collection("friendRequests").document().setData(requestData) { [weak self] error in
+                            guard let self = self else { return }
+                            
+                            self.isLoading = false
+                            
+                            if let error = error {
+                                self.error = error.localizedDescription
+                                completion(.failure(error))
+                                return
+                            }
+                            
+                            // Success
+                            completion(.success(()))
+                        }
                     }
             }
     }
@@ -333,6 +349,11 @@ class FriendshipViewModel: ObservableObject {
             
             completion(.success(()))
         }
+    }
+    
+    /// Returns the current user's ID from Firebase Auth
+    var currentUserId: String? {
+        return Auth.auth().currentUser?.uid
     }
     
     // MARK: - Chat Methods

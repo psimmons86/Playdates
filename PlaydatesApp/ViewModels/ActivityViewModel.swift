@@ -128,6 +128,43 @@ class ActivityViewModel: ObservableObject {
         isLoading = true
         error = nil
         
+        // First try to order by rating (if available)
+        db.collection("activities")
+            .order(by: "rating", descending: true)
+            .limit(to: limit)
+            .getDocuments { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                // IMPORTANT: Dispatch UI updates to the main thread
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    
+                    if let error = error {
+                        self.error = error.localizedDescription
+                        print("Error fetching popular activities by rating: \(error.localizedDescription)")
+                        
+                        // Fallback to popularity if rating query fails
+                        self.fetchPopularActivitiesByPopularity(limit: limit)
+                        return
+                    }
+                    
+                    guard let documents = snapshot?.documents else {
+                        self.popularActivities = []
+                        return
+                    }
+                    
+                    // Parse activities with safe data handling
+                    self.popularActivities = self.parseActivities(from: documents)
+                    print("Fetched \(self.popularActivities.count) popular activities by rating")
+                }
+            }
+    }
+    
+    // Fallback method if rating index is not available
+    private func fetchPopularActivitiesByPopularity(limit: Int = 10) {
+        isLoading = true
+        error = nil
+        
         db.collection("activities")
             .order(by: "popularity", descending: true)
             .limit(to: limit)
@@ -140,6 +177,7 @@ class ActivityViewModel: ObservableObject {
                     
                     if let error = error {
                         self.error = error.localizedDescription
+                        print("Error fetching popular activities by popularity: \(error.localizedDescription)")
                         return
                     }
                     
@@ -150,6 +188,52 @@ class ActivityViewModel: ObservableObject {
                     
                     // Parse activities with safe data handling
                     self.popularActivities = self.parseActivities(from: documents)
+                    print("Fetched \(self.popularActivities.count) popular activities by popularity")
+                }
+            }
+    }
+    
+    // Add method to fetch featured activities
+    func fetchFeaturedActivities(limit: Int = 5) {
+        isLoading = true
+        error = nil
+        
+        db.collection("activities")
+            .whereField("isFeatured", isEqualTo: true)
+            .limit(to: limit)
+            .getDocuments { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                // IMPORTANT: Dispatch UI updates to the main thread
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    
+                    if let error = error {
+                        self.error = error.localizedDescription
+                        print("Error fetching featured activities: \(error.localizedDescription)")
+                        return
+                    }
+                    
+                    guard let documents = snapshot?.documents else {
+                        // If no featured activities, we'll handle this in the view
+                        print("No featured activities found")
+                        return
+                    }
+                    
+                    // Parse activities with safe data handling
+                    let featuredActivities = self.parseActivities(from: documents)
+                    print("Fetched \(featuredActivities.count) featured activities")
+                    
+                    // If we have featured activities, update the main activities array
+                    // This ensures featured activities are available for the featuredActivities computed property in HomeView
+                    if !featuredActivities.isEmpty {
+                        // Add featured activities to the main activities array if they're not already there
+                        for activity in featuredActivities {
+                            if !self.activities.contains(where: { $0.id == activity.id }) {
+                                self.activities.append(activity)
+                            }
+                        }
+                    }
                 }
             }
     }

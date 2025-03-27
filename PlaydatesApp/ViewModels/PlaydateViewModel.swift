@@ -5,8 +5,6 @@ import Combine
 import CoreLocation
 
 class PlaydateViewModel: ObservableObject {
-    // Shared instance for use across the app
-    static let shared = PlaydateViewModel()
     
     @Published var playdates: [Playdate] = []
     @Published var userPlaydates: [Playdate] = []
@@ -41,20 +39,22 @@ class PlaydateViewModel: ObservableObject {
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self = self else { return }
                 
-                self.isLoading = false
-                
-                if let error = error {
-                    self.error = error.localizedDescription
-                    return
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    
+                    if let error = error {
+                        self.error = error.localizedDescription
+                        return
+                    }
+                    
+                    guard let documents = snapshot?.documents else {
+                        self.playdates = []
+                        return
+                    }
+                    
+                    // Parse playdates with safe data handling
+                    self.playdates = self.parsePlaydates(from: documents)
                 }
-                
-                guard let documents = snapshot?.documents else {
-                    self.playdates = []
-                    return
-                }
-                
-                // Parse playdates with safe data handling
-                self.playdates = self.parsePlaydates(from: documents)
             }
     }
     
@@ -78,20 +78,22 @@ class PlaydateViewModel: ObservableObject {
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self = self else { return }
                 
-                self.isLoading = false
-                
-                if let error = error {
-                    self.error = error.localizedDescription
-                    return
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    
+                    if let error = error {
+                        self.error = error.localizedDescription
+                        return
+                    }
+                    
+                    guard let documents = snapshot?.documents else {
+                        self.userPlaydates = []
+                        return
+                    }
+                    
+                    // Parse playdates with safe data handling
+                    self.userPlaydates = self.parsePlaydates(from: documents)
                 }
-                
-                guard let documents = snapshot?.documents else {
-                    self.userPlaydates = []
-                    return
-                }
-                
-                // Parse playdates with safe data handling
-                self.userPlaydates = self.parsePlaydates(from: documents)
             }
     }
     
@@ -112,46 +114,48 @@ class PlaydateViewModel: ObservableObject {
             completion: { [weak self] (result: Result<[ActivityPlace], Error>) in
                 guard let self = self else { return }
                 
-                self.isLoading = false
-                
-                switch result {
-                case .success(let activities):
-                    // Convert Google Places activities to our Playdate model
-                    let mappedPlaydates = activities.prefix(5).map { place -> Playdate in
-                        let location = Location(
-                            name: place.location.name,
-                            address: place.location.address,
-                            latitude: place.location.latitude,
-                            longitude: place.location.longitude
-                        )
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    
+                    switch result {
+                    case .success(let activities):
+                        // Convert Google Places activities to our Playdate model
+                        let mappedPlaydates = activities.prefix(5).map { place -> Playdate in
+                            let location = Location(
+                                name: place.location.name,
+                                address: place.location.address,
+                                latitude: place.location.latitude,
+                                longitude: place.location.longitude
+                            )
+                            
+                            // Determine activity type based on place types
+                            let activityType = self.determineActivityType(from: place.types)
+                            
+                            // Create a sample playdate based on this location
+                            return Playdate(
+                                id: place.id,
+                                hostID: "system",
+                                title: "Playdate at \(place.name)",
+                                description: "A fun playdate at this location",
+                                activityType: activityType,
+                                location: location,
+                                startDate: Date().addingTimeInterval(86400), // Tomorrow
+                                endDate: Date().addingTimeInterval(86400 + 7200), // 2 hours after start
+                                attendeeIDs: [],
+                                isPublic: true
+                            )
+                        }
                         
-                        // Determine activity type based on place types
-                        let activityType = self.determineActivityType(from: place.types)
+                        self.nearbyPlaydates = Array(mappedPlaydates)
                         
-                        // Create a sample playdate based on this location
-                        return Playdate(
-                            id: place.id,
-                            hostID: "system",
-                            title: "Playdate at \(place.name)",
-                            description: "A fun playdate at this location",
-                            activityType: activityType,
-                            location: location,
-                            startDate: Date().addingTimeInterval(86400), // Tomorrow
-                            endDate: Date().addingTimeInterval(86400 + 7200), // 2 hours after start
-                            attendeeIDs: [],
-                            isPublic: true
-                        )
+                    case .failure(let error):
+                        self.error = error.localizedDescription
+                        
+                        // Fallback to Firebase method if Google Places fails
+                        let latitude = location.coordinate.latitude
+                        let longitude = location.coordinate.longitude
+                        self.fetchNearbyPlaydates(latitude: latitude, longitude: longitude, radiusInKm: radiusInKm)
                     }
-                    
-                    self.nearbyPlaydates = Array(mappedPlaydates)
-                    
-                case .failure(let error):
-                    self.error = error.localizedDescription
-                    
-                    // Fallback to Firebase method if Google Places fails
-                    let latitude = location.coordinate.latitude
-                    let longitude = location.coordinate.longitude
-                    self.fetchNearbyPlaydates(latitude: latitude, longitude: longitude, radiusInKm: radiusInKm)
                 }
             }
         )
@@ -205,40 +209,42 @@ class PlaydateViewModel: ObservableObject {
             .getDocuments { [weak self] snapshot, error in
                 guard let self = self else { return }
                 
-                self.isLoading = false
-                
-                if let error = error {
-                    self.error = error.localizedDescription
-                    return
-                }
-                
-                guard let documents = snapshot?.documents else {
-                    self.nearbyPlaydates = []
-                    return
-                }
-                
-                // Parse playdates and filter by longitude and precise distance
-                let playdates = self.parsePlaydates(from: documents)
-                
-                // Now filter by longitude and actual distance in a second pass
-                // Fixed filter implementation to avoid closure passing issue
-                self.nearbyPlaydates = playdates.filter { playdate in
-                    // Must unwrap the location safely first
-                    guard let playdateLoc = playdate.location else {
-                        return false
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    
+                    if let error = error {
+                        self.error = error.localizedDescription
+                        return
                     }
                     
-                    // First check longitude (couldn't be done in the query due to limitations)
-                    if playdateLoc.longitude < minLon || playdateLoc.longitude > maxLon {
-                        return false
+                    guard let documents = snapshot?.documents else {
+                        self.nearbyPlaydates = []
+                        return
                     }
                     
-                    // Calculate actual distance using CLLocation for more accuracy
-                    let playdateLocation = CLLocation(latitude: playdateLoc.latitude, longitude: playdateLoc.longitude)
-                    let userLocation = CLLocation(latitude: latitude, longitude: longitude)
-                    let distanceInMeters = playdateLocation.distance(from: userLocation)
+                    // Parse playdates and filter by longitude and precise distance
+                    let playdates = self.parsePlaydates(from: documents)
                     
-                    return distanceInMeters <= (radiusInKm * 1000) // convert km to meters
+                    // Now filter by longitude and actual distance in a second pass
+                    // Fixed filter implementation to avoid closure passing issue
+                    self.nearbyPlaydates = playdates.filter { playdate in
+                        // Must unwrap the location safely first
+                        guard let playdateLoc = playdate.location else {
+                            return false
+                        }
+                        
+                        // First check longitude (couldn't be done in the query due to limitations)
+                        if playdateLoc.longitude < minLon || playdateLoc.longitude > maxLon {
+                            return false
+                        }
+                        
+                        // Calculate actual distance using CLLocation for more accuracy
+                        let playdateLocation = CLLocation(latitude: playdateLoc.latitude, longitude: playdateLoc.longitude)
+                        let userLocation = CLLocation(latitude: latitude, longitude: longitude)
+                        let distanceInMeters = playdateLocation.distance(from: userLocation)
+                        
+                        return distanceInMeters <= (radiusInKm * 1000) // convert km to meters
+                    }
                 }
             }
     }
@@ -353,52 +359,54 @@ class PlaydateViewModel: ObservableObject {
             docRef.getDocument { [weak self] document, error in
                 guard let self = self else { return }
                 
-                self.isLoading = false
-                
-                if let error = error {
-                    self.error = error.localizedDescription
-                    completion(.failure(error))
-                    return
-                }
-                
-                guard let document = document, document.exists else {
-                    let error = NSError(domain: "PlaydateViewModel", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create playdate"])
-                    self.error = error.localizedDescription
-                    completion(.failure(error))
-                    return
-                }
-                
-                // Parse the document
-                do {
-                    // Try to decode the document directly first
-                    if let createdPlaydate = try? document.data(as: Playdate.self) {
-                        completion(.success(createdPlaydate))
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    
+                    if let error = error {
+                        self.error = error.localizedDescription
+                        completion(.failure(error))
                         return
                     }
                     
-                    // Fallback to manual parsing
-                    let rawData = document.data() ?? [:]
-                    let data = FirebaseSafetyKit.sanitizeData(rawData) ?? [:]
-                    
-                    // Extract the required fields
-                    guard
-                        let hostID = FirebaseSafetyKit.getString(from: data, forKey: "hostID"),
-                        let title = FirebaseSafetyKit.getString(from: data, forKey: "title")
-                    else {
-                        throw NSError(domain: "PlaydateViewModel", code: 3, userInfo: [NSLocalizedDescriptionKey: "Missing required fields"])
+                    guard let document = document, document.exists else {
+                        let error = NSError(domain: "PlaydateViewModel", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to create playdate"])
+                        self.error = error.localizedDescription
+                        completion(.failure(error))
+                        return
                     }
-                    
-                    // Create a minimal playdate
-                    let createdPlaydate = Playdate(
-                        id: document.documentID,
-                        hostID: hostID,
-                        title: title
-                    )
-                    
-                    completion(.success(createdPlaydate))
-                } catch {
-                    self.error = error.localizedDescription
-                    completion(.failure(error))
+                
+                    // Parse the document
+                    do {
+                        // Try to decode the document directly first
+                        if let createdPlaydate = try? document.data(as: Playdate.self) {
+                            completion(.success(createdPlaydate))
+                            return
+                        }
+                        
+                        // Fallback to manual parsing
+                        let rawData = document.data() ?? [:]
+                        let data = FirebaseSafetyKit.sanitizeData(rawData) ?? [:]
+                        
+                        // Extract the required fields
+                        guard
+                            let hostID = FirebaseSafetyKit.getString(from: data, forKey: "hostID"),
+                            let title = FirebaseSafetyKit.getString(from: data, forKey: "title")
+                        else {
+                            throw NSError(domain: "PlaydateViewModel", code: 3, userInfo: [NSLocalizedDescriptionKey: "Missing required fields"])
+                        }
+                        
+                        // Create a minimal playdate
+                        let createdPlaydate = Playdate(
+                            id: document.documentID,
+                            hostID: hostID,
+                            title: title
+                        )
+                        
+                        completion(.success(createdPlaydate))
+                    } catch {
+                        self.error = error.localizedDescription
+                        completion(.failure(error))
+                    }
                 }
             }
         } catch {

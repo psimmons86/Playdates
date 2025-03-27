@@ -1,413 +1,293 @@
 import SwiftUI
-import CoreLocation
-import Combine
+import Foundation
 
-// Weather view for playdate details
-struct PlaydateWeatherView: View {
-    let playdate: Playdate
-    @StateObject private var weatherService = WeatherService.shared
-    @State private var weather: Weather?
-    @State private var isLoading = false
-    @State private var error: String?
-    @State private var showingWeatherDetails = false
+struct WeatherView: View {
+    @ObservedObject private var weatherService = WeatherService.shared
+    @State private var isLoading = true
+    @State private var showingSettings = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Header
-            HStack {
-                Text("Weather Forecast")
-                    .font(.headline)
-                    .foregroundColor(ColorTheme.darkPurple)
-                
-                Spacer()
-                
-                if isLoading {
-                    ProgressView()
-                } else if weather != nil {
-                    Button(action: {
-                        showingWeatherDetails = true
-                    }) {
-                        Text("See Details")
-                            .font(.caption)
-                            .foregroundColor(ColorTheme.primary)
-                    }
-                }
-            }
+        ZStack {
+            // Gradient background based on weather condition
+            LinearGradient(
+                gradient: Gradient(colors: weatherGradientColors),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16))
             
-            if let error = error {
-                Text(error)
-                    .font(.caption)
-                    .foregroundColor(.red)
-                    .padding(.vertical, 4)
-            } else if let weather = weather {
-                // Weather summary
-                HStack(spacing: 16) {
-                    // Weather icon
-                    AsyncImage(url: weather.iconURL) { phase in
-                        if let image = phase.image {
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 60, height: 60)
-                        } else if phase.error != nil {
-                            // Error state
-                            Image(systemName: "exclamationmark.triangle")
-                                .foregroundColor(.orange)
-                                .frame(width: 60, height: 60)
-                        } else {
-                            // Loading state
-                            ProgressView()
-                                .frame(width: 60, height: 60)
-                        }
+            if isLoading {
+                // Loading state
+                VStack {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    
+                    Text("Loading weather...")
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .padding(.top, 8)
+                }
+            } else if let weather = weatherService.currentWeather {
+                // Weather content
+                HStack(spacing: 20) {
+                    // Weather icon and temperature
+                    VStack(alignment: .center, spacing: 4) {
+                        Image(systemName: weatherIconName)
+                            .font(.system(size: 40))
+                            .foregroundColor(.white)
+                        
+                        Text("\(Int(weather.temperature))°")
+                            .font(.system(size: 36, weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        Text(weather.condition)
+                            .font(.caption)
+                            .foregroundColor(.white)
                     }
+                    .frame(width: 100)
                     
                     // Weather details
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(weather.formattedTemperature)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(ColorTheme.darkPurple)
-                        
-                        Text(weather.description)
-                            .font(.subheadline)
-                            .foregroundColor(ColorTheme.lightText)
-                        
-                        // Activity recommendation
-                        HStack {
-                            Image(systemName: weather.isGoodForOutdoor ? "checkmark.circle" : "exclamationmark.triangle")
-                                .foregroundColor(weather.isGoodForOutdoor ? .green : .orange)
-                            
-                            Text(weather.isGoodForOutdoor ? "Good for outdoor activities" : "Consider indoor alternatives")
-                                .font(.caption)
-                                .foregroundColor(weather.isGoodForOutdoor ? .green : .orange)
-                        }
-                    }
-                }
-                
-                // Activity suggestions
-                if !weatherService.getActivitySuggestions(for: weather).isEmpty {
-                    Divider()
-                        .padding(.vertical, 8)
-                    
-                    Text("Suggested Activities:")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(ColorTheme.darkPurple)
-                    
-                    Text(weatherService.getActivitySuggestions(for: weather).joined(separator: ", "))
-                        .font(.caption)
-                        .foregroundColor(ColorTheme.lightText)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            } else {
-                // Weather not loaded yet
-                Button(action: loadWeather) {
-                    HStack {
-                        Image(systemName: "cloud.sun")
-                        Text("Load Weather Forecast")
-                    }
-                    .font(.subheadline)
-                    .foregroundColor(ColorTheme.primary)
-                }
-                .padding(.vertical, 4)
-            }
-        }
-        .padding()
-        .background(Color.white)
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-        .padding(.horizontal)
-        .sheet(isPresented: $showingWeatherDetails) {
-            if let weather = weather {
-                WeatherDetailView(weather: weather, date: playdate.startDate)
-            }
-        }
-        .onAppear {
-            loadWeather()
-        }
-    }
-    
-    private func loadWeather() {
-        guard let location = playdate.location else {
-            error = "Location not available"
-            return
-        }
-        
-        isLoading = true
-        error = nil
-        
-        let coordinate = CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude)
-        
-        weatherService.fetchWeatherForDate(location: coordinate, date: playdate.startDate)
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { completion in
-                isLoading = false
-                
-                if case .failure(let error) = completion {
-                    self.error = error.localizedDescription
-                }
-            }, receiveValue: { weather in
-                isLoading = false
-                self.weather = weather
-            })
-            .cancel()
-    }
-}
-
-// Detailed weather view
-struct WeatherDetailView: View {
-    let weather: Weather
-    let date: Date
-    @StateObject private var weatherService = WeatherService.shared
-    @State private var forecast: [Weather] = []
-    @State private var isLoading = false
-    @Environment(\.presentationMode) var presentationMode
-    
-    private let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter
-    }()
-    
-    var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Current weather section
-                    VStack(spacing: 16) {
-                        Text(dateFormatter.string(from: date))
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(weather.location)
                             .font(.headline)
-                            .foregroundColor(ColorTheme.darkPurple)
+                            .foregroundColor(.white)
                         
-                        // Weather icon and temperature
-                        HStack(spacing: 20) {
-                            AsyncImage(url: weather.iconURL) { phase in
-                                if let image = phase.image {
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 100, height: 100)
-                                } else if phase.error != nil {
-                                    Image(systemName: "exclamationmark.triangle")
-                                        .foregroundColor(.orange)
-                                        .frame(width: 100, height: 100)
-                                } else {
-                                    ProgressView()
-                                        .frame(width: 100, height: 100)
-                                }
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(weather.formattedTemperature)
-                                    .font(.system(size: 40, weight: .bold))
-                                    .foregroundColor(ColorTheme.darkPurple)
-                                
-                                Text(weather.description)
-                                    .font(.title3)
-                                    .foregroundColor(ColorTheme.lightText)
-                            }
-                        }
-                        
-                        // Weather details grid
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 20) {
+                        HStack {
                             WeatherDetailItem(
-                                icon: "thermometer",
-                                label: "Feels Like",
-                                value: String(format: "%.0f°F", weather.feelsLike)
+                                icon: "humidity",
+                                value: "\(weather.humidity)%",
+                                label: "Humidity"
                             )
+                            
+                            Spacer()
                             
                             WeatherDetailItem(
                                 icon: "wind",
-                                label: "Wind",
-                                value: String(format: "%.1f mph", weather.windSpeed)
-                            )
-                            
-                            WeatherDetailItem(
-                                icon: "humidity",
-                                label: "Humidity",
-                                value: "\(weather.humidity)%"
-                            )
-                            
-                            WeatherDetailItem(
-                                icon: "cloud.rain",
-                                label: "Precipitation",
-                                value: weather.precipitation != nil ? String(format: "%.1f mm", weather.precipitation!) : "0 mm"
+                                value: "\(Int(weather.windSpeed)) mph",
+                                label: "Wind"
                             )
                         }
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
-                    }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(16)
-                    .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
-                    
-                    // Activity recommendation section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Activity Recommendations")
-                            .font(.headline)
-                            .foregroundColor(ColorTheme.darkPurple)
                         
-                        HStack {
-                            Image(systemName: weather.isGoodForOutdoor ? "checkmark.circle" : "exclamationmark.triangle")
-                                .foregroundColor(weather.isGoodForOutdoor ? .green : .orange)
-                                .font(.system(size: 24))
-                            
-                            Text(weather.isGoodForOutdoor ? "Good weather for outdoor activities" : "Consider indoor alternatives")
-                                .font(.subheadline)
-                                .foregroundColor(weather.isGoodForOutdoor ? .green : .orange)
-                        }
-                        .padding(.bottom, 8)
-                        
-                        Text("Suggested Activities:")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(ColorTheme.darkPurple)
-                        
-                        ForEach(weatherService.getActivitySuggestions(for: weather), id: \.self) { activity in
-                            HStack(spacing: 8) {
-                                Image(systemName: "circle.fill")
-                                    .font(.system(size: 6))
-                                    .foregroundColor(ColorTheme.primary)
-                                
-                                Text(activity)
-                                    .font(.subheadline)
-                                    .foregroundColor(ColorTheme.lightText)
-                            }
-                            .padding(.vertical, 2)
-                        }
+                        Text("Updated: \(formattedUpdateTime)")
+                            .font(.caption2)
+                            .foregroundColor(.white.opacity(0.8))
                     }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(16)
-                    .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
-                    
-                    // 5-day forecast
-                    if !forecast.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("5-Day Forecast")
-                                .font(.headline)
-                                .foregroundColor(ColorTheme.darkPurple)
-                                .padding(.bottom, 4)
-                            
-                            ForEach(forecast) { dailyWeather in
-                                DailyForecastRow(weather: dailyWeather)
-                            }
-                        }
-                        .padding()
-                        .background(Color.white)
-                        .cornerRadius(16)
-                        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
-                    }
+                    .padding(.trailing)
                 }
                 .padding()
+            } else {
+                // Error or no data state
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 30))
+                        .foregroundColor(.white)
+                    
+                    Text("Weather data unavailable")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    
+                    Button(action: {
+                        refreshWeather()
+                    }) {
+                        Text("Refresh")
+                            .font(.caption)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.white.opacity(0.3))
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                    }
+                }
             }
-            .navigationTitle("Weather Details")
-            .navigationBarItems(trailing: Button("Close") {
+        }
+        .frame(height: 120)
+        .onAppear {
+            refreshWeather()
+        }
+        .onTapGesture {
+            showingSettings = true
+        }
+        .sheet(isPresented: $showingSettings) {
+            WeatherSettingsView()
+        }
+    }
+    
+    // MARK: - Helper Properties
+    
+    private var weatherIconName: String {
+        guard let weather = weatherService.currentWeather else {
+            return "cloud.fill"
+        }
+        
+        let condition = weather.condition.lowercased()
+        let isDay = true // In a real app, determine based on time
+        
+        if condition.contains("clear") || condition.contains("sunny") {
+            return isDay ? "sun.max.fill" : "moon.stars.fill"
+        } else if condition.contains("cloud") {
+            if condition.contains("partly") {
+                return isDay ? "cloud.sun.fill" : "cloud.moon.fill"
+            } else {
+                return "cloud.fill"
+            }
+        } else if condition.contains("rain") {
+            if condition.contains("light") {
+                return "cloud.drizzle.fill"
+            } else if condition.contains("heavy") {
+                return "cloud.heavyrain.fill"
+            } else {
+                return "cloud.rain.fill"
+            }
+        } else if condition.contains("snow") {
+            return "cloud.snow.fill"
+        } else if condition.contains("thunder") || condition.contains("lightning") {
+            return "cloud.bolt.fill"
+        } else if condition.contains("fog") || condition.contains("mist") {
+            return "cloud.fog.fill"
+        } else if condition.contains("wind") {
+            return "wind"
+        } else {
+            return "cloud.fill"
+        }
+    }
+    
+    private var weatherGradientColors: [Color] {
+        guard let weather = weatherService.currentWeather else {
+            return [Color.blue, Color.blue.opacity(0.7)]
+        }
+        
+        let condition = weather.condition.lowercased()
+        let isDay = true // In a real app, determine based on time
+        
+        if condition.contains("clear") || condition.contains("sunny") {
+            return isDay ? 
+                [Color.blue, Color(red: 0.3, green: 0.7, blue: 0.9)] : 
+                [Color(red: 0.1, green: 0.1, blue: 0.3), Color(red: 0.2, green: 0.2, blue: 0.5)]
+        } else if condition.contains("cloud") {
+            return isDay ?
+                [Color(red: 0.5, green: 0.7, blue: 0.9), Color(red: 0.7, green: 0.8, blue: 0.9)] :
+                [Color(red: 0.2, green: 0.3, blue: 0.4), Color(red: 0.3, green: 0.4, blue: 0.5)]
+        } else if condition.contains("rain") {
+            return [Color(red: 0.3, green: 0.4, blue: 0.5), Color(red: 0.5, green: 0.6, blue: 0.7)]
+        } else if condition.contains("snow") {
+            return [Color(red: 0.7, green: 0.7, blue: 0.8), Color(red: 0.9, green: 0.9, blue: 1.0)]
+        } else if condition.contains("thunder") {
+            return [Color(red: 0.3, green: 0.3, blue: 0.4), Color(red: 0.5, green: 0.5, blue: 0.6)]
+        } else {
+            return [Color.blue, Color.blue.opacity(0.7)]
+        }
+    }
+    
+    private var formattedUpdateTime: String {
+        guard let lastUpdated = weatherService.lastUpdated else {
+            return "Unknown"
+        }
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: lastUpdated)
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func refreshWeather() {
+        isLoading = true
+        weatherService.fetchWeather { success in
+            isLoading = false
+        }
+    }
+}
+
+// MARK: - Weather Detail Item
+struct WeatherDetailItem: View {
+    let icon: String
+    let value: String
+    let label: String
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(.white)
+            
+            Text(value)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.white)
+            
+            Text(label)
+                .font(.system(size: 10))
+                .foregroundColor(.white.opacity(0.8))
+        }
+    }
+}
+
+// MARK: - Weather Settings View
+struct WeatherSettingsView: View {
+    @Environment(\.presentationMode) var presentationMode
+    @ObservedObject private var weatherService = WeatherService.shared
+    @State private var locationText = ""
+    @State private var useCurrentLocation = true
+    @State private var temperatureUnit = "celsius"
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Location")) {
+                    Toggle("Use Current Location", isOn: $useCurrentLocation)
+                    
+                    if !useCurrentLocation {
+                        TextField("City, State", text: $locationText)
+                            .autocapitalization(.words)
+                    }
+                }
+                
+                Section(header: Text("Units")) {
+                    Picker("Temperature", selection: $temperatureUnit) {
+                        Text("Celsius (°C)").tag("celsius")
+                        Text("Fahrenheit (°F)").tag("fahrenheit")
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
+                
+                Section {
+                    Button(action: {
+                        saveSettings()
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Text("Save Settings")
+                            .foregroundColor(.blue)
+                    }
+                }
+            }
+            .navigationTitle("Weather Settings")
+            .navigationBarItems(trailing: Button("Done") {
                 presentationMode.wrappedValue.dismiss()
             })
             .onAppear {
-                loadForecast()
+                // Load current settings
+                locationText = weatherService.customLocation ?? ""
+                useCurrentLocation = weatherService.useCurrentLocation
+                temperatureUnit = weatherService.temperatureUnit
             }
         }
     }
     
-    private func loadForecast() {
-        guard let location = extractLocationFromWeather() else {
-            return
-        }
+    private func saveSettings() {
+        weatherService.useCurrentLocation = useCurrentLocation
+        weatherService.customLocation = useCurrentLocation ? nil : locationText
+        weatherService.temperatureUnit = temperatureUnit
         
-        isLoading = true
-        
-        weatherService.fetchForecast(for: location)
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { _ in
-                isLoading = false
-            }, receiveValue: { forecast in
-                self.forecast = forecast
-                isLoading = false
-            })
-            .cancel()
-    }
-    
-    private func extractLocationFromWeather() -> CLLocationCoordinate2D? {
-        // In a real app, you'd have the location stored in the Weather object
-        // Here we'll simulate it with a default location
-        return CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194)
+        // Refresh weather with new settings
+        weatherService.fetchWeather { _ in }
     }
 }
 
-// Supporting views
-struct WeatherDetailItem: View {
-    let icon: String
-    let label: String
-    let value: String
-    
-    var body: some View {
-        HStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.system(size: 18))
-                .foregroundColor(ColorTheme.primary)
-                .frame(width: 24, height: 24)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(label)
-                    .font(.caption)
-                    .foregroundColor(ColorTheme.lightText)
-                
-                Text(value)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(ColorTheme.darkPurple)
-            }
-        }
+#if DEBUG
+struct WeatherView_Previews: PreviewProvider {
+    static var previews: some View {
+        WeatherView()
+            .previewLayout(.fixed(width: 375, height: 120))
+            .padding()
     }
 }
-
-struct DailyForecastRow: View {
-    let weather: Weather
-    
-    var body: some View {
-        HStack {
-            // Day
-            Text(formatDay(weather.date))
-                .font(.subheadline)
-                .frame(width: 80, alignment: .leading)
-            
-            // Icon
-            AsyncImage(url: weather.iconURL) { phase in
-                if let image = phase.image {
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 40, height: 40)
-                } else {
-                    Image(systemName: "cloud")
-                        .foregroundColor(ColorTheme.lightText)
-                        .frame(width: 40, height: 40)
-                }
-            }
-            
-            // Description
-            Text(weather.description)
-                .font(.caption)
-                .foregroundColor(ColorTheme.lightText)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            // Temperature
-            Text(weather.formattedTemperature)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundColor(ColorTheme.darkPurple)
-        }
-        .padding(.vertical, 8)
-    }
-    
-    private func formatDay(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEE, MMM d"
-        return formatter.string(from: date)
-    }
-}
+#endif

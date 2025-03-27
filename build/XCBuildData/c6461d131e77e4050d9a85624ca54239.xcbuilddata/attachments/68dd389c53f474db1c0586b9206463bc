@@ -1,0 +1,4 @@
+module FirebaseCoreExtension {
+umbrella "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/firebase-ios-sdk/FirebaseCore/Extension"
+export *
+}

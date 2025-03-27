@@ -191,7 +191,7 @@ struct ExploreActivityDetailView: View {
     }
     
     private var activityIcon: some View {
-        Group {
+        SwiftUI.Group {
             switch activity.type {
             case .park:
                 ActivityIcons.ParkIcon(size: 120)
@@ -485,7 +485,7 @@ struct CreatePlaydateFromActivityView: View {
     }
     
     private var activityIcon: some View {
-        Group {
+        SwiftUI.Group {
             switch activity.type {
             case .park:
                 ActivityIcons.ParkIcon(size: 60)
@@ -615,7 +615,7 @@ struct ExploreActivityDetailView_Previews: PreviewProvider {
         
         NavigationView {
             ExploreActivityDetailView(activity: mockActivity)
-                .environmentObject(PlaydateViewModel.shared)
+                .environmentObject(PlaydateViewModel())
         }
     }
 }

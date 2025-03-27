@@ -13,8 +13,11 @@ struct MainTabView: View {
     
     // Create the view models here instead of passing them in
     @StateObject private var activityViewModel = ActivityViewModel.shared
-    @StateObject private var playdateViewModel = PlaydateViewModel.shared
+    @StateObject private var playdateViewModel = PlaydateViewModel()
     @StateObject private var friendshipViewModel = FriendshipViewModel()
+    @StateObject private var groupViewModel = GroupViewModel.shared
+    @StateObject private var resourceViewModel = ResourceViewModel.shared
+    @StateObject private var communityEventViewModel = CommunityEventViewModel.shared
     
     // Add state to track selected tab
     @State private var selectedTab = 0
@@ -53,13 +56,15 @@ struct MainTabView: View {
             }
             .tag(2)
             
-            // Friends Tab - Use the existing FriendsView
+            // Community Tab
             NavigationView {
-                FriendsView()
-                    .environmentObject(friendshipViewModel)
+                CommunityTabView()
+                    .environmentObject(groupViewModel)
+                    .environmentObject(resourceViewModel)
+                    .environmentObject(communityEventViewModel)
             }
             .tabItem {
-                Label("Friends", systemImage: "person.2.fill")
+                Label("Community", systemImage: "person.3.fill")
             }
             .tag(3)
             
@@ -71,7 +76,7 @@ struct MainTabView: View {
             .tabItem {
                 Label("Profile", systemImage: "person.fill")
             }
-            .tag(4)
+            .tag(5)
         }
         .accentColor(ColorTheme.primary)
         .onAppear {

@@ -1,10 +1,9 @@
 import Foundation
-import FirebaseFirestoreSwift
 import CoreLocation
 
 struct Activity: Identifiable, Codable {
     // Using DocumentID for Firestore integration
-    @DocumentID var id: String?
+    var id: String?
     
     // Core properties
     var name: String

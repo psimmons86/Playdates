@@ -1,6 +1,10 @@
 import UIKit
 import Firebase
 import FirebaseAppCheck
+import SwiftUI
+
+// Import the view models
+import Foundation
 
 // Provider factory class for Firebase App Check
 class AppCheckProviderFactory: NSObject, FirebaseAppCheck.AppCheckProviderFactory {
@@ -17,9 +21,15 @@ class AppCheckProviderFactory: NSObject, FirebaseAppCheck.AppCheckProviderFactor
 
 // Remove @UIApplicationMain since we're using @main in PlaydatesApp.swift
 class AppDelegate: UIResponder, UIApplicationDelegate {
+    
+    // Shared instance for accessing from other parts of the app
+    static var shared: AppDelegate?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         print("📱 AppDelegate: didFinishLaunchingWithOptions started")
+        
+        // Store shared instance
+        AppDelegate.shared = self
         
         // CRITICAL: Apply FirebaseSafetyKit BEFORE ANYTHING ELSE
         print("📱 Initializing FirebaseSafetyKit")
@@ -32,19 +42,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             FirebaseApp.configure()
             print("✅ Firebase configured successfully")
             
-            // Disable App Check for development
-            print("📱 Configuring Firebase App Check")
-            #if DEBUG
-            // Use debug provider in development
-            let providerFactory = AppCheckDebugProviderFactory()
-            AppCheck.setAppCheckProviderFactory(providerFactory)
-            print("✅ Firebase App Check configured with DEBUG provider")
-            #else
-            // Use real providers in production
-            let providerFactory = AppCheckProviderFactory()
-            AppCheck.setAppCheckProviderFactory(providerFactory)
-            print("✅ Firebase App Check configured with production provider")
-            #endif
+            // Completely disable App Check for now
+            print("📱 Firebase App Check is disabled")
             
             // Apply additional Firebase configuration
             applyFirebaseSettings()
@@ -63,6 +62,228 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         print("📱 AppDelegate: didFinishLaunchingWithOptions completed")
         return true
+    }
+    
+    // MARK: - Mock Data Loading
+    
+    /// Load mock data for development and testing
+    func loadMockData() {
+        print("📱 Loading mock data")
+        
+        // Instead of directly calling addMockData, we'll use a workaround
+        // to avoid the compiler error with extensions
+        
+        // Create mock groups
+        let groupVM = GroupViewModel.shared
+        groupVM.userGroups = createMockGroups()
+        groupVM.nearbyGroups = createMockGroups()
+        groupVM.recommendedGroups = createMockGroups()
+        
+        // Create mock resources
+        let resourceVM = ResourceViewModel.shared
+        resourceVM.availableResources = createMockResources()
+        resourceVM.filteredResources = createMockResources()
+        resourceVM.userResources = Array(createMockResources().prefix(3))
+        
+        // Create mock events
+        let eventVM = CommunityEventViewModel.shared
+        eventVM.upcomingEvents = createMockEvents()
+        eventVM.userEvents = Array(createMockEvents().prefix(3))
+        eventVM.filteredEvents = createMockEvents()
+        
+        print("✅ Mock data loaded successfully")
+    }
+    
+    // MARK: - Mock Data Creation
+    
+    private func createMockGroups() -> [Group] {
+        let userIDs = ["user1", "user2", "user3", "user4", "user5"]
+        
+        return [
+            Group(
+                id: "group1",
+                name: "Neighborhood Playgroup",
+                description: "A group for families in the neighborhood to organize playdates and activities.",
+                groupType: .neighborhood,
+                privacyType: .public,
+                location: Location(
+                    name: "Central Park",
+                    address: "Central Park, San Francisco",
+                    latitude: 37.7749,
+                    longitude: -122.4194
+                ),
+                memberIDs: [userIDs[0], userIDs[1], userIDs[2], userIDs[3]],
+                adminIDs: [userIDs[0]],
+                moderatorIDs: [userIDs[1]],
+                pendingMemberIDs: [userIDs[4]],
+                tags: ["playgroup", "toddlers", "neighborhood", "outdoor activities"],
+                createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 30), // 30 days ago
+                createdBy: userIDs[0]
+            ),
+            Group(
+                id: "group2",
+                name: "Parents of Preschoolers",
+                description: "Support group for parents with preschool-aged children.",
+                groupType: .interestBased,
+                privacyType: .public,
+                memberIDs: [userIDs[0], userIDs[1], userIDs[3]],
+                adminIDs: [userIDs[1]],
+                tags: ["preschool", "parenting", "support", "advice"],
+                createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 45), // 45 days ago
+                createdBy: userIDs[1]
+            ),
+            Group(
+                id: "group3",
+                name: "Weekend Adventures",
+                description: "Families who love to explore parks, museums, and outdoor activities on weekends.",
+                groupType: .interestBased,
+                privacyType: .public,
+                memberIDs: [userIDs[0], userIDs[2], userIDs[3], userIDs[4]],
+                adminIDs: [userIDs[2]],
+                moderatorIDs: [userIDs[0]],
+                tags: ["weekend", "adventures", "outdoors", "family activities"],
+                createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 15), // 15 days ago
+                createdBy: userIDs[2]
+            )
+        ]
+    }
+    
+    private func createMockResources() -> [SharedResource] {
+        let userIDs = ["user1", "user2", "user3", "user4", "user5"]
+        
+        return [
+            SharedResource(
+                id: "resource1",
+                title: "Double Stroller - Free to Borrow",
+                description: "City Mini GT2 double stroller available to borrow for up to 2 weeks.",
+                resourceType: .physicalItem,
+                ownerID: userIDs[0],
+                availabilityStatus: .available,
+                location: Location(
+                    name: "Downtown",
+                    address: "123 Main St, Downtown",
+                    latitude: 37.7749,
+                    longitude: -122.4194
+                ),
+                isFree: true,
+                isNegotiable: false,
+                tags: ["stroller", "baby gear", "double stroller"],
+                createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 5) // 5 days ago
+            ),
+            SharedResource(
+                id: "resource2",
+                title: "Swim Instructor Recommendation",
+                description: "We've been taking lessons with Ms. Sarah at Aquatic Center for 6 months.",
+                resourceType: .recommendation,
+                ownerID: userIDs[1],
+                availabilityStatus: .available,
+                location: Location(
+                    name: "Aquatic Center",
+                    address: "500 Pool Ave, Lakeside",
+                    latitude: 37.7833,
+                    longitude: -122.4167
+                ),
+                isFree: true,
+                isNegotiable: false,
+                tags: ["swimming", "lessons", "instructor", "water safety"],
+                createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 10) // 10 days ago
+            ),
+            SharedResource(
+                id: "resource3",
+                title: "Kids' Books Bundle - Ages 3-5",
+                description: "Selling a bundle of 15 picture books in excellent condition.",
+                resourceType: .physicalItem,
+                ownerID: userIDs[2],
+                availabilityStatus: .available,
+                location: Location(
+                    name: "Parkside",
+                    address: "789 Park Blvd, Parkside",
+                    latitude: 37.7695,
+                    longitude: -122.4529
+                ),
+                price: 25.00,
+                isFree: false,
+                isNegotiable: true,
+                tags: ["books", "children's books", "picture books", "preschool"],
+                createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 3) // 3 days ago
+            )
+        ]
+    }
+    
+    private func createMockEvents() -> [CommunityEvent] {
+        let userIDs = ["user1", "user2", "user3", "user4", "user5"]
+        
+        let locations = [
+            Location(
+                name: "Central Park Playground",
+                address: "100 Central Park Dr, San Francisco, CA",
+                latitude: 37.7749,
+                longitude: -122.4194
+            ),
+            Location(
+                name: "Community Center",
+                address: "250 Main St, San Francisco, CA",
+                latitude: 37.7833,
+                longitude: -122.4167
+            ),
+            Location(
+                name: "Lakeside Library",
+                address: "500 Lake Ave, San Francisco, CA",
+                latitude: 37.7695,
+                longitude: -122.4529
+            )
+        ]
+        
+        return [
+            CommunityEvent(
+                id: "event1",
+                title: "Family Picnic Day",
+                description: "Join us for a community picnic at Central Park!",
+                category: .playdate,
+                startDate: Calendar.current.date(byAdding: .day, value: 3, to: Date()) ?? Date(),
+                endDate: Calendar.current.date(byAdding: .day, value: 3, to: Date())?.addingTimeInterval(3 * 60 * 60) ?? Date(),
+                location: locations[0],
+                isVirtual: false,
+                attendeeIDs: [userIDs[0], userIDs[1], userIDs[2], userIDs[3], userIDs[4]],
+                waitlistIDs: [],
+                organizerID: userIDs[0],
+                isPublic: true,
+                tags: ["picnic", "outdoor", "family", "games"],
+                createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 10) // 10 days ago
+            ),
+            CommunityEvent(
+                id: "event2",
+                title: "Parent-Child Art Workshop",
+                description: "A fun art workshop for parents and children to create together.",
+                category: .workshop,
+                startDate: Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date(),
+                endDate: Calendar.current.date(byAdding: .day, value: 7, to: Date())?.addingTimeInterval(2 * 60 * 60) ?? Date(),
+                location: locations[1],
+                isVirtual: false,
+                attendeeIDs: [userIDs[1], userIDs[3], userIDs[4]],
+                waitlistIDs: [userIDs[0], userIDs[2]],
+                organizerID: userIDs[1],
+                isPublic: true,
+                tags: ["art", "workshop", "creative", "parent-child"],
+                createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 5) // 5 days ago
+            ),
+            CommunityEvent(
+                id: "event3",
+                title: "Storytime at Lakeside Library",
+                description: "Weekly storytime session for preschoolers.",
+                category: .education,
+                startDate: Calendar.current.date(byAdding: .day, value: 2, to: Date()) ?? Date(),
+                endDate: Calendar.current.date(byAdding: .day, value: 2, to: Date())?.addingTimeInterval(1 * 60 * 60) ?? Date(),
+                location: locations[2],
+                isVirtual: false,
+                attendeeIDs: [userIDs[2], userIDs[4]],
+                waitlistIDs: [],
+                organizerID: userIDs[2],
+                isPublic: true,
+                tags: ["storytime", "library", "preschool", "reading"],
+                createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 14) // 14 days ago
+            )
+        ]
     }
     
     private func applyFirebaseSettings() {

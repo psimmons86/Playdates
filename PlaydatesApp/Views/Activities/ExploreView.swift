@@ -4,7 +4,7 @@ import CoreLocation
 
 public struct ExploreView: View {
     @ObservedObject var activityViewModel = ActivityViewModel.shared
-    @ObservedObject var playdateViewModel = PlaydateViewModel.shared
+    @EnvironmentObject var playdateViewModel: PlaydateViewModel
     @State private var selectedCategory: String? = nil
     @State private var searchText = ""
     @State private var selectedDistance: Double = 10.0 // Default 10 miles
@@ -286,7 +286,7 @@ struct ExploreCategoryButton: View {
     }
     
     private var categoryIcon: some View {
-        Group {
+        SwiftUI.Group {
             switch category {
             case "Parks":
                 ActivityIcons.ParkIcon(size: 24)
@@ -326,7 +326,7 @@ struct ExploreActivityCard: View {
     
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            NavigationLink(destination: ExploreActivityDetailView(activity: activity).environmentObject(PlaydateViewModel.shared)) {
+            NavigationLink(destination: ExploreActivityDetailView(activity: activity)) {
                 VStack(alignment: .leading) {
                     // Activity icon
                     activityIcon
@@ -419,7 +419,7 @@ struct ExploreActivityCard: View {
     }
     
     private var activityIcon: some View {
-        Group {
+        SwiftUI.Group {
             switch activity.type {
             case .park:
                 ActivityIcons.ParkIcon(size: 60)

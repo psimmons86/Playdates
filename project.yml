@@ -18,11 +18,14 @@ targets:
       path: PlaydatesApp/Info.plist
       properties:
         CFBundleDisplayName: Playdates
+        CFBundleShortVersionString: "3.0.0"
+        CFBundleVersion: "3.0.0"
         UILaunchStoryboardName: LaunchScreen
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UIBackgroundModes: [location, remote-notification]
         NSLocationWhenInUseUsageDescription: Playdates needs your location to find activities and playdates near you.
+        NSCalendarsUsageDescription: Playdates needs access to your calendar to add and manage playdate events.
     entitlements:
       path: Playdates.entitlements
     settings:

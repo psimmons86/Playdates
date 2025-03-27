@@ -1,0 +1,15 @@
+{
+  "" : {
+    "const-values" : "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/firebase-ios-sdk/build/Firebase.build/Release-iphonesimulator/FirebaseFirestoreSwift.build/Objects-normal/arm64/FirebaseFirestoreSwift-master.swiftconstvalues",
+    "dependencies" : "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/firebase-ios-sdk/build/Firebase.build/Release-iphonesimulator/FirebaseFirestoreSwift.build/Objects-normal/arm64/FirebaseFirestoreSwift-master.d",
+    "diagnostics" : "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/firebase-ios-sdk/build/Firebase.build/Release-iphonesimulator/FirebaseFirestoreSwift.build/Objects-normal/arm64/FirebaseFirestoreSwift-master.dia",
+    "emit-module-dependencies" : "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/firebase-ios-sdk/build/Firebase.build/Release-iphonesimulator/FirebaseFirestoreSwift.build/Objects-normal/arm64/FirebaseFirestoreSwift-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/firebase-ios-sdk/build/Firebase.build/Release-iphonesimulator/FirebaseFirestoreSwift.build/Objects-normal/arm64/FirebaseFirestoreSwift-master-emit-module.dia",
+    "swift-dependencies" : "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/firebase-ios-sdk/build/Firebase.build/Release-iphonesimulator/FirebaseFirestoreSwift.build/Objects-normal/arm64/FirebaseFirestoreSwift-master.swiftdeps"
+  },
+  "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/firebase-ios-sdk/FirebaseFirestoreSwift/Sources/FirebaseFirestoreSwift.swift" : {
+    "index-unit-output-path" : "/Firebase.build/Release-iphonesimulator/FirebaseFirestoreSwift.build/Objects-normal/arm64/FirebaseFirestoreSwift.o",
+    "llvm-bc" : "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/firebase-ios-sdk/build/Firebase.build/Release-iphonesimulator/FirebaseFirestoreSwift.build/Objects-normal/arm64/FirebaseFirestoreSwift.bc",
+    "object" : "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/firebase-ios-sdk/build/Firebase.build/Release-iphonesimulator/FirebaseFirestoreSwift.build/Objects-normal/arm64/FirebaseFirestoreSwift.o"
+  }
+}

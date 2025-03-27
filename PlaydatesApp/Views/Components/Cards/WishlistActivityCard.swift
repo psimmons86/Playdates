@@ -8,93 +8,82 @@ struct WishlistActivityCard: View {
     @State private var isAnimating = false
     
     var body: some View {
-        HStack(spacing: 16) {
-            // Activity icon with gradient background
-            ZStack {
-                // Gradient background
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        activityColor,
-                        activityColor.opacity(0.7)
-                    ]),
-                    startPoint: isAnimating ? .topLeading : .bottomTrailing,
-                    endPoint: isAnimating ? .bottomTrailing : .topLeading
-                )
-                .frame(width: 60, height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .onAppear {
-                    withAnimation(Animation.easeInOut(duration: 3).repeatForever(autoreverses: true)) {
-                        isAnimating = true
-                    }
-                }
-                
+        GradientCard(
+            gradientColors: [
+                activityColor,
+                activityColor.opacity(0.7)
+            ],
+            cornerRadius: 12,
+            shadowRadius: 5
+        ) {
+            HStack(spacing: 16) {
                 // Activity icon
                 Image(systemName: activityIcon)
                     .font(.system(size: 24))
                     .foregroundColor(.white)
-            }
-            
-            // Activity details
-            VStack(alignment: .leading, spacing: 4) {
-                // Title and rating
-                HStack {
-                    Text(activity.name)
-                        .font(.headline)
-                        .foregroundColor(ColorTheme.darkPurple)
-                        .lineLimit(1)
-                    
-                    Spacer()
-                    
-                    if let rating = activity.rating {
-                        HStack(spacing: 2) {
-                            Image(systemName: "star.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(ColorTheme.highlight)
-                            
-                            Text(String(format: "%.1f", rating))
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(ColorTheme.darkPurple)
+                    .frame(width: 50, height: 50)
+                    .background(Color.white.opacity(0.2))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                
+                // Activity details
+                VStack(alignment: .leading, spacing: 4) {
+                    // Title and rating
+                    HStack {
+                        Text(activity.name)
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                        
+                        Spacer()
+                        
+                        if let rating = activity.rating {
+                            HStack(spacing: 2) {
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.white)
+                                
+                                Text(String(format: "%.1f", rating))
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.white)
+                            }
                         }
+                    }
+                    
+                    // Location
+                    HStack {
+                        Image(systemName: "mappin.and.ellipse")
+                            .font(.system(size: 12))
+                            .foregroundColor(.white.opacity(0.9))
+                        
+                        Text(activity.location.name)
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.9))
+                            .lineLimit(1)
+                    }
+                    
+                    // Activity type
+                    HStack {
+                        Image(systemName: "tag")
+                            .font(.system(size: 12))
+                            .foregroundColor(.white.opacity(0.9))
+                        
+                        Text(activity.type.rawValue.capitalized)
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.9))
                     }
                 }
                 
-                // Location
-                HStack {
-                    Image(systemName: "mappin.and.ellipse")
-                        .font(.system(size: 12))
-                        .foregroundColor(ColorTheme.lightText)
-                    
-                    Text(activity.location.name)
-                        .font(.caption)
-                        .foregroundColor(ColorTheme.lightText)
-                        .lineLimit(1)
+                // Remove button
+                Button(action: onRemove) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.white.opacity(0.9))
                 }
-                
-                // Activity type
-                HStack {
-                    Image(systemName: "tag")
-                        .font(.system(size: 12))
-                        .foregroundColor(ColorTheme.lightText)
-                    
-                    Text(activity.type.rawValue.capitalized)
-                        .font(.caption)
-                        .foregroundColor(ColorTheme.lightText)
-                }
+                .buttonStyle(PlainButtonStyle())
             }
-            
-            // Remove button
-            Button(action: onRemove) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(ColorTheme.lightText.opacity(0.7))
-            }
-            .buttonStyle(PlainButtonStyle())
+            .padding(12)
         }
-        .padding(12)
-        .background(Color.white)
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 1)
     }
     
     // Helper to determine activity icon

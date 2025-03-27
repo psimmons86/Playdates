@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import Firebase
 
 struct FriendsView: View {
     @StateObject var viewModel = FriendshipViewModel()
@@ -307,28 +308,185 @@ struct AddFriendView: View {
     private func searchUsers() {
         guard !searchText.isEmpty else { return }
         
+        print("DEBUG: Starting search with query: \(searchText)")
         isSearching = true
         errorMessage = nil
         
-        // Simulate searching users - replace with actual implementation
-        // that interacts with the FriendshipViewModel
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            // This is a placeholder for the real implementation
-            let mockUsers = [
-                User(id: UUID().uuidString, name: "Jane Smith", email: "jane@example.com", createdAt: Date(), lastActive: Date()),
-                User(id: UUID().uuidString, name: "John Doe", email: "john@example.com", createdAt: Date(), lastActive: Date())
-            ]
+        // Create a dispatch group to handle multiple queries
+        let dispatchGroup = DispatchGroup()
+        var allResults: [User] = []
+        
+        // Search by name (using Firebase's array-contains-any with name parts)
+        dispatchGroup.enter()
+        searchByName(searchText) { users in
+            print("DEBUG: Name search completed with \(users.count) results")
+            allResults.append(contentsOf: users)
+            dispatchGroup.leave()
+        }
+        
+        // Search by email
+        dispatchGroup.enter()
+        searchByEmail(searchText) { users in
+            print("DEBUG: Email search completed with \(users.count) results")
+            allResults.append(contentsOf: users)
+            dispatchGroup.leave()
+        }
+        
+        // When all searches are complete
+        dispatchGroup.notify(queue: .main) {
+            print("DEBUG: All searches complete, total results: \(allResults.count)")
+            
+            // Remove duplicates
+            var uniqueResults: [User] = []
+            var seenIds = Set<String>()
+            
+            for user in allResults {
+                if let id = user.id, !seenIds.contains(id) {
+                    seenIds.insert(id)
+                    uniqueResults.append(user)
+                }
+            }
+            
+            print("DEBUG: After removing duplicates: \(uniqueResults.count) results")
+            
+            // Filter out the current user
+            if let currentUserId = self.viewModel.currentUserId {
+                print("DEBUG: Current user ID: \(currentUserId)")
+                uniqueResults = uniqueResults.filter { $0.id != currentUserId }
+                print("DEBUG: After filtering out current user: \(uniqueResults.count) results")
+            }
+            
+            // Also filter out users who are already friends
+            let beforeFriendFilter = uniqueResults.count
+            uniqueResults = uniqueResults.filter { user in
+                guard let userId = user.id else { return true }
+                return !self.viewModel.isFriend(userId: userId)
+            }
+            print("DEBUG: After filtering out friends: \(uniqueResults.count) results (removed \(beforeFriendFilter - uniqueResults.count))")
             
             self.isSearching = false
-            self.searchResults = mockUsers.filter { user in
-                user.name.localizedCaseInsensitiveContains(self.searchText) ||
-                user.email.localizedCaseInsensitiveContains(self.searchText)
-            }
+            self.searchResults = uniqueResults
             
-            if self.searchResults.isEmpty {
+            if uniqueResults.isEmpty {
+                print("DEBUG: No users found after filtering")
                 self.errorMessage = "No users found matching '\(self.searchText)'"
+            } else {
+                self.errorMessage = nil
             }
         }
+    }
+    
+    private func searchByName(_ query: String, completion: @escaping ([User]) -> Void) {
+        // Create search terms by splitting the query
+        let searchTerms = query.lowercased().split(separator: " ").map(String.init)
+        
+        print("DEBUG: Searching for name with query: \(query)")
+        
+        // Firebase can't do case-insensitive searches directly, so we'll use a prefix search
+        // This works well for names that start with the search term
+        viewModel.db.collection("users")
+            .whereField("name_lowercase", isGreaterThanOrEqualTo: query.lowercased())
+            .whereField("name_lowercase", isLessThan: query.lowercased() + "\u{f8ff}")
+            .limit(to: 20)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("DEBUG ERROR: Error searching by name: \(error.localizedDescription)")
+                    completion([])
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    print("DEBUG: No documents found in name search")
+                    completion([])
+                    return
+                }
+                
+                print("DEBUG: Found \(documents.count) documents in name search")
+                
+                // Debug: Print raw document data to check fields
+                for (index, document) in documents.enumerated() {
+                    print("DEBUG: Document \(index) data: \(document.data())")
+                }
+                
+                let users = documents.compactMap { document -> User? in
+                    do {
+                        return try document.data(as: User.self)
+                    } catch {
+                        print("DEBUG ERROR: Failed to decode user from document \(document.documentID): \(error.localizedDescription)")
+                        // Try manual parsing as fallback
+                        let data = document.data()
+                        if let name = data["name"] as? String,
+                           let email = data["email"] as? String {
+                            print("DEBUG: Manually parsed user: \(name), \(email)")
+                            return User(
+                                id: document.documentID,
+                                name: name,
+                                email: email,
+                                createdAt: Date(),
+                                lastActive: Date()
+                            )
+                        }
+                        return nil
+                    }
+                }
+                
+                print("DEBUG: Successfully decoded \(users.count) users from name search")
+                completion(users)
+            }
+    }
+    
+    private func searchByEmail(_ query: String, completion: @escaping ([User]) -> Void) {
+        print("DEBUG: Searching for email with query: \(query)")
+        
+        viewModel.db.collection("users")
+            .whereField("email", isGreaterThanOrEqualTo: query.lowercased())
+            .whereField("email", isLessThan: query.lowercased() + "\u{f8ff}")
+            .limit(to: 20)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("DEBUG ERROR: Error searching by email: \(error.localizedDescription)")
+                    completion([])
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    print("DEBUG: No documents found in email search")
+                    completion([])
+                    return
+                }
+                
+                print("DEBUG: Found \(documents.count) documents in email search")
+                
+                // Debug: Print raw document data to check fields
+                for (index, document) in documents.enumerated() {
+                    print("DEBUG: Document \(index) email data: \(document.data())")
+                }
+                
+                let users = documents.compactMap { document -> User? in
+                    do {
+                        return try document.data(as: User.self)
+                    } catch {
+                        print("DEBUG ERROR: Failed to decode user from email document \(document.documentID): \(error.localizedDescription)")
+                        // Try manual parsing as fallback
+                        let data = document.data()
+                        if let name = data["name"] as? String,
+                           let email = data["email"] as? String {
+                            print("DEBUG: Manually parsed user from email search: \(name), \(email)")
+                            return User(
+                                id: document.documentID,
+                                name: name,
+                                email: email,
+                                createdAt: Date(),
+                                lastActive: Date()
+                            )
+                        }
+                        return nil
+                    }
+                }
+                
+                print("DEBUG: Successfully decoded \(users.count) users from email search")
+                completion(users)
+            }
     }
 }
 
@@ -367,11 +525,23 @@ struct UserSearchRow: View {
             
             // Add button
             Button(action: {
-                if let userId = user.id {
-                    viewModel.sendFriendRequest(from: "currentUserId", to: userId)
+                if let userId = user.id, let currentUserId = Auth.auth().currentUser?.uid {
+                    viewModel.sendFriendRequest(from: currentUserId, to: userId) { result in
+                        switch result {
+                        case .success:
+                            // Show success indicator or message
+                            print("Friend request sent successfully")
+                        case .failure(let error):
+                            // Show error
+                            print("Error sending friend request: \(error.localizedDescription)")
+                        }
+                    }
                 }
             }) {
-                if viewModel.isFriendRequestPending(userId: user.id ?? "") {
+                // Get the user ID safely
+                let userId = user.id ?? ""
+                
+                if viewModel.isFriendRequestPending(userId: userId) {
                     Text("Sent")
                         .font(.subheadline)
                         .fontWeight(.medium)
@@ -380,7 +550,7 @@ struct UserSearchRow: View {
                         .padding(.vertical, 8)
                         .background(Color(.systemGray5))
                         .cornerRadius(16)
-                } else if viewModel.isFriend(userId: user.id ?? "") {
+                } else if viewModel.isFriend(userId: userId) {
                     Text("Friend")
                         .font(.subheadline)
                         .fontWeight(.medium)
@@ -400,9 +570,14 @@ struct UserSearchRow: View {
                         .cornerRadius(16)
                 }
             }
-            .disabled(viewModel.isFriendRequestPending(userId: user.id ?? "") || viewModel.isFriend(userId: user.id ?? ""))
+            .disabled(isButtonDisabled)
         }
         .padding(.vertical, 8)
+    }
+    
+    private var isButtonDisabled: Bool {
+        let userId = user.id ?? ""
+        return viewModel.isFriendRequestPending(userId: userId) || viewModel.isFriend(userId: userId)
     }
 }
 
@@ -530,19 +705,50 @@ struct FriendRequestRow: View {
     }
     
     private func fetchSender() {
-        // Check if senderID exists and is not empty
-        let senderID = request.senderID ?? ""
-        if !senderID.isEmpty {
-            // Simulate fetching the sender user
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                // This is a placeholder. In the real app, you would use viewModel to fetch the user
-                self.sender = User(
-                    id: senderID,
-                    name: "John Doe",
-                    email: "john@example.com",
-                    createdAt: Date(),
-                    lastActive: Date()
-                )
+        // Check if senderID is not empty
+        guard !request.senderID.isEmpty else { return }
+        
+        // Fetch the actual user data from Firebase
+        viewModel.db.collection("users").document(request.senderID).getDocument { snapshot, error in
+            if let error = error {
+                print("Error fetching sender: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let document = snapshot, document.exists else {
+                print("Sender document not found")
+                return
+            }
+            
+            // Try to decode the user
+            if let user = try? document.data(as: User.self) {
+                DispatchQueue.main.async {
+                    self.sender = user
+                }
+            } else {
+                // Manual parsing if decoding fails
+                if let data = document.data() {
+                    let name = data["name"] as? String ?? "Unknown User"
+                    let email = data["email"] as? String ?? "unknown@example.com"
+                    let profileImageURL = data["profileImageURL"] as? String
+                    
+                    // Create a User object without directly setting the @DocumentID property
+                    var user = User(
+                        id: nil,  // Don't set the ID directly to avoid Firestore warning
+                        name: name,
+                        email: email,
+                        profileImageURL: profileImageURL,
+                        createdAt: Date(),
+                        lastActive: Date()
+                    )
+                    // Store the ID separately since we need it for display purposes
+                    // but don't want to trigger the @DocumentID warning
+                    user.id = request.senderID
+                    
+                    DispatchQueue.main.async {
+                        self.sender = user
+                    }
+                }
             }
         }
     }
@@ -584,36 +790,170 @@ extension FriendshipViewModel {
     }
     
     func isFriendRequestPending(userId: String) -> Bool {
-        return friendRequests.contains { $0.senderID == userId }
-    }
-    
-    var currentUserId: String? {
-        // This would be implemented to return the current user's ID
-        return nil
+        return friendRequests.contains { 
+            $0.senderID == userId || $0.receiverID == userId
+        }
     }
     
     // Friend request actions
     func acceptFriendRequest(requestId: String, completion: @escaping (Bool) -> Void) {
-        // Implementation would be added here
-        completion(true)
+        isLoading = true
+        
+        // Get the request document
+        db.collection("friendRequests").document(requestId).getDocument { [weak self] snapshot, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("Error getting friend request: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    completion(false)
+                }
+                return
+            }
+            
+            guard let document = snapshot, document.exists,
+                  let data = document.data(),
+                  let senderID = data["senderID"] as? String,
+                  let receiverID = data["receiverID"] as? String else {
+                print("Friend request not found or invalid")
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    completion(false)
+                }
+                return
+            }
+            
+            // Create a FriendRequestModel to pass to respondToFriendRequest
+            let request = FriendRequestModel(
+                id: requestId,
+                senderID: senderID,
+                receiverID: receiverID,
+                status: .pending
+            )
+            
+            // Use the existing method to accept the request
+            self.respondToFriendRequest(request: request, accept: true) { result in
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    
+                    switch result {
+                    case .success:
+                        // Refresh the friend requests list
+                        if let currentUserId = self.currentUserId {
+                            self.fetchFriendRequests(for: currentUserId)
+                            self.fetchFriends(for: currentUserId)
+                        }
+                        completion(true)
+                    case .failure(let error):
+                        print("Error accepting friend request: \(error.localizedDescription)")
+                        completion(false)
+                    }
+                }
+            }
+        }
     }
     
     func declineFriendRequest(requestId: String, completion: @escaping (Bool) -> Void) {
-        // Implementation would be added here
-        completion(true)
+        isLoading = true
+        
+        // Get the request document
+        db.collection("friendRequests").document(requestId).getDocument { [weak self] snapshot, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("Error getting friend request: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    completion(false)
+                }
+                return
+            }
+            
+            guard let document = snapshot, document.exists,
+                  let data = document.data(),
+                  let senderID = data["senderID"] as? String,
+                  let receiverID = data["receiverID"] as? String else {
+                print("Friend request not found or invalid")
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    completion(false)
+                }
+                return
+            }
+            
+            // Create a FriendRequestModel to pass to respondToFriendRequest
+            let request = FriendRequestModel(
+                id: requestId,
+                senderID: senderID,
+                receiverID: receiverID,
+                status: .pending
+            )
+            
+            // Use the existing method to decline the request
+            self.respondToFriendRequest(request: request, accept: false) { result in
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    
+                    switch result {
+                    case .success:
+                        // Refresh the friend requests list
+                        if let currentUserId = self.currentUserId {
+                            self.fetchFriendRequests(for: currentUserId)
+                        }
+                        completion(true)
+                    case .failure(let error):
+                        print("Error declining friend request: \(error.localizedDescription)")
+                        completion(false)
+                    }
+                }
+            }
+        }
     }
     
     func removeFriendship(friendId: String) {
-        // Implementation would be added here
-    }
-    
-    func sendFriendRequest(from senderId: String, to recipientId: String) {
-        // Implementation would be added here
-    }
-}
-
-struct FriendsView_Previews: PreviewProvider {
-    static var previews: some View {
-        FriendsView()
+        guard let currentUserId = currentUserId else { return }
+        isLoading = true
+        
+        // Find the friendship document
+        db.collection("friendships")
+            .whereField("participants", arrayContains: currentUserId)
+            .getDocuments { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("Error finding friendship: \(error.localizedDescription)")
+                    self.isLoading = false
+                    return
+                }
+                
+                // Find the friendship document that contains both users
+                let friendshipDoc = snapshot?.documents.first { document in
+                    if let participants = document.data()["participants"] as? [String] {
+                        return participants.contains(friendId)
+                    }
+                    return false
+                }
+                
+                if let friendshipDoc = friendshipDoc {
+                    // Delete the friendship
+                    friendshipDoc.reference.delete { error in
+                        DispatchQueue.main.async {
+                            self.isLoading = false
+                            
+                            if let error = error {
+                                print("Error removing friendship: \(error.localizedDescription)")
+                                return
+                            }
+                            
+                            // Remove the friend from the local list
+                            self.friends.removeAll { $0.id == friendId }
+                        }
+                    }
+                } else {
+                    self.isLoading = false
+                    print("Friendship not found")
+                }
+            }
     }
 }

@@ -8,6 +8,8 @@ public struct User: Identifiable, Codable {
     public var email: String
     public var profileImageURL: String?
     public var bio: String?
+    // Search-optimized fields
+    public var name_lowercase: String?
     // Use StoredOnHeap for potentially large arrays and collections
     @StoredOnHeap public var children: [PlaydateChild]?
     @StoredOnHeap public var friendIDs: [String]?
@@ -29,6 +31,9 @@ public struct User: Identifiable, Codable {
         self.friendRequestIDs = friendRequestIDs
         self.createdAt = createdAt
         self.lastActive = lastActive
+        
+        // Set search-optimized fields
+        self.name_lowercase = name.lowercased()
     }
 
     enum CodingKeys: String, CodingKey {
@@ -37,6 +42,7 @@ public struct User: Identifiable, Codable {
         case email
         case profileImageURL
         case bio
+        case name_lowercase
         case children
         case friendIDs
         case friendRequestIDs
@@ -56,6 +62,9 @@ public struct User: Identifiable, Codable {
         email = try Self.decodeString(from: container, forKey: .email) ?? ""
         profileImageURL = try Self.decodeString(from: container, forKey: .profileImageURL)
         bio = try Self.decodeString(from: container, forKey: .bio)
+        
+        // Decode search-optimized fields or generate them if missing
+        name_lowercase = try container.decodeIfPresent(String.self, forKey: .name_lowercase) ?? name.lowercased()
 
         // Decode arrays and wrap in StoredOnHeap
         children = try container.decodeIfPresent([PlaydateChild].self, forKey: .children)
@@ -80,6 +89,11 @@ public struct User: Identifiable, Codable {
         try container.encode(email, forKey: .email)
         try container.encodeIfPresent(profileImageURL, forKey: .profileImageURL)
         try container.encodeIfPresent(bio, forKey: .bio)
+        
+        // Always ensure name_lowercase is set and encoded
+        let nameLowercase = name.lowercased()
+        try container.encode(nameLowercase, forKey: .name_lowercase)
+        
         try container.encodeIfPresent(children, forKey: .children)
         try container.encodeIfPresent(friendIDs, forKey: .friendIDs)
         try container.encodeIfPresent(friendRequestIDs, forKey: .friendRequestIDs)

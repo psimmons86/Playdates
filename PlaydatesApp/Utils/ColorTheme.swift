@@ -11,8 +11,10 @@ public enum ColorTheme {
     public static let highlight = Color(hex: "F19ED2")    // Pink
     public static let darkPurple = Color(hex: "5D4E6D")   // Dark purple for text
     public static let text = Color(hex: "333333")         // Dark text
+    public static let darkText = Color(hex: "333333")     // Dark text (alias for text)
     public static let lightText = Color(hex: "666666")    // Secondary text
     public static let background = Color(hex: "FAFAFA")   // Very light background
+    public static let lightBackground = Color(hex: "F0F0F0") // Light background for UI elements
     
     // MARK: - Additional Shades
     

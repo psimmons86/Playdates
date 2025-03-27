@@ -44,11 +44,17 @@ struct PlaydatesApp: App {
 
 struct AppContentView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    @StateObject private var groupViewModel = GroupViewModel.shared
+    @StateObject private var resourceViewModel = ResourceViewModel.shared
+    @StateObject private var communityEventViewModel = CommunityEventViewModel.shared
     
     var body: some View {
-        Group {
+        SwiftUI.Group {
             if authViewModel.isSignedIn {
                 MainTabView()
+                    .environmentObject(groupViewModel)
+                    .environmentObject(resourceViewModel)
+                    .environmentObject(communityEventViewModel)
             } else {
                 AuthView()
             }
@@ -56,6 +62,17 @@ struct AppContentView: View {
         .onAppear {
             // Check if user is already logged in
             authViewModel.checkAuthState()
+            
+            // Load mock data for Community features
+            loadMockData()
+        }
+    }
+    
+    private func loadMockData() {
+        // Add a slight delay to ensure view models are fully initialized
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // Use the AppDelegate's loadMockData method
+            AppDelegate.shared?.loadMockData()
         }
     }
 }
