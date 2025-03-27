@@ -661,7 +661,8 @@ struct EventCalendarPlaceholder: View {
                 mapView
             // Add default case to make switch exhaustive
             default:
-                Text("Selected View Mode: \(viewMode.rawValue)") // Placeholder for any potentially missed modes
+                // Use string interpolation directly as CalendarViewMode has no rawValue
+                Text("Selected View Mode: \(viewMode)") // Placeholder for any potentially missed modes
             }
         }
         .padding()
