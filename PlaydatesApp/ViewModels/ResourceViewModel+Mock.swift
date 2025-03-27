@@ -18,6 +18,7 @@ extension ResourceViewModel {
                 description: "City Mini GT2 double stroller available to borrow for up to 2 weeks. Perfect for travel or if you have visitors with kids. Good condition, easy to fold.",
                 resourceType: .physicalItem,
                 ownerID: userIDs[0],
+                coverImageURL: nil,
                 tags: ["stroller", "baby gear", "double stroller"],
                 isFree: true,
                 price: nil,
@@ -29,7 +30,6 @@ extension ResourceViewModel {
                     latitude: 37.7749,
                     longitude: -122.4194
                 ),
-                coverImageURL: nil,
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 5) // 5 days ago
             ),
             SharedResource(
@@ -38,6 +38,7 @@ extension ResourceViewModel {
                 description: "We've been taking lessons with Ms. Sarah at Aquatic Center for 6 months and she's amazing with anxious kids. Our 4-year-old went from terrified to swimming independently. Highly recommend!",
                 resourceType: .recommendation,
                 ownerID: userIDs[1],
+                coverImageURL: nil,
                 tags: ["swimming", "lessons", "instructor", "water safety"],
                 isFree: true,
                 price: nil,
@@ -49,7 +50,6 @@ extension ResourceViewModel {
                     latitude: 37.7833,
                     longitude: -122.4167
                 ),
-                coverImageURL: nil,
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 10) // 10 days ago
             ),
             SharedResource(
@@ -58,6 +58,7 @@ extension ResourceViewModel {
                 description: "Selling a bundle of 15 picture books in excellent condition. Titles include several Dr. Seuss, Eric Carle, and popular characters. Great for preschoolers.",
                 resourceType: .physicalItem,
                 ownerID: userIDs[2],
+                coverImageURL: nil,
                 tags: ["books", "children's books", "picture books", "preschool"],
                 isFree: false,
                 price: 25.00,
@@ -69,7 +70,6 @@ extension ResourceViewModel {
                     latitude: 37.7695,
                     longitude: -122.4529
                 ),
-                coverImageURL: nil,
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 3) // 3 days ago
             ),
             SharedResource(
@@ -78,13 +78,13 @@ extension ResourceViewModel {
                 description: "Just discovered this amazing website with free printable worksheets, activities, and learning materials for ages 2-10. They have everything from letter tracing to science experiments. www.learningprintables.com",
                 resourceType: .educationalResource,
                 ownerID: userIDs[3],
+                coverImageURL: nil,
                 tags: ["education", "printables", "worksheets", "homeschool", "activities"],
                 isFree: true,
                 price: nil,
                 isNegotiable: false,
                 availabilityStatus: .available,
                 location: nil,
-                coverImageURL: nil,
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 7) // 7 days ago
             ),
             SharedResource(
@@ -93,6 +93,7 @@ extension ResourceViewModel {
                 description: "We live in the Marina district and are looking for another family to share school drop-off/pick-up duties for Lake School (kindergarten). We can drive Mon/Wed, looking for Tue/Thu coverage.",
                 resourceType: .carpoolOffer,
                 ownerID: userIDs[4],
+                coverImageURL: nil,
                 tags: ["carpool", "Lake School", "kindergarten", "Marina district"],
                 isFree: true,
                 price: nil,
@@ -104,7 +105,6 @@ extension ResourceViewModel {
                     latitude: 37.8030,
                     longitude: -122.4378
                 ),
-                coverImageURL: nil,
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 2) // 2 days ago
             ),
             SharedResource(
@@ -113,6 +113,7 @@ extension ResourceViewModel {
                 description: "College student with 5+ years of childcare experience available for babysitting. CPR certified, experience with all ages from infants to pre-teens. Available evenings and weekends. References available.",
                 resourceType: .serviceProvider,
                 ownerID: userIDs[5],
+                coverImageURL: nil,
                 tags: ["babysitter", "childcare", "evening care", "weekend care"],
                 isFree: false,
                 price: 20.00,
@@ -124,7 +125,6 @@ extension ResourceViewModel {
                     latitude: 37.7749,
                     longitude: -122.4194
                 ),
-                coverImageURL: nil,
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 1) // 1 day ago
             ),
             SharedResource(
@@ -133,6 +133,7 @@ extension ResourceViewModel {
                 description: "16-inch children's bike in good condition. Suitable for 4-6 year olds. Training wheels included but removable. Blue color with dinosaur design.",
                 resourceType: .classifiedAd,
                 ownerID: userIDs[6],
+                coverImageURL: nil,
                 tags: ["bike", "bicycle", "kids bike", "16 inch", "training wheels"],
                 isFree: false,
                 price: 45.00,
@@ -144,7 +145,6 @@ extension ResourceViewModel {
                     latitude: 37.7749,
                     longitude: -122.4194
                 ),
-                coverImageURL: nil,
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 4) // 4 days ago
             )
         ]
