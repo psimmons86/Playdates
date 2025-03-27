@@ -616,46 +616,7 @@ struct ResourceTypeCard: View {
     }
 }
 
-// Extension to add icon and displayName properties to ResourceType
-extension ResourceType {
-    var icon: String {
-        switch self {
-        case .physicalItem:
-            return "backpack.fill"
-        case .recommendation:
-            return "star.fill"
-        case .educationalResource:
-            return "book.fill"
-        case .classifiedAd:
-            return "tag.fill"
-        case .carpoolOffer:
-            return "car.fill"
-        case .serviceProvider:
-            return "person.fill.checkmark"
-        case .other:
-            return "square.grid.2x2.fill"
-        }
-    }
-    
-    var displayName: String {
-        switch self {
-        case .physicalItem:
-            return "Item"
-        case .recommendation:
-            return "Recommendation"
-        case .educationalResource:
-            return "Educational"
-        case .classifiedAd:
-            return "For Sale"
-        case .carpoolOffer:
-            return "Carpool"
-        case .serviceProvider:
-            return "Service"
-        case .other:
-            return "Other"
-        }
-    }
-}
+// ResourceType properties are already defined in SharedResource.swift
 
 // Placeholder for filter view
 struct ResourceFilterView: View {
