@@ -519,19 +519,37 @@ struct CompactGroupCard: View {
     }
 }
 
-// Extension to apply rounded corners to specific corners
-extension View {
-    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
-        clipShape(RoundedCorner(radius: radius, corners: corners))
+// Placeholder for GroupDetailView
+struct GroupDetailView: View {
+    let group: Group
+    
+    var body: some View {
+        VStack {
+            Text("Group Detail View")
+                .font(.title)
+            
+            Text(group.name)
+                .font(.headline)
+            
+            Text(group.description)
+                .font(.body)
+                .padding()
+        }
+        .navigationTitle(group.name)
     }
 }
 
-struct RoundedCorner: Shape {
-    var radius: CGFloat = .infinity
-    var corners: UIRectCorner = .allCorners
-
-    func path(in rect: CGRect) -> Path {
-        let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
-        return Path(path.cgPath)
+// Placeholder for CreateGroupView
+struct CreateGroupView: View {
+    @Environment(\.presentationMode) var presentationMode
+    
+    var body: some View {
+        NavigationView {
+            Text("Create Group Form - Coming Soon")
+                .navigationTitle("Create Group")
+                .navigationBarItems(leading: Button("Cancel") {
+                    presentationMode.wrappedValue.dismiss()
+                })
+        }
     }
 }
