@@ -266,9 +266,11 @@ public struct ExploreView: View {
 
         if !searchText.isEmpty {
             filtered = filtered.filter { activity in
-                activity.name.localizedCaseInsensitiveContains(searchText) ||
-                (activity.description?.localizedCaseInsensitiveContains(searchText) ?? false) ||
-                (activity.type.title.localizedCaseInsensitiveContains(searchText)) // Use type.title
+                let nameMatch = activity.name.localizedCaseInsensitiveContains(searchText)
+                let descriptionMatch = activity.description?.localizedCaseInsensitiveContains(searchText) ?? false
+                // Assuming activity.type is non-optional based on Activity model, and type.title is non-optional based on ActivityType model
+                let typeMatch = activity.type.title.localizedCaseInsensitiveContains(searchText)
+                return nameMatch || descriptionMatch || typeMatch
             }
         }
 
