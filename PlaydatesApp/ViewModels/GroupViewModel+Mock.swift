@@ -137,8 +137,8 @@ extension GroupViewModel {
                 status: .published,
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 5), // 5 days ago
                 likedByIDs: [userIDs[0], userIDs[2], userIDs[4], userIDs[5]],
-                isPoll: true,
                 commentIDs: ["comment3", "comment4", "comment5"],
+                isPoll: true,
                 pollOptions: [
                     PollOption(id: "option1", text: "We'll be there!", votedByIDs: [userIDs[0], userIDs[4]]),
                     PollOption(id: "option2", text: "Can't make it this time", votedByIDs: [userIDs[2]]),
