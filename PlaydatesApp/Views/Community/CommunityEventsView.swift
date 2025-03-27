@@ -1,5 +1,13 @@
 import SwiftUI
 
+// Placeholder Views
+struct CreateEventView: View {
+    var body: some View { Text("Create Event Placeholder") }
+}
+struct EventFilterView: View {
+    var body: some View { Text("Event Filter Placeholder") }
+}
+
 enum ActiveSheet: Identifiable {
     case createEvent, filter
     
@@ -379,7 +387,7 @@ struct EnhancedEventCard: View {
                         .font(.system(size: 14))
                         .foregroundColor(ColorTheme.lightText)
                     
-                    Text(event.location.name)
+                    Text(event.location?.name ?? "Unknown Location")
                         .font(.subheadline)
                         .foregroundColor(ColorTheme.lightText)
                         .lineLimit(1)
@@ -439,8 +447,9 @@ struct EnhancedEventCard: View {
             return "book.fill"
         case .outdoors:
             return "leaf.fill"
-        case .other:
-            return "calendar"
+        // Add default case to make switch exhaustive
+        default:
+             return "calendar" // Default icon
         }
     }
     
@@ -470,9 +479,10 @@ struct EnhancedEventCard: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-        case .other:
+        // Add default case to make switch exhaustive
+        default:
             return LinearGradient(
-                gradient: Gradient(colors: [Color.blue.opacity(0.7), Color.blue]),
+                gradient: Gradient(colors: [Color.gray.opacity(0.7), Color.gray]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -530,7 +540,7 @@ struct CompactEventCard: View {
                     .font(.headline)
                     .foregroundColor(ColorTheme.darkPurple)
                 
-                Text(event.location.name)
+                Text(event.location?.name ?? "Unknown Location")
                     .font(.subheadline)
                     .foregroundColor(ColorTheme.lightText)
                 
@@ -570,8 +580,9 @@ struct CompactEventCard: View {
             return "book.fill"
         case .outdoors:
             return "leaf.fill"
-        case .other:
-            return "calendar"
+        // Add default case to make switch exhaustive
+        default:
+            return "calendar" // Default icon
         }
     }
     
@@ -585,8 +596,9 @@ struct CompactEventCard: View {
             return Color.purple
         case .outdoors:
             return Color.green
-        case .other:
-            return Color.blue
+        // Add default case to make switch exhaustive
+        default:
+            return Color.gray
         }
     }
     
@@ -647,6 +659,9 @@ struct EventCalendarPlaceholder: View {
                 agendaView
             case .map:
                 mapView
+            // Add default case to make switch exhaustive
+            default:
+                Text("Selected View Mode: \(viewMode.rawValue)") // Placeholder for any potentially missed modes
             }
         }
         .padding()
@@ -850,8 +865,9 @@ struct EventCalendarPlaceholder: View {
             return Color.purple
         case .outdoors:
             return Color.green
-        case .other:
-            return Color.blue
+        // Add default case to make switch exhaustive
+        default:
+            return Color.gray
         }
     }
     
@@ -865,26 +881,30 @@ struct EventCalendarPlaceholder: View {
             return "book.fill"
         case .outdoors:
             return "leaf.fill"
-        case .other:
-            return "calendar"
+        // Add default case to make switch exhaustive
+        default:
+            return "calendar" // Default icon
         }
     }
 }
 
 // Add a computed property to CommunityEvent for remaining spots
 extension CommunityEvent {
+    // Corrected property name from maxAttendees to maxCapacity
     var isAtMaxCapacity: Bool {
-        if let maxAttendees = maxAttendees {
-            return attendeeIDs.count >= maxAttendees
+        if let capacity = maxCapacity {
+            return attendeeIDs.count >= capacity
         }
         return false
     }
-    
+
+    // Corrected property name from maxAttendees to maxCapacity
     var remainingSpots: Int {
-        if let maxAttendees = maxAttendees {
-            let remaining = maxAttendees - attendeeIDs.count
+        if let capacity = maxCapacity {
+            let remaining = capacity - attendeeIDs.count
             return remaining > 0 ? remaining : 0
         }
-        return 0 // Unlimited if maxAttendees is nil
+        // Consider if unlimited should be represented differently, e.g., Int.max or nil
+        return Int.max // Represent unlimited spots
     }
 }
