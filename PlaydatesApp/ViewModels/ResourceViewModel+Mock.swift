@@ -23,7 +23,6 @@ extension ResourceViewModel {
                 price: nil,
                 isNegotiable: false,
                 availabilityStatus: .available,
-                isAvailable: true,
                 location: Location(
                     name: "Downtown",
                     address: "123 Main St, Downtown",
@@ -44,7 +43,6 @@ extension ResourceViewModel {
                 price: nil,
                 isNegotiable: false,
                 availabilityStatus: .available,
-                isAvailable: true,
                 location: Location(
                     name: "Aquatic Center",
                     address: "500 Pool Ave, Lakeside",
@@ -65,7 +63,6 @@ extension ResourceViewModel {
                 price: 25.00,
                 isNegotiable: true,
                 availabilityStatus: .available,
-                isAvailable: true,
                 location: Location(
                     name: "Parkside",
                     address: "789 Park Blvd, Parkside",
@@ -86,7 +83,6 @@ extension ResourceViewModel {
                 price: nil,
                 isNegotiable: false,
                 availabilityStatus: .available,
-                isAvailable: true,
                 location: nil,
                 coverImageURL: nil,
                 createdAt: Date().addingTimeInterval(-60 * 60 * 24 * 7) // 7 days ago
@@ -102,7 +98,6 @@ extension ResourceViewModel {
                 price: nil,
                 isNegotiable: false,
                 availabilityStatus: .available,
-                isAvailable: true,
                 location: Location(
                     name: "Marina District",
                     address: "Marina District, San Francisco",
@@ -123,7 +118,6 @@ extension ResourceViewModel {
                 price: 20.00,
                 isNegotiable: false,
                 availabilityStatus: .available,
-                isAvailable: true,
                 location: Location(
                     name: "University Area",
                     address: "University District",
@@ -144,7 +138,6 @@ extension ResourceViewModel {
                 price: 45.00,
                 isNegotiable: true,
                 availabilityStatus: .available,
-                isAvailable: true,
                 location: Location(
                     name: "Richmond District",
                     address: "Richmond District, San Francisco",
