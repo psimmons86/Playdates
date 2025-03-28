@@ -208,8 +208,7 @@ struct InviteToPlaydateView: View {
             playdateId: playdateId,
             userId: friendId,
             message: invitationMessage
-        ) { [weak self] result in
-            guard let self = self else { return }
+        ) { result in
             
             DispatchQueue.main.async {
                 self.isLoading = false
