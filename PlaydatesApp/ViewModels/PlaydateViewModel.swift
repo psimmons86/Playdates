@@ -22,6 +22,51 @@ class PlaydateViewModel: ObservableObject {
         userPlaydatesListener?.remove()
     }
     
+    // Add mock playdates for testing
+    func addMockPlaydates() {
+        // Create a few mock playdates
+        let mockPlaydates = [
+            Playdate.mock,
+            Playdate(
+                id: "mock-playdate-2",
+                hostID: "mock-host-id",
+                title: "Swimming Lessons",
+                description: "Weekly swimming lessons for kids ages 3-6",
+                activityType: "swimming",
+                location: Location(
+                    name: "Community Pool",
+                    address: "456 Main Street, San Francisco, CA",
+                    latitude: 37.7749,
+                    longitude: -122.4194
+                ),
+                startDate: Date().addingTimeInterval(86400), // Tomorrow
+                endDate: Date().addingTimeInterval(86400 + 3600), // 1 hour after start
+                attendeeIDs: ["mock-host-id", "mock-attendee-3", "mock-attendee-4"],
+                isPublic: true
+            ),
+            Playdate(
+                id: "mock-playdate-3",
+                hostID: "mock-host-id",
+                title: "Museum Trip",
+                description: "Visit to the Children's Museum",
+                activityType: "museum",
+                location: Location(
+                    name: "Children's Museum",
+                    address: "789 Museum Way, San Francisco, CA",
+                    latitude: 37.7833,
+                    longitude: -122.4167
+                ),
+                startDate: Date().addingTimeInterval(172800), // 2 days from now
+                endDate: Date().addingTimeInterval(172800 + 7200), // 2 hours after start
+                attendeeIDs: ["mock-host-id", "mock-attendee-1"],
+                isPublic: true
+            )
+        ]
+        
+        // Add the mock playdates to the published property
+        self.playdates = mockPlaydates
+    }
+    
     // MARK: - Fetch Playdates
     
     func fetchPlaydates() {

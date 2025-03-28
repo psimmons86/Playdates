@@ -21,7 +21,7 @@ struct WishlistActivityCard: View {
                 Image(systemName: activityIcon)
                     .font(.system(size: 24))
                     .foregroundColor(.white)
-                    .frame(width: 50, height: 50)
+                    .frame(minWidth: 40, idealWidth: 50, maxWidth: 50, minHeight: 40, idealHeight: 50, maxHeight: 50)
                     .background(Color.white.opacity(0.2))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 
@@ -32,7 +32,7 @@ struct WishlistActivityCard: View {
                         Text(activity.name)
                             .font(.headline)
                             .foregroundColor(.white)
-                            .lineLimit(1)
+                            // Allow wrapping
                         
                         Spacer()
                         
@@ -59,7 +59,7 @@ struct WishlistActivityCard: View {
                         Text(activity.location.name)
                             .font(.caption)
                             .foregroundColor(.white.opacity(0.9))
-                            .lineLimit(1)
+                            // Allow wrapping
                     }
                     
                     // Activity type

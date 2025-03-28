@@ -68,6 +68,16 @@ struct MainTabView: View {
             }
             .tag(3)
             
+            // Friends Tab
+            NavigationView {
+                FriendsView()
+                    .environmentObject(friendshipViewModel)
+            }
+            .tabItem {
+                Label("Friends", systemImage: "person.2.fill")
+            }
+            .tag(4)
+            
             // Profile Tab - Show ProfileView instead of AuthView
             NavigationView {
                 ProfileView()

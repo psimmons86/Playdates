@@ -37,7 +37,7 @@ struct PopularActivityCard: View {
                         Text(activity.name)
                             .font(.headline)
                             .foregroundColor(.white)
-                            .lineLimit(1)
+                            // Allow wrapping
                         
                         Spacer()
                         
@@ -64,7 +64,7 @@ struct PopularActivityCard: View {
                         Text(activity.location.name)
                             .font(.caption)
                             .foregroundColor(.white.opacity(0.9))
-                            .lineLimit(1)
+                            // Allow wrapping
                     }
                     
                     // Wishlist button
@@ -89,7 +89,7 @@ struct PopularActivityCard: View {
                 }
                 .padding(12)
             }
-            .frame(height: 200)
+            // Removed fixed height to allow natural sizing
         }
     }
     

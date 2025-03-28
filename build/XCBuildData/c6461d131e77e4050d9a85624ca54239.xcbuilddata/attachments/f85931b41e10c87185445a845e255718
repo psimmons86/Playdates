@@ -1,4 +1,0 @@
-module nanopb {
-umbrella "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/nanopb/spm_headers"
-export *
-}

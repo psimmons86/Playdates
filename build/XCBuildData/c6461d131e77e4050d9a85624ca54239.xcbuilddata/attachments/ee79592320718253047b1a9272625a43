@@ -1,4 +1,0 @@
-module grpcppWrapper {
-umbrella "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/grpc-binary/grpcpp-Wrapper/include"
-export *
-}

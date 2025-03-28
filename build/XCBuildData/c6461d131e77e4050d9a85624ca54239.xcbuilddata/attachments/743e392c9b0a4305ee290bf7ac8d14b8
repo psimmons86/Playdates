@@ -1,4 +1,0 @@
-module abslWrapper {
-umbrella "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/abseil-cpp-binary/absl-Wrapper/include"
-export *
-}

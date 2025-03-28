@@ -1,4 +1,0 @@
-module GoogleUtilities_NSData {
-umbrella "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/GoogleUtilities/GoogleUtilities/NSData+zlib/Public"
-export *
-}

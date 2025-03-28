@@ -57,7 +57,10 @@ struct HomeView: View {
                                     Button(action: {
                                         // Navigate to activity detail
                                     }) {
-                                        FeaturedActivityCard(activity: activity)
+                                        FeaturedActivityCard(
+                                            activity: activity,
+                                            buttonAction: nil
+                                        )
                                     }
                                 }
                             }
@@ -199,6 +202,19 @@ struct HomeView: View {
             
             // Debug logging
             print("HomeView appeared - fetching data from Firebase")
+            
+            // Add mock data if needed for testing
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                // Add mock activities if needed
+                if activityViewModel.activities.isEmpty && activityViewModel.popularActivities.isEmpty {
+                    addMockActivities()
+                }
+                
+                // Add mock playdates if needed
+                if playdateViewModel.playdates.isEmpty {
+                    playdateViewModel.addMockPlaydates()
+                }
+            }
         }
     }
     

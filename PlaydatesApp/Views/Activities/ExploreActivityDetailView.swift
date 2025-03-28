@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
 import CoreLocation
+import Firebase
+import FirebaseAuth
 
 struct ExploreActivityDetailView: View {
     let activity: Activity
@@ -587,12 +589,11 @@ struct CreatePlaydateFromActivityView: View {
     }
 }
 
-// Extension for PlaydateViewModel to provide a current user ID (stub for now)
+// Extension for PlaydateViewModel to provide a current user ID from Firebase Auth
 extension PlaydateViewModel {
     var currentUserId: String? {
-        // In a real implementation, this would get the current user ID from authentication
-        // For this placeholder, we'll return a static ID
-        return "current-user-id"
+        // Get the actual user ID from Firebase Auth
+        return Auth.auth().currentUser?.uid
     }
 }
 

@@ -1,4 +1,0 @@
-module FirebaseFirestoreSwiftTarget {
-umbrella "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/firebase-ios-sdk/SwiftPM-PlatformExclude/FirebaseFirestoreSwiftWrap/include"
-export *
-}

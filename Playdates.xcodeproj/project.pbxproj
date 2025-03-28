@@ -3,10 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 56;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		01BD21DDD9FF79C9DDB6AD56 /* ExploreEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B4A11F4E4F30935E3FDF375 /* ExploreEmptyStateView.swift */; };
 		03635E86EA254255C92696D9 /* PopularActivityCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 989543D165E648BB35EF89A9 /* PopularActivityCard.swift */; };
 		04C0F30464457E36003ACA82 /* CommunityEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFCCD3499989EE36983B4BAD /* CommunityEvent.swift */; };
 		051D54851CA8CB30E9B400A5 /* PlaydateDetailCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB6792490A298115B2D91CC /* PlaydateDetailCalendarView.swift */; };
@@ -42,7 +43,10 @@
 		2F1A86A3A9599A6225F58474 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = FA3F6B966701403DF94E9697 /* README.md */; };
 		3226437F1EC820D8B0AF22A1 /* CommentsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A525EA1F329F25217A8597CF /* CommentsSection.swift */; };
 		33A715C67C386B4B1BCC4C22 /* ActivityViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DBCC0858A51569CF95A19FA /* ActivityViewModel.swift */; };
+		367FC30AF2DBD40931E2879C /* LoadingSkeletonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 970DAC423F4E186DC56A8088 /* LoadingSkeletonView.swift */; };
+		369AEF0B229AC284E8F8C90A /* EnhancedActivityGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 771A3F72AFABEC8C79BA470F /* EnhancedActivityGrid.swift */; };
 		3ACE78A028DA521FF363C0BF /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 615BDA681B1E3F9367A512E8 /* FirebaseAppCheck */; };
+		3C107CD46EE6E2D2A5886600 /* ExploreComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2549EB158FAB340354BC84EF /* ExploreComponents.swift */; };
 		3D468747C52B4DA2E9C4330E /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4535E33607D1DF35F6695EA8 /* OnboardingCoordinator.swift */; };
 		3DC2AEE2DDA352D400570FD9 /* CalendarSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF20C03B1430AE958C65241 /* CalendarSettingsView.swift */; };
 		3F61CEBE23055E05B0B73591 /* SwiftUIToolbarFix.md in Resources */ = {isa = PBXBuildFile; fileRef = 92754B9F122E5127A1814C95 /* SwiftUIToolbarFix.md */; };
@@ -67,6 +71,7 @@
 		59DCC8CAF1E331AFF7554ED4 /* ResourceViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C406B2AB5D6D1F815C08BD9 /* ResourceViewModel.swift */; };
 		5EDA024481794D4330DF54DA /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = DD07AEE56ACD16A2DBF25099 /* FirebaseStorage */; };
 		68891832B4507DB94ACF71A8 /* cleanup_firebase_utils.sh in Resources */ = {isa = PBXBuildFile; fileRef = 3D5B0ABBEF1A68B2D1FEEB35 /* cleanup_firebase_utils.sh */; };
+		6C5385A31C1C4DED359AA983 /* EnhancedActivityList.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4886E41A11F38159B62F05E /* EnhancedActivityList.swift */; };
 		6E989BCC9758403794D3748B /* PlaydateInvitation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51CC5564DE4603D1B9C1C4A1 /* PlaydateInvitation.swift */; };
 		6FBFB36A3C68350EAA277F24 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A2FE0C3AF6DB4F07392F055 /* WelcomeView.swift */; };
 		7940B0EC988090913C860861 /* Activity.swift in Sources */ = {isa = PBXBuildFile; fileRef = EADA35F037710848A91880F1 /* Activity.swift */; };
@@ -100,6 +105,7 @@
 		B64A6949FFEFAFCD97A573F5 /* NotificationCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B9B8048C2ED930831DDDA65 /* NotificationCenterView.swift */; };
 		B83CA365A83117E8C0A57797 /* FirebaseSafetyKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59B038F7911108AD63D437C9 /* FirebaseSafetyKit.swift */; };
 		BC3F2AF80EE5979A7549448A /* GooglePlacesServiceCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308FBC38B4D380C05F10CD23 /* GooglePlacesServiceCache.swift */; };
+		BD8438059F411F7A0678C385 /* ResultsHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0C227412818400289447F56 /* ResultsHeaderView.swift */; };
 		C06989AF7B1C18A0C4B717F0 /* WeatherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FEEE3958143544FD5B4EFBA /* WeatherView.swift */; };
 		C3ED66886CE19A64F9DC773A /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E567E0458E485CE1192E72AD /* LocationManager.swift */; };
 		C54A9E950A1D731AE859DDB3 /* PlaydateDetailHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90BC89833B5797E5F3FBEE4D /* PlaydateDetailHelpers.swift */; };
@@ -119,6 +125,7 @@
 		E61F097D8DACED72C8C674C5 /* GradientCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89127E04EB52F1301589DE29 /* GradientCard.swift */; };
 		E6821E62453652AD3D92A8B6 /* NewPlaydateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFA1347872B4AD84BDDEA192 /* NewPlaydateView.swift */; };
 		E7A52CE3855AC000DE4CD1B3 /* FirebaseFirestoreSwift in Frameworks */ = {isa = PBXBuildFile; productRef = E35B741DB6590FC4CA6DD2D7 /* FirebaseFirestoreSwift */; };
+		E975D3596EBF285A2CCF0FB2 /* ExploreErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5836FE21F0A89E86050F6CF /* ExploreErrorView.swift */; };
 		EA01C4804AADEDF99B715A34 /* Playdate+Mock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77338D64A1FB35AF07584F71 /* Playdate+Mock.swift */; };
 		EA0B0A6C50903E2B78D96A0C /* MessagingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500876562E04DC10D8F18620 /* MessagingService.swift */; };
 		EAC598A4CBBB0D434F81D021 /* GooglePlacesModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0154266D8C669AF4D36D463 /* GooglePlacesModels.swift */; };
@@ -136,7 +143,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		00E24D26DC411F585FD49030 /* Playdates.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Playdates.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		00E24D26DC411F585FD49030 /* Playdates.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Playdates.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		02804A2FDF6E4CA1DCDE5614 /* ColorTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorTheme.swift; sourceTree = "<group>"; };
 		063F0C6B656BD6F07754B7B1 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		06CCFD98FBF993E4DBCD0C33 /* LocationManagerCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManagerCache.swift; sourceTree = "<group>"; };
@@ -151,6 +158,7 @@
 		1DAAB995E33AC61DB51B4BF4 /* SharedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedComponents.swift; sourceTree = "<group>"; };
 		2012EA14C16C1453730C876A /* GooglePlacesServiceExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooglePlacesServiceExtension.swift; sourceTree = "<group>"; };
 		24D2AF4772740CF01F0BC5AF /* LocationPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPickerView.swift; sourceTree = "<group>"; };
+		2549EB158FAB340354BC84EF /* ExploreComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreComponents.swift; sourceTree = "<group>"; };
 		286E50AFE5CC40CCEBD8429F /* Localization-README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Localization-README.md"; sourceTree = "<group>"; };
 		2A55F9E5CE04E8C5E4A306C8 /* CommentExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommentExtensions.swift; sourceTree = "<group>"; };
 		2C011D157CA60EF935A1F6EC /* PlaydateDetailSupportingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaydateDetailSupportingViews.swift; sourceTree = "<group>"; };
@@ -162,6 +170,7 @@
 		385EDBEDBBBE0CE8BA8F7D6C /* GroupsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupsView.swift; sourceTree = "<group>"; };
 		392BAF1FDF1F96751F50DF08 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		39D64EEECBC9E0FB43D9EFA7 /* open_in_xcode.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = open_in_xcode.sh; sourceTree = "<group>"; };
+		3B4A11F4E4F30935E3FDF375 /* ExploreEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreEmptyStateView.swift; sourceTree = "<group>"; };
 		3C8153D5AF8A4B8047B804BE /* PlaydateCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaydateCard.swift; sourceTree = "<group>"; };
 		3D5B0ABBEF1A68B2D1FEEB35 /* cleanup_firebase_utils.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = cleanup_firebase_utils.sh; sourceTree = "<group>"; };
 		3E5FC5223AB3D47E69056B65 /* ActivitySearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitySearchView.swift; sourceTree = "<group>"; };
@@ -198,6 +207,7 @@
 		7272FF2F0D351163D5618D0D /* verify_files_modified.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = verify_files_modified.sh; sourceTree = "<group>"; };
 		73E00D5A70C97A334D6F82C6 /* fix_firebase_permissions.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = fix_firebase_permissions.sh; sourceTree = "<group>"; };
 		75E32F4DC68B37C8180BF19A /* GroupViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupViewModel.swift; sourceTree = "<group>"; };
+		771A3F72AFABEC8C79BA470F /* EnhancedActivityGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnhancedActivityGrid.swift; sourceTree = "<group>"; };
 		77338D64A1FB35AF07584F71 /* Playdate+Mock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Playdate+Mock.swift"; sourceTree = "<group>"; };
 		7D02D5B5BF66FC347D348B3B /* Group.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Group.swift; sourceTree = "<group>"; };
 		7DB6792490A298115B2D91CC /* PlaydateDetailCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaydateDetailCalendarView.swift; sourceTree = "<group>"; };
@@ -212,6 +222,7 @@
 		918B2A90DE9D8674C405411C /* HomeComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeComponents.swift; sourceTree = "<group>"; };
 		92754B9F122E5127A1814C95 /* SwiftUIToolbarFix.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = SwiftUIToolbarFix.md; sourceTree = "<group>"; };
 		9519F805719FCEE409BC6590 /* SocialFeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialFeedView.swift; sourceTree = "<group>"; };
+		970DAC423F4E186DC56A8088 /* LoadingSkeletonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingSkeletonView.swift; sourceTree = "<group>"; };
 		989543D165E648BB35EF89A9 /* PopularActivityCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopularActivityCard.swift; sourceTree = "<group>"; };
 		99DABBD55C14A64FAB7FD91C /* CalendarComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarComponents.swift; sourceTree = "<group>"; };
 		99E47B324F3353249779E446 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -226,6 +237,7 @@
 		AE0E1BBE25551786A3D028D2 /* WeatherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherService.swift; sourceTree = "<group>"; };
 		B10A85FFD472648C9DA9DCF5 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		B1446CE09382B4B6FC00444E /* ResourceViewModel+Mock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ResourceViewModel+Mock.swift"; sourceTree = "<group>"; };
+		B4886E41A11F38159B62F05E /* EnhancedActivityList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnhancedActivityList.swift; sourceTree = "<group>"; };
 		B578D0DBACD477A65CE9320D /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		B7014C0CE95B2DBDF26505FB /* PlaydateModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaydateModels.swift; sourceTree = "<group>"; };
 		BB757E188CADD9ABCD653D3B /* AttendeesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttendeesSection.swift; sourceTree = "<group>"; };
@@ -234,12 +246,14 @@
 		C0A2FFA35AD36FB9DD4A81DD /* Location.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Location.swift; sourceTree = "<group>"; };
 		C42689418EA888AC597C8A3C /* ActivitySearchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitySearchViewModel.swift; sourceTree = "<group>"; };
 		C4DE6AADB4B994249BF99BBA /* ModelImports.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelImports.swift; sourceTree = "<group>"; };
+		C5836FE21F0A89E86050F6CF /* ExploreErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreErrorView.swift; sourceTree = "<group>"; };
 		C5BDFF6E6E8246E943B7FF97 /* ConversationsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationsListView.swift; sourceTree = "<group>"; };
 		C79F6FD73A360CD16EBA5622 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		C8CE65347E571742F8D5FE79 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		CDB1DC5081D8F35EB9375211 /* StringExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringExtensions.swift; sourceTree = "<group>"; };
 		CFCCD3499989EE36983B4BAD /* CommunityEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityEvent.swift; sourceTree = "<group>"; };
 		D03DF3493387695BA79B40D4 /* CommunityEventsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityEventsView.swift; sourceTree = "<group>"; };
+		D0C227412818400289447F56 /* ResultsHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsHeaderView.swift; sourceTree = "<group>"; };
 		D650008E7782E5D082C04D94 /* Google-Maps-API-Guide.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Google-Maps-API-Guide.md"; sourceTree = "<group>"; };
 		D66395A1CEE1190FB6EF1589 /* LocalizationHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationHelpers.swift; sourceTree = "<group>"; };
 		D69FEC8DD6EDFCEA81D8FE1B /* ResourceSharingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResourceSharingView.swift; sourceTree = "<group>"; };
@@ -358,6 +372,7 @@
 				DDE42679E3891FA211ECE114 /* ActivityIcons.swift */,
 				3E5FC5223AB3D47E69056B65 /* ActivitySearchView.swift */,
 				69ED3922A34510CD087F5F92 /* ExploreActivityDetailView.swift */,
+				2549EB158FAB340354BC84EF /* ExploreComponents.swift */,
 				2FCDB234D4723D7545059DA2 /* ExploreView.swift */,
 			);
 			path = Activities;
@@ -539,11 +554,17 @@
 			children = (
 				BB757E188CADD9ABCD653D3B /* AttendeesSection.swift */,
 				A525EA1F329F25217A8597CF /* CommentsSection.swift */,
+				771A3F72AFABEC8C79BA470F /* EnhancedActivityGrid.swift */,
+				B4886E41A11F38159B62F05E /* EnhancedActivityList.swift */,
+				3B4A11F4E4F30935E3FDF375 /* ExploreEmptyStateView.swift */,
+				C5836FE21F0A89E86050F6CF /* ExploreErrorView.swift */,
 				89127E04EB52F1301589DE29 /* GradientCard.swift */,
 				918B2A90DE9D8674C405411C /* HomeComponents.swift */,
+				970DAC423F4E186DC56A8088 /* LoadingSkeletonView.swift */,
 				24D2AF4772740CF01F0BC5AF /* LocationPickerView.swift */,
 				063F0C6B656BD6F07754B7B1 /* MapView.swift */,
 				68B94150FE809792843D9B00 /* ProfileImageView.swift */,
+				D0C227412818400289447F56 /* ResultsHeaderView.swift */,
 				1DAAB995E33AC61DB51B4BF4 /* SharedComponents.swift */,
 				1106F3D8A49DEFC51CE0EAD9 /* Cards */,
 			);
@@ -732,7 +753,6 @@
 				LastUpgradeCheck = 1400;
 				TargetAttributes = {
 					D798C11D8B900CE0EC146F1B = {
-						DevelopmentTeam = XXXXXXXXXX;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -826,9 +846,14 @@
 				95E40D081D939DF00F25171C /* ContentView.swift in Sources */,
 				3F74CED3F499D78528B9E8BE /* ConversationsListView.swift in Sources */,
 				AB6F8777FA415B73C63721CB /* CreatePlaydateCalendarView.swift in Sources */,
+				369AEF0B229AC284E8F8C90A /* EnhancedActivityGrid.swift in Sources */,
+				6C5385A31C1C4DED359AA983 /* EnhancedActivityList.swift in Sources */,
 				54360D39C23436D9D0AA5293 /* EnhancedChatView.swift in Sources */,
 				28DF2729D0A29BA2CE30FDAF /* EnhancedPlaydateCard.swift in Sources */,
 				0B8562F5D6B61422A4A11344 /* ExploreActivityDetailView.swift in Sources */,
+				3C107CD46EE6E2D2A5886600 /* ExploreComponents.swift in Sources */,
+				01BD21DDD9FF79C9DDB6AD56 /* ExploreEmptyStateView.swift in Sources */,
+				E975D3596EBF285A2CCF0FB2 /* ExploreErrorView.swift in Sources */,
 				A7DBD955F2C55C14C3F3D81E /* ExploreView.swift in Sources */,
 				8B96EFA23D3926841B3A401D /* FeaturedActivityCard.swift in Sources */,
 				B83CA365A83117E8C0A57797 /* FirebaseSafetyKit.swift in Sources */,
@@ -850,6 +875,7 @@
 				CB38D6810B7678A136E2AC94 /* HomeView.swift in Sources */,
 				C94FE277E4B5D7D4D25526A8 /* InviteFriendsToPlaydateView.swift in Sources */,
 				45A762F89C06EA6259112E35 /* InviteToPlaydateView.swift in Sources */,
+				367FC30AF2DBD40931E2879C /* LoadingSkeletonView.swift in Sources */,
 				07D08D35AA83B0C0A08BA108 /* LocalizationHelpers.swift in Sources */,
 				9C9C19820D0E290B0339CB22 /* Location.swift in Sources */,
 				C3ED66886CE19A64F9DC773A /* LocationManager.swift in Sources */,
@@ -882,6 +908,7 @@
 				13638D042FF53F5A5BFEAE3F /* ResourceSharingView.swift in Sources */,
 				2EBF209546FAF19C30E0D871 /* ResourceViewModel+Mock.swift in Sources */,
 				59DCC8CAF1E331AFF7554ED4 /* ResourceViewModel.swift in Sources */,
+				BD8438059F411F7A0678C385 /* ResultsHeaderView.swift in Sources */,
 				2EDADC1F788797A2BEAD4510 /* SceneDelegate.swift in Sources */,
 				D4F70E1F2E7773AA1CC063BA /* SharedComponents.swift in Sources */,
 				89753ABD8DA3374783CB6FF2 /* SharedResource.swift in Sources */,
@@ -918,7 +945,7 @@
 				CODE_SIGN_ENTITLEMENTS = Playdates.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = XXXXXXXXXX;
+				DEVELOPMENT_TEAM = 4Y39R5M676;
 				INFOPLIST_FILE = PlaydatesApp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1058,7 +1085,7 @@
 				CODE_SIGN_ENTITLEMENTS = Playdates.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = XXXXXXXXXX;
+				DEVELOPMENT_TEAM = 4Y39R5M676;
 				INFOPLIST_FILE = PlaydatesApp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (

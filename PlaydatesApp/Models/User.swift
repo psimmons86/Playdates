@@ -10,10 +10,10 @@ public struct User: Identifiable, Codable {
     public var bio: String?
     // Search-optimized fields
     public var name_lowercase: String?
-    // Use StoredOnHeap for potentially large arrays and collections
-    @StoredOnHeap public var children: [PlaydateChild]?
-    @StoredOnHeap public var friendIDs: [String]?
-    @StoredOnHeap public var friendRequestIDs: [String]?
+    // Removed StoredOnHeap wrapper
+    public var children: [PlaydateChild]?
+    public var friendIDs: [String]?
+    public var friendRequestIDs: [String]?
     public var createdAt: Date
     public var lastActive: Date
 

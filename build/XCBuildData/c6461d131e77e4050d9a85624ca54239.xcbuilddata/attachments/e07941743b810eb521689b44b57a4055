@@ -1,4 +1,0 @@
-module GTMSessionFetcherCore {
-umbrella "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/gtm-session-fetcher/Sources/Core/Public"
-export *
-}

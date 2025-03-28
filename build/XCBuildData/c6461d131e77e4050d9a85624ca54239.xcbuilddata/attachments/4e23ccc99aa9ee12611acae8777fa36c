@@ -1,4 +1,0 @@
-module GoogleUtilities_Network {
-umbrella "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/GoogleUtilities/GoogleUtilities/Network/Public"
-export *
-}

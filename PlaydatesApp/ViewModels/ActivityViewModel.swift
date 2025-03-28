@@ -289,7 +289,17 @@ class ActivityViewModel: ObservableObject {
                             )
                         }
                         
-                        self.nearbyActivities = mappedActivities
+                        // Enhanced behavior: For certain types (like Parks), we want to accumulate results
+                        // from multiple searches rather than replacing them
+                        if searchType == "park" || searchType == "playground" {
+                            // Merge new activities with existing ones, avoiding duplicates
+                            self.mergeNearbyActivities(mappedActivities)
+                        } else {
+                            // Standard behavior - replace the entire list
+                            self.nearbyActivities = mappedActivities
+                        }
+                        
+                        print("Debug: Found \(mappedActivities.count) activities of type: \(searchType)")
                         
                     case .failure(let error):
                         self.error = error.localizedDescription
@@ -302,6 +312,31 @@ class ActivityViewModel: ObservableObject {
                 }
             }
         )
+    }
+    
+    // New helper method to merge activities while avoiding duplicates
+    private func mergeNearbyActivities(_ newActivities: [Activity]) {
+        var updatedActivities = self.nearbyActivities
+        
+        for activity in newActivities {
+            // Check if the activity is already in the list (by name or by ID)
+            let isDuplicate = updatedActivities.contains { existingActivity in
+                if let activityId = activity.id, let existingId = existingActivity.id {
+                    return activityId == existingId
+                } else {
+                    // If no ID, fall back to name comparison
+                    return activity.name == existingActivity.name
+                }
+            }
+            
+            // If it's not a duplicate, add it to the list
+            if !isDuplicate {
+                updatedActivities.append(activity)
+            }
+        }
+        
+        // Update the published property
+        self.nearbyActivities = updatedActivities
     }
     
     // Helper method to determine activity type from place types

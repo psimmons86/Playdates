@@ -756,4 +756,407 @@ class FriendshipViewModel: ObservableObject {
             completion(.success(()))
         }
     }
+    
+    // MARK: - Friend Management Convenience Methods
+    
+    /// Remove a friendship between the current user and another user
+    func removeFriendship(friendId: String, completion: ((Bool) -> Void)? = nil) {
+        guard let currentUserId = self.currentUserId else {
+            self.error = "User not logged in"
+            completion?(false)
+            return
+        }
+        
+        isLoading = true
+        
+        // Query for the friendship document
+        db.collection("friendships")
+            .whereField("participants", arrayContains: currentUserId)
+            .getDocuments { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    self.isLoading = false
+                    self.error = error.localizedDescription
+                    completion?(false)
+                    return
+                }
+                
+                // Find the friendship document that contains both users
+                let friendshipDoc = snapshot?.documents.first { document in
+                    guard let participants = document.data()["participants"] as? [String] else { 
+                        return false
+                    }
+                    return participants.contains(friendId)
+                }
+                
+                guard let friendshipDoc = friendshipDoc else {
+                    self.isLoading = false
+                    self.error = "Friendship not found"
+                    completion?(false)
+                    return
+                }
+                
+                // Delete the friendship document
+                self.db.collection("friendships").document(friendshipDoc.documentID).delete { error in
+                    self.isLoading = false
+                    
+                    if let error = error {
+                        self.error = error.localizedDescription
+                        completion?(false)
+                        return
+                    }
+                    
+                    // Remove the friend from the local array
+                    self.friends.removeAll { $0.id == friendId }
+                    completion?(true)
+                }
+            }
+    }
+    
+    /// Accept a friend request
+    func acceptFriendRequest(requestId: String, completion: ((Bool) -> Void)? = nil) {
+        isLoading = true
+        
+        // Get the request details
+        db.collection("friendRequests").document(requestId).getDocument { [weak self] snapshot, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                self.isLoading = false
+                self.error = error.localizedDescription
+                completion?(false)
+                return
+            }
+            
+            guard let data = snapshot?.data(),
+                  let senderID = data["senderID"] as? String,
+                  let receiverID = data["recipientID"] as? String else {
+                self.isLoading = false
+                self.error = "Invalid friend request data"
+                completion?(false)
+                return
+            }
+            
+            // Create a FriendRequestModel to use with existing method
+            let request = FriendRequestModel(
+                id: requestId,
+                senderID: senderID,
+                receiverID: receiverID,
+                status: .pending
+            )
+            
+            // Use the existing method to accept the request
+            self.respondToFriendRequest(request: request, accept: true) { result in
+                switch result {
+                case .success:
+                    // Update the local arrays
+                    self.friendRequests.removeAll { $0.id == requestId }
+                    self.fetchUserDetails(for: [senderID]) // Refresh the friends list
+                    completion?(true)
+                case .failure(let error):
+                    self.error = error.localizedDescription
+                    completion?(false)
+                }
+            }
+        }
+    }
+    
+    /// Decline a friend request
+    func declineFriendRequest(requestId: String, completion: ((Bool) -> Void)? = nil) {
+        isLoading = true
+        
+        // Get the request details
+        db.collection("friendRequests").document(requestId).getDocument { [weak self] snapshot, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                self.isLoading = false
+                self.error = error.localizedDescription
+                completion?(false)
+                return
+            }
+            
+            guard let data = snapshot?.data(),
+                  let senderID = data["senderID"] as? String,
+                  let receiverID = data["recipientID"] as? String else {
+                self.isLoading = false
+                self.error = "Invalid friend request data"
+                completion?(false)
+                return
+            }
+            
+            // Create a FriendRequestModel to use with existing method
+            let request = FriendRequestModel(
+                id: requestId,
+                senderID: senderID,
+                receiverID: receiverID,
+                status: .pending
+            )
+            
+            // Use the existing method to decline the request
+            self.respondToFriendRequest(request: request, accept: false) { result in
+                switch result {
+                case .success:
+                    // Update the local arrays
+                    self.friendRequests.removeAll { $0.id == requestId }
+                    completion?(true)
+                case .failure(let error):
+                    self.error = error.localizedDescription
+                    completion?(false)
+                }
+            }
+        }
+    }
+    
+    /// Check if a user is already a friend
+    func isFriend(userId: String) -> Bool {
+        return friends.contains { $0.id == userId }
+    }
+    
+    /// Check if a friend request is pending to a specific user
+    func isFriendRequestPending(userId: String) -> Bool {
+        // Check if there's a pending request where current user is sender and userId is recipient
+        // or vice versa
+        guard let currentUserId = self.currentUserId else { return false }
+        
+        // Check pending sent requests
+        var pendingSentRequests: [FriendRequestModel] = []
+        
+        // We'll need to query Firestore for this, but for now we'll just check our local array
+        return pendingSentRequests.contains { 
+            ($0.senderID == currentUserId && $0.receiverID == userId) ||
+            ($0.senderID == userId && $0.receiverID == currentUserId)
+        }
+    }
+    
+    /// Search users by name
+    func searchByName(_ query: String, completion: @escaping ([User]) -> Void) {
+        guard !query.isEmpty else {
+            completion([])
+            return
+        }
+        
+        print("DEBUG: Firebase searchByName executing with query: \(query)")
+        
+        // Improved search that's more flexible and shows debug info
+        db.collection("users").getDocuments { [weak self] snapshot, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("DEBUG: Firebase search error: \(error.localizedDescription)")
+                self.error = error.localizedDescription
+                completion([])
+                return
+            }
+            
+            guard let documents = snapshot?.documents else {
+                print("DEBUG: No user documents found in Firebase")
+                completion([])
+                return
+            }
+            
+            print("DEBUG: Found \(documents.count) total users in database")
+            
+            // More lenient searching - split query into words and match any
+            let queryTerms = query.lowercased().split(separator: " ").map(String.init)
+            
+            // Show some document samples for debugging
+            if !documents.isEmpty {
+                print("DEBUG: Sample user document fields:")
+                let sampleDoc = documents[0].data()
+                for (key, value) in sampleDoc {
+                    print("  \(key): \(value)")
+                }
+            }
+            
+            // Filter by name, case-insensitive, with partial matching
+            var filteredUsers: [User] = []
+            
+            for document in documents {
+                let data = document.data()
+                
+                // Try to extract user data safely
+                let name = data["name"] as? String ?? data["displayName"] as? String ?? ""
+                let email = data["email"] as? String ?? ""
+                
+                // For debugging
+                if !name.isEmpty {
+                    print("DEBUG: Comparing name: \(name) with query: \(query)")
+                }
+                
+                // Search logic - check if any query term is in the name
+                let nameLowercased = name.lowercased()
+                let matchesName = queryTerms.contains { term in
+                    nameLowercased.contains(term)
+                } || nameLowercased.contains(query.lowercased())
+                
+                if matchesName {
+                    print("DEBUG: Found match: \(name)")
+                    
+                    let user = User(
+                        id: document.documentID,
+                        name: name,
+                        email: email,
+                        profileImageURL: data["profileImageURL"] as? String,
+                        createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+                        lastActive: (data["lastActive"] as? Timestamp)?.dateValue() ?? Date()
+                    )
+                    filteredUsers.append(user)
+                }
+            }
+            
+            print("DEBUG: Name search returning \(filteredUsers.count) results")
+            completion(filteredUsers)
+        }
+    }
+    
+    /// Search users by email
+    func searchByEmail(_ query: String, completion: @escaping ([User]) -> Void) {
+        guard !query.isEmpty else {
+            completion([])
+            return
+        }
+        
+        print("DEBUG: Firebase searchByEmail executing with query: \(query)")
+        
+        // Improved search with more debugging
+        db.collection("users").getDocuments { [weak self] snapshot, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("DEBUG: Firebase search error: \(error.localizedDescription)")
+                self.error = error.localizedDescription
+                completion([])
+                return
+            }
+            
+            guard let documents = snapshot?.documents else {
+                print("DEBUG: No user documents found in Firebase")
+                completion([])
+                return
+            }
+            
+            print("DEBUG: Searching through \(documents.count) users for email match")
+            
+            // Filter by email with more flexible matching
+            let queryLowercased = query.lowercased()
+            var filteredUsers: [User] = []
+            
+            for document in documents {
+                let data = document.data()
+                
+                let name = data["name"] as? String ?? data["displayName"] as? String ?? ""
+                let email = data["email"] as? String ?? ""
+                
+                // More tolerant email matching
+                if email.lowercased().contains(queryLowercased) {
+                    print("DEBUG: Found email match: \(email)")
+                    
+                    let user = User(
+                        id: document.documentID,
+                        name: name,
+                        email: email,
+                        profileImageURL: data["profileImageURL"] as? String,
+                        createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+                        lastActive: (data["lastActive"] as? Timestamp)?.dateValue() ?? Date()
+                    )
+                    filteredUsers.append(user)
+                }
+            }
+            
+            print("DEBUG: Email search returning \(filteredUsers.count) results")
+            completion(filteredUsers)
+        }
+    }
+    
+    /// Combined search for users
+    func searchUsers(_ query: String, completion: @escaping ([User]) -> Void) {
+        guard !query.isEmpty else {
+            completion([])
+            return
+        }
+        
+        print("DEBUG: Starting combined search with query: \(query)")
+        
+        // Create a dispatch group to handle multiple queries
+        let dispatchGroup = DispatchGroup()
+        var allResults: [User] = []
+        
+        // Query Firestore directly with a more comprehensive approach
+        dispatchGroup.enter()
+        db.collection("users").getDocuments { [weak self] snapshot, error in
+            defer { dispatchGroup.leave() }
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("DEBUG: Firebase search error: \(error.localizedDescription)")
+                self.error = error.localizedDescription
+                return
+            }
+            
+            guard let documents = snapshot?.documents else {
+                print("DEBUG: No user documents found in Firebase")
+                return
+            }
+            
+            print("DEBUG: Found \(documents.count) total users to search through")
+            
+            // Split query into terms for more flexible matching
+            let queryTerms = query.lowercased().split(separator: " ").map(String.init)
+            let queryLowercased = query.lowercased()
+            
+            for document in documents {
+                let data = document.data()
+                
+                // Try different field names that might exist
+                let name = data["name"] as? String ?? 
+                           data["displayName"] as? String ?? 
+                           data["fullName"] as? String ?? ""
+                           
+                let email = data["email"] as? String ?? ""
+                
+                // Early diagnostic for specific search
+                if queryLowercased.contains("nora") || queryLowercased.contains("casey") {
+                    print("DEBUG: Checking document ID: \(document.documentID)")
+                    print("DEBUG: Name found: \(name), Email: \(email)")
+                    print("DEBUG: Full document data: \(data)")
+                }
+                
+                // More comprehensive matching
+                let nameLowercased = name.lowercased()
+                let emailLowercased = email.lowercased()
+                
+                // Check for matches across different criteria
+                let matchesFullName = nameLowercased.contains(queryLowercased)
+                let matchesEmail = emailLowercased.contains(queryLowercased)
+                
+                // Check if any term matches part of the name
+                let matchesNameTerms = queryTerms.contains { term in
+                    nameLowercased.contains(term)
+                }
+                
+                if matchesFullName || matchesEmail || matchesNameTerms {
+                    print("DEBUG: Found match: \(name) / \(email)")
+                    
+                    // Create user object and add to results
+                    let user = User(
+                        id: document.documentID,
+                        name: name,
+                        email: email,
+                        profileImageURL: data["profileImageURL"] as? String ?? data["photoURL"] as? String,
+                        createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+                        lastActive: (data["lastActive"] as? Timestamp)?.dateValue() ?? Date()
+                    )
+                    allResults.append(user)
+                }
+            }
+        }
+        
+        // When all searches are complete
+        dispatchGroup.notify(queue: .main) {
+            print("DEBUG: Combined search returning \(allResults.count) results")
+            completion(allResults)
+        }
+    }
 }

@@ -1,4 +1,0 @@
-module leveldb {
-umbrella "/Users/admin/Library/Developer/Xcode/DerivedData/Playdates-firxklxfpqnpxfgyztyuwuqlllmr/SourcePackages/checkouts/leveldb/include"
-export *
-}

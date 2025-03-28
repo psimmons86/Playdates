@@ -46,7 +46,7 @@ struct EnhancedPlaydateCard: View {
                 Text(playdate.title)
                     .font(.headline)
                     .foregroundColor(.white)
-                    .lineLimit(1)
+                    // Allow wrapping
                 
                 HStack {
                     Image(systemName: "mappin.and.ellipse")
@@ -56,7 +56,7 @@ struct EnhancedPlaydateCard: View {
                     Text(playdate.location?.name ?? playdate.address ?? "Location TBD")
                         .font(.subheadline)
                         .foregroundColor(.white.opacity(0.8))
-                        .lineLimit(1)
+                        // Allow wrapping
                 }
                 
                 // Attendees
@@ -73,7 +73,7 @@ struct EnhancedPlaydateCard: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 16)
         }
-        .frame(width: 220, height: 180)
+        .frame(minWidth: 180, maxWidth: 220, minHeight: 160)
         .background(
             LinearGradient(
                 gradient: Gradient(colors: [
