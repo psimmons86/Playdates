@@ -12,6 +12,7 @@ struct EnhancedChatView: View {
     
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var viewModel = ChatViewModel()
+    @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
         VStack(spacing: 0) {
@@ -38,6 +39,7 @@ struct EnhancedChatView: View {
         HStack {
             Button(action: {
                 // Go back
+                presentationMode.wrappedValue.dismiss()
             }) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 18, weight: .semibold))

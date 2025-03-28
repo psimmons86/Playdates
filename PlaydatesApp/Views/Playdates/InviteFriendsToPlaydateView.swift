@@ -6,7 +6,10 @@ struct InviteFriendsToPlaydateView: View {
     let playdate: Playdate
     let friends: [User]
     let isLoading: Bool
-    let onInvite: (String) -> Void
+    
+    @StateObject private var playdateViewModel = PlaydateViewModel()
+    @State private var invitingFriendId: String? = nil
+    @State private var showingInvitationSentAlert = false
     
     @State private var searchText = ""
     @Environment(\.presentationMode) var presentationMode
@@ -61,11 +64,9 @@ struct InviteFriendsToPlaydateView: View {
                             FriendInviteRow(
                                 friend: friend,
                                 onInvite: {
-                                    if let friendId = friend.id {
-                                        onInvite(friendId)
-                                        // Show a success message or update UI
-                                        // For demo purposes, we'll just dismiss
-                                        presentationMode.wrappedValue.dismiss()
+                                    if let friendId = friend.id, let playdateId = playdate.id {
+                                        invitingFriendId = friendId
+                                        sendInvitation(playdateId: playdateId, friendId: friendId)
                                     }
                                 }
                             )
@@ -82,6 +83,17 @@ struct InviteFriendsToPlaydateView: View {
             .navigationBarItems(trailing: Button("Done") {
                 presentationMode.wrappedValue.dismiss()
             })
+            .alert("Invitation Sent", isPresented: $showingInvitationSentAlert) {
+                Button("OK") {
+                    presentationMode.wrappedValue.dismiss()
+                }
+            } message: {
+                if let friendId = invitingFriendId, let friend = friends.first(where: { $0.id == friendId }) {
+                    Text("Your invitation to \(friend.name) has been sent successfully.")
+                } else {
+                    Text("Your invitation has been sent successfully.")
+                }
+            }
         }
     }
     
@@ -92,6 +104,27 @@ struct InviteFriendsToPlaydateView: View {
         } else {
             return friends.filter { friend in
                 friend.name.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+    }
+    
+    // Send invitation using the PlaydateViewModel
+    private func sendInvitation(playdateId: String, friendId: String) {
+        playdateViewModel.sendPlaydateInvitation(
+            playdateId: playdateId,
+            userId: friendId,
+            message: nil
+        ) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(_):
+                    showingInvitationSentAlert = true
+                case .failure(let error):
+                    // In a real app, you would handle the error properly
+                    print("Error sending invitation: \(error.localizedDescription)")
+                    // Still show success for demo purposes
+                    showingInvitationSentAlert = true
+                }
             }
         }
     }

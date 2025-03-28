@@ -620,4 +620,66 @@ class PlaydateViewModel: ObservableObject {
             completion(.success(()))
         }
     }
+    
+    // MARK: - Playdate Invitations
+    
+    func sendPlaydateInvitation(playdateId: String, userId: String, message: String?, completion: @escaping (Result<PlaydateInvitation, Error>) -> Void) {
+        isLoading = true
+        error = nil
+        
+        // Create the invitation object
+        let invitation = PlaydateInvitation(
+            id: nil,
+            playdateID: playdateId,
+            senderID: Auth.auth().currentUser?.uid ?? "",
+            recipientID: userId,
+            status: .pending,
+            message: message,
+            createdAt: Date(),
+            updatedAt: Date()
+        )
+        
+        do {
+            // Add to Firestore
+            let docRef = try db.collection("playdateInvitations").addDocument(from: invitation)
+            
+            // Get the created invitation with ID
+            docRef.getDocument { [weak self] document, error in
+                guard let self = self else { return }
+                
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    
+                    if let error = error {
+                        self.error = error.localizedDescription
+                        completion(.failure(error))
+                        return
+                    }
+                    
+                    guard let document = document, document.exists else {
+                        let error = NSError(domain: "PlaydateViewModel", code: 8, userInfo: [NSLocalizedDescriptionKey: "Failed to create invitation"])
+                        self.error = error.localizedDescription
+                        completion(.failure(error))
+                        return
+                    }
+                    
+                    // Parse the document
+                    do {
+                        if let invitation = try? document.data(as: PlaydateInvitation.self) {
+                            completion(.success(invitation))
+                        } else {
+                            throw NSError(domain: "PlaydateViewModel", code: 9, userInfo: [NSLocalizedDescriptionKey: "Failed to parse invitation"])
+                        }
+                    } catch {
+                        self.error = error.localizedDescription
+                        completion(.failure(error))
+                    }
+                }
+            }
+        } catch {
+            isLoading = false
+            self.error = error.localizedDescription
+            completion(.failure(error))
+        }
+    }
 }
