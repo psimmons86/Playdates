@@ -28,28 +28,29 @@ struct ResourceSharingView: View {
                                 }
                             
                             if !searchText.isEmpty {
-                                Button(action: {
+                                Button { // Use trailing closure syntax
                                     searchText = ""
                                     viewModel.setSearchQuery("")
-                                }) {
+                                } label: {
                                     Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(ColorTheme.lightText)
+                                        .foregroundColor(ColorTheme.lightText) // Keep color
                                 }
+                                .buttonStyle(PlainButtonStyle()) // Apply plain style
                             }
                             
                             Divider()
                                 .frame(height: 20)
                             
-                            Button(action: {
+                            Button { // Use trailing closure syntax
                                 showingFilterSheet = true
-                            }) {
+                            } label: {
                                 HStack(spacing: 4) {
                                     Image(systemName: "line.3.horizontal.decrease")
                                     Text("Filter")
                                 }
-                                .font(.subheadline)
-                                .foregroundColor(ColorTheme.primary)
+                                // Font/color handled by textStyle
                             }
+                            .textStyle() // Apply text style
                         }
                         .padding(12)
                         .background(Color.white)
@@ -254,13 +255,14 @@ struct ResourceSharingView: View {
                 .padding(.vertical)
             }
         }
-        .navigationBarItems(trailing: Button(action: {
+        .navigationBarItems(trailing: Button { // Use trailing closure syntax
             showingCreateResourceSheet = true
-        }) {
+        } label: {
             Image(systemName: "plus")
                 .font(.system(size: 16, weight: .bold))
-                .foregroundColor(ColorTheme.primary)
-        })
+                .foregroundColor(ColorTheme.primary) // Keep color
+        }
+        .buttonStyle(PlainButtonStyle())) // Apply plain style
         .sheet(isPresented: $showingCreateResourceSheet) {
             CreateResourceView()
         }
@@ -310,6 +312,7 @@ struct FilterPillButton: View {
                     .stroke(isActive ? Color.clear : ColorTheme.lightText.opacity(0.3), lineWidth: 1)
             )
         }
+        .buttonStyle(PlainButtonStyle()) // Apply plain style for custom background
     }
 }
 
@@ -612,7 +615,7 @@ struct ResourceTypeCard: View {
             .cornerRadius(12)
             .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
         }
-        .buttonStyle(PlainButtonStyle())
+        .buttonStyle(PlainButtonStyle()) // Apply plain style for custom background
     }
 }
 
@@ -672,19 +675,21 @@ struct ResourceFilterView: View {
                 }
                 
                 Section {
-                    Button(action: {
+                    Button { // Use trailing closure syntax
                         viewModel.resetFilters()
-                    }) {
+                    } label: {
                         Text("Reset Filters")
-                            .foregroundColor(.red)
                             .frame(maxWidth: .infinity, alignment: .center)
+                            // Color handled by textStyle
                     }
+                    .textStyle(color: .red) // Apply text style with red color
                 }
             }
             .navigationTitle("Filter Resources")
             .navigationBarItems(trailing: Button("Done") {
                 presentationMode.wrappedValue.dismiss()
-            })
+            }
+            .textStyle()) // Apply text style
         }
     }
 }
@@ -699,7 +704,8 @@ struct CreateResourceView: View {
                 .navigationTitle("Share a Resource")
                 .navigationBarItems(leading: Button("Cancel") {
                     presentationMode.wrappedValue.dismiss()
-                })
+                }
+                .textStyle()) // Apply text style
         }
     }
 }

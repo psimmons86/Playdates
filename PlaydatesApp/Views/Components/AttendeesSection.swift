@@ -17,11 +17,13 @@ struct AttendeesSection: View {
                 
                 Spacer()
                 
-                Button(action: onTapInvite) {
+                Button { // Use trailing closure syntax
+                    onTapInvite()
+                } label: {
                     Label("Invite", systemImage: "person.badge.plus")
-                        .font(.subheadline)
-                        .foregroundColor(ColorTheme.primary)
+                    // Font/color handled by textStyle
                 }
+                .textStyle() // Apply text style
             }
             
             // Attendees list or loading state

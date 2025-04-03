@@ -37,35 +37,29 @@ struct PlaydateDetailCalendarView: View {
                     }
                     
                     HStack {
-                        Button(action: {
+                        Button { // Use trailing closure syntax
                             showingSyncOptions = true
-                        }) {
+                        } label: {
                             HStack {
                                 Image(systemName: "arrow.triangle.2.circlepath")
                                 Text("Sync Options")
-                                    .font(.caption)
+                                // Font/color handled by textStyle
                             }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(ColorTheme.primary.opacity(0.2))
-                            .foregroundColor(ColorTheme.primary)
-                            .cornerRadius(6)
+                            // Remove custom styling
                         }
+                        .textStyle() // Apply text style
                         
-                        Button(action: {
+                        Button { // Use trailing closure syntax
                             removeFromCalendar()
-                        }) {
+                        } label: {
                             HStack {
                                 Image(systemName: "calendar.badge.minus")
                                 Text("Remove")
-                                    .font(.caption)
+                                // Font/color handled by textStyle
                             }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.red.opacity(0.2))
-                            .foregroundColor(.red)
-                            .cornerRadius(6)
+                            // Remove custom styling
                         }
+                        .textStyle(color: .red) // Apply text style with red color
                     }
                 }
             } else {
@@ -170,20 +164,17 @@ struct PlaydateCalendarInviteSection: View {
                 .font(.subheadline)
                 .foregroundColor(ColorTheme.lightText)
             
-            Button(action: {
+            Button { // Use trailing closure syntax
                 showingInviteFriends = true
-            }) {
+            } label: {
                 HStack {
                     Image(systemName: "calendar.badge.plus")
                     Text("Send Calendar Invites")
+                    // Font/color handled by primaryStyle
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(ColorTheme.primary)
-                .foregroundColor(.white)
-                .cornerRadius(8)
-                .frame(maxWidth: .infinity, alignment: .center)
+                // Styling handled by primaryStyle
             }
+            .primaryStyle() // Apply primary style
         }
         .padding()
         .background(Color.white)
@@ -251,6 +242,7 @@ struct CalendarInviteFriendsView: View {
                                 }) {
                                     friendRow
                                 }
+                                .buttonStyle(PlainButtonStyle()) // Apply plain style to list row button
                                 .contentShape(Rectangle())
                             }
                         }
@@ -258,22 +250,19 @@ struct CalendarInviteFriendsView: View {
                 }
                 
                 VStack {
-                    Button(action: {
+                    Button { // Use trailing closure syntax
                         sendInvites()
-                    }) {
+                    } label: {
                         if isLoading {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .frame(height: 20) // Match approx text height
                         } else {
                             Text("Send Calendar Invites")
-                                .fontWeight(.semibold)
+                            // Font/color handled by primaryStyle
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(selectedFriends.isEmpty ? Color.gray : ColorTheme.primary)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                    .primaryStyle() // Apply primary style
                     .disabled(selectedFriends.isEmpty || isLoading)
                     .padding()
                 }
@@ -281,7 +270,8 @@ struct CalendarInviteFriendsView: View {
             .navigationTitle("Calendar Invites")
             .navigationBarItems(trailing: Button("Cancel") {
                 presentationMode.wrappedValue.dismiss()
-            })
+            }
+            .textStyle()) // Apply text style
             .alert(isPresented: $showingCompletionAlert) {
                 Alert(
                     title: Text("Invites Sent"),

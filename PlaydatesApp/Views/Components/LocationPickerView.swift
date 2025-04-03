@@ -16,6 +16,10 @@ struct LocationPickerContent: View {
     @State private var errorMessage: String? = nil
     @ObservedObject private var locationManager = LocationManager.shared
     
+    // Add optional action parameters
+    var actionTitle: String? = nil
+    var action: (() -> Void)? = nil
+    
     var body: some View {
         VStack {
             // Search bar
@@ -31,13 +35,14 @@ struct LocationPickerContent: View {
                     }
                 
                 if !searchText.isEmpty {
-                    Button(action: {
+                    Button(action: { // Original Clear Search Button
                         searchText = ""
                         searchResults = []
                     }) {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(.gray)
                     }
+                    .buttonStyle(PlainButtonStyle()) // Keep plain style for this icon button
                 }
             }
             .padding()
@@ -61,7 +66,7 @@ struct LocationPickerContent: View {
                 List {
                     // Current location option
                     if let userLocation = locationManager.location {
-                        Button(action: {
+                        Button(action: { // Original Current Location Button
                             // Get address for current location
                             let geocoder = CLGeocoder()
                             let clLocation = CLLocation(latitude: userLocation.coordinate.latitude, longitude: userLocation.coordinate.longitude)
@@ -113,11 +118,12 @@ struct LocationPickerContent: View {
                                     .foregroundColor(.primary)
                             }
                         }
+                        .buttonStyle(PlainButtonStyle()) // Add plain style for list interaction
                     }
                     
                     // Search results
                     ForEach(searchResults, id: \.id) { location in
-                        Button(action: {
+                        Button(action: { // Original Search Result Button
                             selectedLocation = location
                             isPresented = false
                         }) {
@@ -130,14 +136,29 @@ struct LocationPickerContent: View {
                                     .foregroundColor(.secondary)
                             }
                         }
+                        .buttonStyle(PlainButtonStyle()) // Add plain style for list interaction
                     }
                 }
             }
+            
+            // Optional action button (if provided) - Reverted to original
+            if let actionTitle = actionTitle, let action = action {
+                Button(action: action) {
+                    Text(actionTitle)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(ColorTheme.primary)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .padding()
+            }
         }
         .navigationTitle("Select Location")
-        .navigationBarItems(trailing: Button("Cancel") {
+        .navigationBarItems(trailing: Button("Cancel") { // Original Cancel Button
             isPresented = false
         })
+        // Removed potentially problematic comment/modifier placeholder
     }
     
     private func searchLocations() {

@@ -4,75 +4,93 @@ import FirebaseFirestore
 import FirebaseAuth
 import FirebaseStorage
 import CoreLocation
+// Removed Combine import
 
 @main
 struct PlaydatesApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
-    @StateObject private var authViewModel = AuthViewModel()
-    @StateObject private var locationManager = LocationManager.shared
-    
+
+    // Declare StateObjects but initialize them in init() AFTER Firebase config
+    @StateObject private var authViewModel: AuthViewModel
+    @StateObject private var locationManager: LocationManager
+    @StateObject private var friendManager: FriendManagementViewModel
+    @StateObject private var appActivityViewModel: AppActivityViewModel // Add AppActivityViewModel
+    @StateObject private var invitationManager: PlaydateInvitationViewModel // Add Invitation Manager
+    @StateObject private var activityViewModel = ActivityViewModel.shared // Add ActivityViewModel singleton
+    @StateObject private var mainContainerViewModel = MainContainerViewModel.shared // Add MainContainerViewModel singleton
+
     init() {
-        // Set up appearance
+        // --- Firebase Configuration FIRST ---
+        print("📱 PlaydatesApp.init: Configuring Firebase...")
+        FirebaseApp.configure()
+        print("✅ PlaydatesApp.init: Firebase configured.")
+
+        // Configure Firebase Services (Auth, Firestore, Storage)
+        // Ensure services are ready before ViewModels access them
+        print("🚀 PlaydatesApp.init: Configuring Firebase Services...")
+        FirebaseAuthService.shared.configure()
+        FirestoreService.shared.configure()
+        FirebaseStorageService.shared.configure()
+        print("✅ PlaydatesApp.init: Firebase Services configured.")
+        // --- End Firebase Configuration ---
+
+        // --- Initialize ViewModels AFTER Firebase Config ---
+        // Create instances first
+        let authVM = AuthViewModel()
+        let friendVM = FriendManagementViewModel(authViewModel: authVM) // Pass authVM here
+        let activityVM = AppActivityViewModel(authViewModel: authVM, friendManagementViewModel: friendVM) // Pass authVM and friendVM
+        let invitationMgr = PlaydateInvitationViewModel() // Create Invitation Manager
+        let locationMgr = LocationManager.shared
+
+        // Assign to StateObject properties
+        _authViewModel = StateObject(wrappedValue: authVM)
+        _friendManager = StateObject(wrappedValue: friendVM)
+        _appActivityViewModel = StateObject(wrappedValue: activityVM)
+        _invitationManager = StateObject(wrappedValue: invitationMgr) // Assign Invitation Manager
+        _locationManager = StateObject(wrappedValue: locationMgr)
+        // _activityViewModel is already initialized via .shared
+
+        // Setup ActivityViewModel AFTER authVM is ready
+        ActivityViewModel.shared.setup(authViewModel: authVM)
+
+        print("✅ PlaydatesApp.init: ViewModels initialized and setup.")
+        // --- End ViewModel Initialization ---
+
+        // Configure appearance
         configureAppearance()
     }
-    
+
     var body: some Scene {
         WindowGroup {
+            // Show AppContentView directly
             AppContentView()
                 .environmentObject(authViewModel)
                 .environmentObject(locationManager)
+                .environmentObject(friendManager) // Pass friendManager
+                .environmentObject(appActivityViewModel) // Pass appActivityViewModel
+                .environmentObject(invitationManager) // Inject Invitation Manager
+                .environmentObject(activityViewModel) // Inject ActivityViewModel
+                .environmentObject(mainContainerViewModel) // Inject MainContainerViewModel
         }
     }
-    
+
+    // Keep configureAppearance as it doesn't involve Firebase
     private func configureAppearance() {
         // Configure navigation bar appearance
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor(ColorTheme.primary)
+        appearance.backgroundColor = UIColor(ColorTheme.primary) // Use app's primary color
         appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
         appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
-        
+
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
-        UINavigationBar.appearance().tintColor = .white
-        
+        UINavigationBar.appearance().tintColor = .black // Change to black for better visibility
+
         // Configure tab bar appearance
-        UITabBar.appearance().tintColor = UIColor(ColorTheme.primary)
+        UITabBar.appearance().tintColor = UIColor(ColorTheme.primary) // Use app's primary color
     }
 }
 
-struct AppContentView: View {
-    @EnvironmentObject var authViewModel: AuthViewModel
-    @StateObject private var groupViewModel = GroupViewModel.shared
-    @StateObject private var resourceViewModel = ResourceViewModel.shared
-    @StateObject private var communityEventViewModel = CommunityEventViewModel.shared
-    
-    var body: some View {
-        SwiftUI.Group {
-            if authViewModel.isSignedIn {
-                MainTabView()
-                    .environmentObject(groupViewModel)
-                    .environmentObject(resourceViewModel)
-                    .environmentObject(communityEventViewModel)
-            } else {
-                AuthView()
-            }
-        }
-        .onAppear {
-            // Check if user is already logged in
-            authViewModel.checkAuthState()
-            
-            // Load mock data for Community features
-            loadMockData()
-        }
-    }
-    
-    private func loadMockData() {
-        // Add a slight delay to ensure view models are fully initialized
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            // Use the AppDelegate's loadMockData method
-            AppDelegate.shared?.loadMockData()
-        }
-    }
-}
+// AppContentView has been moved to PlaydatesApp/App/AppContentView.swift

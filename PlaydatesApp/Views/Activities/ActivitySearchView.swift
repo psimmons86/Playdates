@@ -30,6 +30,7 @@ struct ActivitySearchView: View {
                             .background(Color(.systemGray6))
                             .cornerRadius(8)
                     }
+                    .buttonStyle(PlainButtonStyle()) // Apply plain style
                 }
                 .padding(.horizontal)
                 
@@ -67,9 +68,9 @@ struct ActivitySearchView: View {
     // List of activities
     private var activityListView: some View {
         List(viewModel.activities) { activity in
-            Button(action: {
+            Button { // Use trailing closure syntax
                 viewModel.getActivityDetails(for: activity)
-            }) {
+            } label: {
                 HStack {
                     VStack(alignment: .leading) {
                         Text(activity.name)
@@ -101,6 +102,7 @@ struct ActivitySearchView: View {
                 }
                 .padding(.vertical, 4)
             }
+            .buttonStyle(PlainButtonStyle()) // Apply plain style to list row
         }
     }
     
@@ -111,15 +113,16 @@ struct ActivitySearchView: View {
                 if let activity = viewModel.selectedActivity {
                     // Header with name and back button
                     HStack {
-                        Button(action: {
+                        Button { // Use trailing closure syntax
                             viewModel.clearSelectedActivity()
-                        }) {
+                        } label: {
                             HStack {
                                 Image(systemName: "chevron.left")
                                 Text("Back")
                             }
-                            .foregroundColor(.blue)
+                            // Color handled by textStyle
                         }
+                        .textStyle(color: .blue) // Apply text style with blue color
                         
                         Spacer()
                     }
@@ -151,22 +154,20 @@ struct ActivitySearchView: View {
                     }
                     
                     // Create Playdate button
-                    Button(action: {
+                    Button { // Use trailing closure syntax
                         // Pre-fill playdate details
                         playdateTitle = "Playdate at \(activity.name)"
                         playdateDescription = "Join us for a playdate at \(activity.name)!"
                         showingCreatePlaydateSheet = true
-                    }) {
+                    } label: {
                         HStack {
                             Image(systemName: "calendar.badge.plus")
                             Text("Create Playdate Here")
+                            // Font/color handled by primaryStyle
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                    }
+                        // Styling handled by primaryStyle
+                    } // End of Button definition
+                    .buttonStyle(PrimaryButtonStyle()) // Apply style directly to the Button
                     .padding()
                 }
             }
@@ -191,17 +192,19 @@ struct ActivitySearchView: View {
                 }
                 
                 Section {
-                    Button(action: createPlaydate) {
+                    Button(action: createPlaydate) { // Use action closure
                         Text("Create Playdate")
-                            .frame(maxWidth: .infinity)
-                            .foregroundColor(.blue)
+                        // Font/color handled by primaryStyle
                     }
+                    .buttonStyle(PrimaryButtonStyle()) // Apply primary style directly
+                    // Remove frame and foregroundColor modifiers
                 }
             }
             .navigationTitle("Create Playdate")
             .navigationBarItems(trailing: Button("Cancel") {
                 showingCreatePlaydateSheet = false
-            })
+            }
+            .textStyle()) // Apply text style
         }
     }
     

@@ -13,7 +13,69 @@
 
 // MARK: - Common UI Components
 "common.user" = "User";
+"common.cancel" = "Cancel";
+"common.save" = "Save";
 
 // MARK: - Empty States
 "emptystate.title.default" = "Nothing to see here";
 "emptystate.message.default" = "Check back later for updates";
+
+// MARK: - Profile
+"profile.title" = "Profile";
+"profile.edit" = "Edit Profile";
+"profile.friends" = "Friends";
+"profile.children" = "Children";
+"profile.joined" = "Joined";
+"profile.addChild" = "Add Child";
+"profile.noChildren" = "No children added yet";
+"profile.noChildrenMessage" = "Add your children to find perfect playdates for them";
+"profile.activity" = "Activity";
+"profile.stats.playdates" = "Playdates";
+"profile.stats.favorites" = "Favorites";
+"profile.stats.completed" = "Completed";
+"profile.stats.upcoming" = "Upcoming";
+"profile.settings" = "Settings";
+"profile.settings.account" = "Account Settings";
+"profile.settings.notifications" = "Notifications";
+"profile.settings.privacy" = "Privacy & Security";
+"profile.settings.help" = "Help & Support";
+"profile.signOut" = "Sign Out";
+
+// MARK: - Edit Profile
+"profile.edit.title" = "Edit Profile";
+"profile.edit.info" = "Profile Information";
+"profile.edit.name" = "Name";
+"profile.edit.bio" = "Bio";
+"profile.edit.image" = "Profile Image";
+"profile.edit.imageUrl" = "Image URL";
+"profile.edit.save" = "Save";
+"profile.edit.cancel" = "Cancel";
+
+// MARK: - Child Profile
+"profile.child.title" = "Edit Child";
+"profile.child.info" = "Child Information";
+"profile.child.name" = "Name";
+"profile.child.age" = "Age";
+"profile.child.interests" = "Interests";
+"profile.child.notFound" = "Child not found";
+"profile.childSetup.title" = "Child Profile Setup";
+
+// MARK: - Edit Child
+"child.edit.title" = "Edit Child";
+"child.edit.name" = "Name";
+"child.edit.age" = "Age";
+"child.edit.interests" = "Interests";
+"child.edit.save" = "Save";
+"child.edit.cancel" = "Cancel";
+
+// MARK: - Friend Management Errors
+"friendManagement.error.requestAlreadySent" = "You have already sent a friend request to this user.";
+"friendManagement.error.alreadyFriends" = "You are already friends with this user.";
+"friendManagement.error.firestore" = "A database error occurred: %@"; // %@ will be replaced by the specific error
+"friendManagement.error.invalidRequestID" = "Invalid friend request ID.";
+"friendManagement.error.userNotLoggedIn" = "You must be logged in to manage friends.";
+"friendManagement.error.friendshipNotFound" = "Friendship record not found.";
+"friendManagement.error.invalidFriendRequestData" = "Could not read friend request data.";
+"friendManagement.error.friendRequestNotPending" = "This friend request is no longer pending.";
+"friendManagement.error.userNotFound" = "Could not find user details.";
+"friendManagement.error.unknown" = "An unknown error occurred while managing friends.";

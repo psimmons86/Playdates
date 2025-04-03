@@ -5,87 +5,76 @@ struct EnhancedPlaydateCard: View {
     let playdate: Playdate
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Header with date and time
-            HStack {
-                // Date box
-                VStack(spacing: 0) {
-                    Text(formatDayOfWeek(playdate.startDate))
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(.white.opacity(0.9))
-                    
-                    Text(formatDayOfMonth(playdate.startDate))
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                    
-                    Text(formatMonth(playdate.startDate))
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(.white.opacity(0.9))
-                }
-                .frame(width: 50)
-                .padding(.vertical, 8)
-                
-                Spacer()
-                
-                // Time
-                Text(formatTime(playdate.startDate))
-                    .font(.subheadline)
+        HStack(spacing: 16) { // Use HStack for side-by-side layout
+            // Date Box (similar style but adapted for white background)
+            VStack(spacing: 2) { // Reduced spacing
+                Text(formatDayOfWeek(playdate.startDate))
+                    .font(.caption)
                     .fontWeight(.medium)
-                    .foregroundColor(.white.opacity(0.9))
+                    .foregroundColor(ColorTheme.primary) // Use primary color
+                
+                Text(formatDayOfMonth(playdate.startDate))
+                    .font(.title) // Slightly larger day
+                    .fontWeight(.bold)
+                    .foregroundColor(ColorTheme.darkPurple) // Darker text
+                
+                Text(formatMonth(playdate.startDate))
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(ColorTheme.primary) // Use primary color
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            
-            Spacer()
+            .frame(width: 60) // Keep fixed width
+            .padding(.vertical, 12) // Adjusted padding
+            .background(ColorTheme.primary.opacity(0.1)) // Light background tint
+            .cornerRadius(12) // Rounded corners for the date box
             
             // Playdate details
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) { // Reduced spacing
                 Text(playdate.title)
                     .font(.headline)
-                    .foregroundColor(.white)
-                    // Allow wrapping
+                    .fontWeight(.semibold) // Slightly bolder
+                    .foregroundColor(ColorTheme.darkPurple)
+                    .lineLimit(2) // Allow wrapping up to 2 lines
                 
-                HStack {
+                HStack(spacing: 4) { // Reduced spacing
                     Image(systemName: "mappin.and.ellipse")
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.8))
+                        .font(.caption) // Smaller icon
+                        .foregroundColor(ColorTheme.lightText)
                     
                     Text(playdate.location?.name ?? playdate.address ?? "Location TBD")
                         .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.8))
-                        // Allow wrapping
+                        .foregroundColor(ColorTheme.lightText)
+                        .lineLimit(1) // Prevent wrapping
+                }
+                
+                HStack(spacing: 4) { // Reduced spacing
+                    Image(systemName: "clock")
+                        .font(.caption) // Smaller icon
+                        .foregroundColor(ColorTheme.lightText)
+                    
+                    Text(formatTime(playdate.startDate))
+                        .font(.subheadline)
+                        .foregroundColor(ColorTheme.lightText)
                 }
                 
                 // Attendees
-                HStack {
+                HStack(spacing: 4) { // Reduced spacing
                     Image(systemName: "person.2")
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.8))
+                        .font(.caption) // Smaller icon
+                        .foregroundColor(ColorTheme.lightText)
                     
                     Text("\(playdate.attendeeIDs.count) attending")
                         .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.8))
+                        .foregroundColor(ColorTheme.lightText)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
+            
+            Spacer() // Pushes content to the left
         }
-        .frame(minWidth: 180, maxWidth: 220, minHeight: 160)
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    ColorTheme.primary,
-                    ColorTheme.primary.opacity(0.8)
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
-        .cornerRadius(16)
-        .shadow(color: ColorTheme.primary.opacity(0.3), radius: 8, x: 0, y: 4)
+        .padding(16) // Overall padding for the card
+        .background(Color.white) // White background
+        .cornerRadius(16) // Rounded corners
+        .shadow(color: Color.black.opacity(0.08), radius: 5, x: 0, y: 2) // Subtle shadow
     }
     
     private func formatDayOfWeek(_ date: Date) -> String {
@@ -115,7 +104,8 @@ struct EnhancedPlaydateCard: View {
 
 struct EnhancedPlaydateCard_Previews: PreviewProvider {
     static var previews: some View {
-        EnhancedPlaydateCard(playdate: Playdate.mock)
+        // Replace Playdate.mock with a basic instance for preview
+        EnhancedPlaydateCard(playdate: Playdate(hostID: "previewHost", title: "Preview Playdate", description: "Preview Description", startDate: Date(), endDate: Date().addingTimeInterval(3600), attendeeIDs: ["1", "2"]))
             .previewLayout(.sizeThatFits)
             .padding()
     }

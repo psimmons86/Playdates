@@ -11,47 +11,394 @@ class ActivityViewModel: ObservableObject {
     @Published var activities: [Activity] = []
     @Published var popularActivities: [Activity] = []
     @Published var nearbyActivities: [Activity] = []
-    @Published var favoriteActivities: Set<String> = [] // Store favorite activity IDs
-    @Published var isLoading = false
+    @Published var favoriteActivityIDs: Set<String> = [] // Synced with Firestore via user listener
+    @Published var wantToDoActivityIDs: Set<String> = [] // Synced with Firestore via user listener
+    @Published var favoriteActivities: [Activity] = [] // Holds fetched favorite Activity objects
+    @Published var wishlistActivities: [Activity] = [] // Holds fetched wishlist Activity objects
+    @Published var isLoading = false // General loading
+    @Published var isLoadingFavorites = false // Specific loading state for favorites
+    @Published var isLoadingWishlist = false // Specific loading state for wishlist
     @Published var error: String?
+    @Published var selectedActivity: Activity? = nil // Added for navigation
     
+    // Enum to identify which list to update
+    private enum ActivityListType {
+        case main, nearby, popular
+    }
     private let db = Firestore.firestore()
     private var cancellables = Set<AnyCancellable>()
     private var activitiesListener: ListenerRegistration?
-    private let favoritesKey = "favoriteActivities" // Key for UserDefaults
-    
-    init() {
-        // Load favorites from UserDefaults
-        if let savedFavorites = UserDefaults.standard.array(forKey: favoritesKey) as? [String] {
-            favoriteActivities = Set(savedFavorites)
-        }
+    private var userListener: ListenerRegistration? // Listener for user document
+    private var authViewModel: AuthViewModel? // To get current user ID
+
+    // Private init for Singleton
+    private init() {
+        print("🚀 ActivityViewModel initialized (Singleton)")
+        // Setup will be called externally after AuthViewModel is available
     }
-    
+
+    // Call this method after AuthViewModel is initialized and available
+    func setup(authViewModel: AuthViewModel) {
+        self.authViewModel = authViewModel
+        print("🚀 ActivityViewModel: AuthViewModel injected. Setting up user observation.")
+
+        // Observe user changes from AuthViewModel
+        authViewModel.$user
+            .sink { [weak self] user in
+                guard let self = self else { return }
+                if let user = user, let userId = user.id {
+                    print("🚀 ActivityViewModel: User logged in (\(userId)). Setting up user listener.")
+                    self.setupUserListener(for: userId)
+                } else {
+                    print("🚀 ActivityViewModel: User logged out. Removing user listener and clearing lists.")
+                    self.removeUserListener()
+                    self.favoriteActivityIDs = []
+                    self.wantToDoActivityIDs = []
+                    // Also clear the fetched activities if IDs are cleared
+                    self.favoriteActivities = []
+                    self.wishlistActivities = []
+                }
+            }
+            .store(in: &cancellables)
+    }
+
     deinit {
         activitiesListener?.remove()
+        removeUserListener() // Ensure user listener is removed
+        print("🗑️ ActivityViewModel deinitialized.")
     }
-    
-    // MARK: - Favorites Management
-    
-    func toggleFavorite(for activity: Activity) {
-        guard let id = activity.id else { return }
-        
-        if favoriteActivities.contains(id) {
-            favoriteActivities.remove(id)
-        } else {
-            favoriteActivities.insert(id)
+
+    // MARK: - User Activity List Management (Firestore-based)
+
+    func setupUserListener(for userID: String) { // Removed private
+        self.removeUserListener() // Ensure no duplicate listeners
+
+        let userRef = db.collection("users").document(userID)
+        userListener = userRef.addSnapshotListener { [weak self] documentSnapshot, error in
+            guard let self = self else { return }
+            guard let document = documentSnapshot else {
+                print("❌ Error fetching user document for activity lists: \(error?.localizedDescription ?? "Unknown error")")
+                return
+            }
+
+            // Use Task @MainActor for safety
+            Task { @MainActor in
+                do {
+                    let user = try document.data(as: User.self)
+                    let newFavoriteIDs = Set(user.favoriteActivityIDs ?? [])
+                    let newWantToDoIDs = Set(user.wantToDoActivityIDs ?? [])
+
+                    // Log the loaded IDs
+                    print(" M setupUserListener: Loaded Favorite IDs: \(newFavoriteIDs)")
+                    print(" M setupUserListener: Loaded WantTo Do IDs: \(newWantToDoIDs)")
+
+                    // Check if IDs actually changed before triggering fetches
+                    let favoritesChanged = newFavoriteIDs != self.favoriteActivityIDs
+                    let wishlistChanged = newWantToDoIDs != self.wantToDoActivityIDs
+
+                    self.favoriteActivityIDs = newFavoriteIDs
+                    self.wantToDoActivityIDs = newWantToDoIDs
+
+                    print("✅ User activity lists updated: Favorites(\(self.favoriteActivityIDs.count)), WantToDo(\(self.wantToDoActivityIDs.count))")
+
+                    // Trigger fetches only if the corresponding ID list changed
+                    if favoritesChanged {
+                        print(" M Favorites changed, triggering fetchFavoriteActivities...") // Add log
+                        self.fetchFavoriteActivities()
+                    }
+                    if wishlistChanged {
+                         print(" M Wishlist changed, triggering fetchWishlistActivities...") // Add log
+                        self.fetchWishlistActivities()
+                    }
+
+                } catch {
+                    print("❌ Error decoding user document for activity lists: \(error)")
+                    // Clear local state on error to avoid inconsistency
+                    self.favoriteActivityIDs = []
+                    self.wantToDoActivityIDs = []
+                    self.favoriteActivities = []
+                    self.wishlistActivities = []
+                }
+            }
         }
-        
-        // Save to UserDefaults
-        UserDefaults.standard.set(Array(favoriteActivities), forKey: favoritesKey)
     }
-    
+
+    // Made internal to be accessible from sink closure and deinit
+    func removeUserListener() {
+        userListener?.remove()
+        userListener = nil
+        print("👂 User listener for activity lists removed.")
+    }
+
+    // Toggles favorite status and updates Firestore
+    func toggleFavorite(activity: Activity) async {
+        guard let activityID = activity.id else {
+            print("❌ Cannot toggle favorite: Activity has no ID.")
+            return
+        }
+        // Simplified Check: Ensure user profile is loaded (implies logged in and initial check complete)
+        guard let userID = authViewModel?.user?.id else {
+            print("❌ Cannot toggle favorite: User profile not loaded.")
+            // Provide clearer feedback to the user
+            DispatchQueue.main.async { self.error = "User profile not available. Please ensure you are logged in." }
+            return
+        }
+
+        let userRef = db.collection("users").document(userID)
+        let isCurrentlyFavorite = favoriteActivityIDs.contains(activityID)
+
+        // --- Optimistic UI Update ---
+        DispatchQueue.main.async {
+            if isCurrentlyFavorite {
+                self.favoriteActivities.removeAll { $0.id == activityID }
+            } else {
+                // Avoid adding duplicates if already present somehow
+                if !self.favoriteActivities.contains(where: { $0.id == activityID }) {
+                    self.favoriteActivities.append(activity)
+                }
+            }
+        }
+        // --- End Optimistic UI Update ---
+
+        do {
+            if isCurrentlyFavorite {
+                // Remove from favorites in Firestore
+                try await userRef.updateData([
+                    "favoriteActivityIDs": FieldValue.arrayRemove([activityID])
+                ])
+                print("✅ Removed \(activityID) from favorites for user \(userID)")
+            } else {
+                // Add to favorites
+                try await userRef.updateData([
+                    "favoriteActivityIDs": FieldValue.arrayUnion([activityID])
+                ])
+                print("✅ Added \(activityID) to favorites for user \(userID) in Firestore")
+            }
+            // The listener will eventually confirm this change, but the UI is already updated.
+        } catch {
+            print("❌ Error updating favorites for activity \(activityID) in Firestore: \(error.localizedDescription)")
+            // --- Revert Optimistic Update on Error ---
+            DispatchQueue.main.async {
+                // If Firestore failed, revert the local change
+                if isCurrentlyFavorite {
+                    // Failed to remove, so add it back if not already there
+                    if !self.favoriteActivities.contains(where: { $0.id == activityID }) {
+                         self.favoriteActivities.append(activity)
+                    }
+                } else {
+                    // Failed to add, so remove it
+                    self.favoriteActivities.removeAll { $0.id == activityID }
+                }
+                self.error = "Failed to update favorites: \(error.localizedDescription)"
+            }
+            // --- End Revert ---
+        }
+    }
+
+    // Toggles "Want to Do" status and updates Firestore
+    func toggleWantToDo(activity: Activity) async {
+        guard let activityID = activity.id else {
+            print("❌ Cannot toggle want to do: Activity has no ID.")
+            return
+        }
+        // Simplified Check: Ensure user profile is loaded (implies logged in and initial check complete)
+        guard let userID = authViewModel?.user?.id else {
+            print("❌ Cannot toggle want to do: User profile not loaded.")
+            // Provide clearer feedback to the user
+            DispatchQueue.main.async { self.error = "User profile not available. Please ensure you are logged in." }
+            return
+        }
+
+        let userRef = db.collection("users").document(userID)
+        let isCurrentlyWantToDo = wantToDoActivityIDs.contains(activityID)
+
+        // --- Optimistic UI Update ---
+        DispatchQueue.main.async {
+            if isCurrentlyWantToDo {
+                self.wishlistActivities.removeAll { $0.id == activityID }
+            } else {
+                // Avoid adding duplicates if already present somehow
+                if !self.wishlistActivities.contains(where: { $0.id == activityID }) {
+                    self.wishlistActivities.append(activity)
+                }
+            }
+        }
+        // --- End Optimistic UI Update ---
+
+        do {
+            if isCurrentlyWantToDo {
+                // Remove from want to do list in Firestore
+                try await userRef.updateData([
+                    "wantToDoActivityIDs": FieldValue.arrayRemove([activityID])
+                ])
+                print("✅ Removed \(activityID) from want-to-do list for user \(userID)")
+            } else {
+                // Add to want to do list
+                try await userRef.updateData([
+                    "wantToDoActivityIDs": FieldValue.arrayUnion([activityID])
+                ])
+                print("✅ Added \(activityID) to want-to-do list for user \(userID) in Firestore")
+            }
+            // The listener will eventually confirm this change, but the UI is already updated.
+        } catch {
+            print("❌ Error updating want-to-do list for activity \(activityID) in Firestore: \(error.localizedDescription)")
+            // --- Revert Optimistic Update on Error ---
+            DispatchQueue.main.async {
+                 // If Firestore failed, revert the local change
+                 if isCurrentlyWantToDo {
+                     // Failed to remove, so add it back if not already there
+                     if !self.wishlistActivities.contains(where: { $0.id == activityID }) {
+                          self.wishlistActivities.append(activity)
+                     }
+                 } else {
+                     // Failed to add, so remove it
+                     self.wishlistActivities.removeAll { $0.id == activityID }
+                 }
+                 self.error = "Failed to update want-to-do list: \(error.localizedDescription)"
+            }
+            // --- End Revert ---
+        }
+    }
+
+    // Check if an activity is favorited (uses local @Published set)
     func isFavorite(activity: Activity) -> Bool {
         guard let id = activity.id else { return false }
-        return favoriteActivities.contains(id)
+        return favoriteActivityIDs.contains(id)
     }
-    
-    // MARK: - Fetch Activities
+
+    // Check if an activity is in the "Want to Do" list (uses local @Published set)
+    func isWantToDo(activity: Activity) -> Bool {
+        guard let id = activity.id else { return false }
+        return wantToDoActivityIDs.contains(id)
+    }
+
+    // Overload to check directly by ID string
+    func isWantToDo(activityID: String) -> Bool {
+        return wantToDoActivityIDs.contains(activityID)
+    }
+
+    // MARK: - Fetch Favorite/Wishlist Activities
+
+    // Fetches full Activity objects based on favoriteActivityIDs
+    func fetchFavoriteActivities() {
+        let idsToFetch = Array(favoriteActivityIDs) // Use the current state
+        print(" M fetchFavoriteActivities: Attempting to fetch activities for IDs: \(idsToFetch)") // Log IDs being fetched
+        guard !idsToFetch.isEmpty else { // Check based on the array derived from the state
+            // If no favorite IDs, clear the list and return
+            DispatchQueue.main.async {
+                self.favoriteActivities = []
+                self.isLoadingFavorites = false
+            }
+            return
+        }
+
+        DispatchQueue.main.async {
+            self.isLoadingFavorites = true
+            self.error = nil // Clear previous errors specific to this fetch if needed
+        }
+
+        // Fetch each favorite activity individually
+        var fetchedFavorites: [Activity] = []
+        let group = DispatchGroup()
+
+        for activityID in idsToFetch {
+            group.enter()
+            db.collection("activities").document(activityID).getDocument { documentSnapshot, error in
+                defer { group.leave() }
+
+                if let error = error {
+                    print("❌ Error fetching favorite activity \(activityID): \(error.localizedDescription)")
+                    return
+                }
+                guard let document = documentSnapshot, document.exists else {
+                    print(" M fetchFavoriteActivities: Document \(activityID) does not exist.")
+                    return
+                }
+
+                // Directly decode the single DocumentSnapshot using try?
+                if let activity = try? document.data(as: Activity.self) {
+                    fetchedFavorites.append(activity)
+                    // Optional: Log success
+                    // print(" M fetchFavoriteActivities: Successfully parsed document \(activityID).")
+                } else {
+                    // Handle decoding error (try? returned nil)
+                    // We don't have the specific error here, but we know it failed.
+                    print("❌ Error decoding favorite activity document \(activityID) with Codable. Data: \(document.data() ?? [:])")
+                }
+            }
+        }
+
+        group.notify(queue: .main) {
+            print(" M fetchFavoriteActivities: DispatchGroup notify block. Fetched \(fetchedFavorites.count) individual activities.")
+            self.favoriteActivities = fetchedFavorites
+            self.isLoadingFavorites = false
+            print("✅ Fetched \(self.favoriteActivities.count) favorite activities individually. Assigned to @Published var.")
+        }
+    }
+
+
+    // Fetches full Activity objects based on wantToDoActivityIDs - Fetching Individually
+    func fetchWishlistActivities() {
+        let idsToFetch = Array(wantToDoActivityIDs) // Use the current state
+        print(" M fetchWishlistActivities: Attempting to fetch activities INDIVIDUALLY for IDs: \(idsToFetch)") // Log IDs being fetched
+        guard !idsToFetch.isEmpty else {
+            // If no wishlist IDs, clear the list and return
+            DispatchQueue.main.async {
+                self.wishlistActivities = []
+                self.isLoadingWishlist = false
+            }
+            return
+        }
+
+        DispatchQueue.main.async {
+            self.isLoadingWishlist = true
+            self.error = nil // Clear previous errors specific to this fetch if needed
+        }
+
+        // Fetch each wishlist activity individually
+        var fetchedWishlist: [Activity] = []
+        let group = DispatchGroup()
+
+        for activityID in idsToFetch {
+            group.enter()
+            db.collection("activities").document(activityID).getDocument { documentSnapshot, error in
+                defer { group.leave() }
+
+                if let error = error {
+                    print("❌ Error fetching wishlist activity \(activityID): \(error.localizedDescription)")
+                    return
+                }
+                guard let document = documentSnapshot, document.exists else {
+                    print(" M fetchWishlistActivities: Document \(activityID) does not exist.")
+                    // This is expected if an ID in the user's list points to a deleted activity
+                    return
+                }
+                 print(" M fetchWishlistActivities: Successfully fetched document \(activityID).")
+
+                // Directly decode the single DocumentSnapshot using try?
+                if let activity = try? document.data(as: Activity.self) {
+                    fetchedWishlist.append(activity)
+                    print(" M fetchWishlistActivities: Successfully parsed document \(activityID).")
+                } else {
+                    // Handle decoding error (try? returned nil)
+                    // We don't have the specific error here, but we know it failed.
+                    print("❌ Error decoding wishlist activity document \(activityID) with Codable. Data: \(document.data() ?? [:])")
+                }
+            }
+        }
+
+        group.notify(queue: .main) {
+            print(" M fetchWishlistActivities: DispatchGroup notify block. Fetched \(fetchedWishlist.count) individual activities.")
+            // Sort results if needed, e.g., by name or original order
+            // For now, just assign
+            self.wishlistActivities = fetchedWishlist
+            self.isLoadingWishlist = false
+            print("✅ Fetched \(self.wishlistActivities.count) wishlist activities individually. Assigned to @Published var.")
+        }
+    }
+
+
+    // MARK: - Fetch General Activities
     
     func fetchActivities(category: String? = nil) {
         isLoading = true
@@ -149,13 +496,23 @@ class ActivityViewModel: ObservableObject {
                     }
                     
                     guard let documents = snapshot?.documents else {
+                        // If no documents, set to empty
+                        print("No popular activity documents found.")
                         self.popularActivities = []
                         return
                     }
                     
                     // Parse activities with safe data handling
-                    self.popularActivities = self.parseActivities(from: documents)
-                    print("Fetched \(self.popularActivities.count) popular activities by rating")
+                    let parsedActivities = self.parseActivities(from: documents)
+                    
+                    if parsedActivities.isEmpty {
+                        // If no activities were parsed, set to empty
+                        print("No popular activities parsed.")
+                        self.popularActivities = []
+                    } else {
+                        self.popularActivities = parsedActivities
+                        print("Fetched \(self.popularActivities.count) popular activities by rating")
+                    }
                 }
             }
     }
@@ -211,12 +568,14 @@ class ActivityViewModel: ObservableObject {
                     if let error = error {
                         self.error = error.localizedDescription
                         print("Error fetching featured activities: \(error.localizedDescription)")
+                        // Don't add mock data on error
                         return
                     }
                     
                     guard let documents = snapshot?.documents else {
-                        // If no featured activities, we'll handle this in the view
-                        print("No featured activities found")
+                        // If no featured activities, do nothing (or set an empty state)
+                        print("No featured activities found.")
+                        // Optionally clear existing featured status if needed
                         return
                     }
                     
@@ -224,14 +583,17 @@ class ActivityViewModel: ObservableObject {
                     let featuredActivities = self.parseActivities(from: documents)
                     print("Fetched \(featuredActivities.count) featured activities")
                     
+                    if featuredActivities.isEmpty {
+                         print("No featured activities parsed.")
+                        // Optionally clear existing featured status if needed
+                        return
+                    }
+                    
                     // If we have featured activities, update the main activities array
                     // This ensures featured activities are available for the featuredActivities computed property in HomeView
-                    if !featuredActivities.isEmpty {
-                        // Add featured activities to the main activities array if they're not already there
-                        for activity in featuredActivities {
-                            if !self.activities.contains(where: { $0.id == activity.id }) {
-                                self.activities.append(activity)
-                            }
+                    for activity in featuredActivities {
+                        if !self.activities.contains(where: { $0.id == activity.id }) {
+                            self.activities.append(activity)
                         }
                     }
                 }
@@ -266,30 +628,45 @@ class ActivityViewModel: ObservableObject {
                     
                     switch result {
                     case .success(let activities):
-                        // Convert Google Places activities to our Activity model
-                        let mappedActivities = activities.map { place -> Activity in
-                            let location = Location(
-                                name: place.location.name,
-                                address: place.location.address,
-                                latitude: place.location.latitude,
-                                longitude: place.location.longitude
-                            )
+                            // Convert Google Places activities to our Activity model
+                            let mappedActivities = activities.map { place -> Activity in
+                                let location = Location(
+                                    name: place.location.name,
+                                    address: place.location.address,
+                                    latitude: place.location.latitude,
+                                    longitude: place.location.longitude
+                                )
+                                
+                                // Determine activity type based on place types
+                                let activityType = self.determineActivityType(from: place.types)
+                                
+                                // Construct photo URL if reference exists
+                                var photoURLs: [String]? = nil
+                                if let photoRef = place.photoReference,
+                                   let photoURL = GooglePlacesService.shared.getPhotoURL(photoReference: photoRef) {
+                                    photoURLs = [photoURL.absoluteString]
+                                }
+                                
+                                return Activity(
+                                    id: place.id,
+                                    name: place.name,
+                                    description: nil, // Set to nil initially, will fetch on demand
+                                    type: activityType,
+                                    location: location,
+                                    website: nil, // Not available from nearby search
+                                    phoneNumber: nil, // Not available from nearby search
+                                    photos: photoURLs, // Use the constructed URL
+                                    rating: place.rating,
+                                    reviewCount: place.userRatingsTotal,
+                                    isPublic: true, // Assume public from Google Places
+                                    isFeatured: false, // Not featured by default
+                                    createdAt: Date(), // Use current date as placeholder
+                                    updatedAt: Date() // Use current date as placeholder
+                                    // photoReference is no longer needed in Activity model if photos array is used
+                                )
+                            }
                             
-                            // Determine activity type based on place types
-                            let activityType = self.determineActivityType(from: place.types)
-                            
-                            return Activity(
-                                id: place.id,
-                                name: place.name,
-                                description: "A family-friendly activity",
-                                type: activityType,
-                                location: location,
-                                rating: place.rating,
-                                reviewCount: place.userRatingsTotal
-                            )
-                        }
-                        
-                        // Enhanced behavior: For certain types (like Parks), we want to accumulate results
+                            // Enhanced behavior: For certain types (like Parks), we want to accumulate results
                         // from multiple searches rather than replacing them
                         if searchType == "park" || searchType == "playground" {
                             // Merge new activities with existing ones, avoiding duplicates
@@ -302,12 +679,10 @@ class ActivityViewModel: ObservableObject {
                         print("Debug: Found \(mappedActivities.count) activities of type: \(searchType)")
                         
                     case .failure(let error):
-                        self.error = error.localizedDescription
-                        
-                        // Fallback to Firebase method if Google Places fails
-                        let latitude = location.coordinate.latitude
-                        let longitude = location.coordinate.longitude
-                        self.fetchNearbyActivities(latitude: latitude, longitude: longitude, radiusInKm: radiusInKm)
+                        self.error = "Failed to fetch nearby places: \(error.localizedDescription)"
+                        print("❌ Error fetching nearby places from Google Places: \(error.localizedDescription)")
+                        // Removed Firestore fallback - rely solely on Google Places for nearby search.
+                        // If Google Places fails, the nearbyActivities list will remain unchanged or empty.
                     }
                 }
             }
@@ -431,113 +806,142 @@ class ActivityViewModel: ObservableObject {
                 }
             }
     }
-    
+
+    // Reverted parsing function signature to accept [QueryDocumentSnapshot]
     private func parseActivities(from documents: [QueryDocumentSnapshot]) -> [Activity] {
         return documents.compactMap { document -> Activity? in
+            // No need to check document.exists here as QueryDocumentSnapshot always exists
             do {
-                // Try to directly decode the document using Firestore's built-in support
-                // This is Firebase's recommended approach for Codable models
+                // Try to directly decode the document using Firestore's built-in Codable support
                 return try document.data(as: Activity.self)
             } catch {
-                // Fallback to manual parsing if direct decoding fails
-                
-                // Get the document data and sanitize it immediately
-                let rawData = document.data()
-                let data = FirebaseSafetyKit.sanitizeData(rawData) ?? [:]
-                
-                let id = document.documentID
-                
-                // Extract data using safe methods
-                guard let name = FirebaseSafetyKit.getString(from: data, forKey: "name") else {
-                    print("Error parsing activity: missing name field")
-                    return nil
-                }
-                
-                // Get description (handle optional type)
-                let description = FirebaseSafetyKit.getString(from: data, forKey: "description") ?? ""
-                
-                // Get activity type (required parameter)
-                let typeStr = FirebaseSafetyKit.getString(from: data, forKey: "type") ?? "other"
-                let type = ActivityType(rawValue: typeStr) ?? .other
-                
-                // Get location (required parameter)
-                var location: Location?
-                if let locationData = data["location"] as? [String: Any] {
-                    let sanitizedLocationData = FirebaseSafetyKit.sanitizeData(locationData) ?? [:]
-                    let locationName = FirebaseSafetyKit.getString(from: sanitizedLocationData, forKey: "name") ?? "Unknown"
-                    let address = FirebaseSafetyKit.getString(from: sanitizedLocationData, forKey: "address") ?? "Unknown"
-                    
-                    if let latitude = sanitizedLocationData["latitude"] as? Double,
-                       let longitude = sanitizedLocationData["longitude"] as? Double {
-                        location = Location(name: locationName, address: address, latitude: latitude, longitude: longitude)
-                    }
-                }
-                
-                // Create default location if none provided
-                if location == nil {
-                    location = Location(name: "Unknown", address: "Unknown", latitude: 0, longitude: 0)
-                }
-                
-                // Optional fields
-                let iconName = FirebaseSafetyKit.getString(from: data, forKey: "iconName")
-                let category = FirebaseSafetyKit.getString(from: data, forKey: "category")
-                let website = FirebaseSafetyKit.getString(from: data, forKey: "website")
-                let phoneNumber = FirebaseSafetyKit.getString(from: data, forKey: "phoneNumber")
-                
-                // Parse arrays
-                let tags = FirebaseSafetyKit.getStringArray(from: data, forKey: "tags") ?? []
-                let photos = FirebaseSafetyKit.getStringArray(from: data, forKey: "photos")
-                
-                // Parse numeric values
-                let minAge = FirebaseSafetyKit.getInt(from: data, forKey: "minAge")
-                let maxAge = FirebaseSafetyKit.getInt(from: data, forKey: "maxAge")
-                
-                var rating: Double?
-                if let ratingValue = data["rating"] as? Double {
-                    rating = ratingValue
-                } else if let ratingValue = data["rating"] as? Int {
-                    rating = Double(ratingValue)
-                } else if let ratingStr = FirebaseSafetyKit.getString(from: data, forKey: "rating"), 
-                          let ratingValue = Double(ratingStr) {
-                    rating = ratingValue
-                }
-                
-                let reviewCount = FirebaseSafetyKit.getInt(from: data, forKey: "reviewCount")
-                
-                // Parse boolean values
-                let isPublic = FirebaseSafetyKit.getBool(from: data, forKey: "isPublic", defaultValue: true)
-                let isFeatured = FirebaseSafetyKit.getBool(from: data, forKey: "isFeatured", defaultValue: false)
-                
-                // Parse dates
-                var createdAt = Date()
-                if let timestamp = data["createdAt"] as? Timestamp {
-                    createdAt = timestamp.dateValue()
-                }
-                
-                var updatedAt = Date()
-                if let timestamp = data["updatedAt"] as? Timestamp {
-                    updatedAt = timestamp.dateValue()
-                }
-                
-                // Create the activity with all required parameters
-                return Activity(
-                    id: id,
-                    name: name,
-                    description: description,
-                    type: type,
-                    location: location!,
-                    website: website,
-                    phoneNumber: phoneNumber,
-                    photos: photos,
-                    rating: rating,
-                    reviewCount: reviewCount,
-                    isPublic: isPublic,
-                    isFeatured: isFeatured,
-                    createdAt: createdAt,
-                    updatedAt: updatedAt
-                )
+                // Log error if Codable decoding fails, including the data that failed
+                // This indicates a potential mismatch between the Firestore data structure and the Activity model
+                print("❌ Error decoding Activity document \(document.documentID) with Codable: \(error.localizedDescription). Data: \(document.data())")
+                return nil // Return nil to exclude this document from the results
             }
         }
+    }
+
+    // MARK: - Fetch Activity Details (On Demand)
+
+    func fetchAndSetActivityDetails(activityID: String) {
+        // Find the index and type of the list containing the activity
+        var activityIndex: Int? = nil
+        var listType: ActivityListType? = nil
+        var existingDescription: String? = nil
+
+        if let index = activities.firstIndex(where: { $0.id == activityID }) {
+            activityIndex = index
+            listType = .main
+            existingDescription = activities[index].description
+        } else if let index = nearbyActivities.firstIndex(where: { $0.id == activityID }) {
+            activityIndex = index
+            listType = .nearby
+            existingDescription = nearbyActivities[index].description
+        } else if let index = popularActivities.firstIndex(where: { $0.id == activityID }) {
+            activityIndex = index
+            listType = .popular
+            existingDescription = popularActivities[index].description
+        }
+
+        // Renamed 'type' back to 'listType' to avoid keyword conflict
+        guard let index = activityIndex, let listType = listType else {
+            print("Activity with ID \(activityID) not found in any list.")
+            return
+        }
+
+        // Check if details (like description) are already fetched
+        if existingDescription != nil {
+             print("Details already fetched for activity \(activityID).")
+             return // Avoid redundant fetching
+        }
+
+        print("Fetching details for activity ID: \(activityID) in list: \(listType)") // Corrected variable name
+        // Indicate loading state specifically for this activity if needed
+        // For simplicity, we'll just update when data arrives
+
+        // Let Swift infer the result type from the getPlaceDetails signature
+        GooglePlacesService.shared.getPlaceDetails(placeId: activityID) { [weak self] result in
+            // We still need guard let self = self for the weak capture
+            guard let self = self else { return }
+
+            // Dispatch the update logic to the main thread
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let placeDetails):
+                     // Removed the guard let check; placeDetails is already ActivityPlaceDetail due to function signature.
+                     // Call the helper function directly with placeDetails, using 'listType'
+                     self.updateActivityDetailsInList(activityID: activityID, placeDetails: placeDetails, listType: listType, index: index)
+                case .failure(let error):
+                     // Use listType variable here as well if needed for context
+                     print("Error fetching details for activity \(activityID) in list \(listType): \(error.localizedDescription)")
+                    // Optionally set an error state for this specific activity
+                }
+            }
+        }
+    }
+
+    // Helper function to update activity details in the specified list, called on the main thread
+    private func updateActivityDetailsInList(activityID: String, placeDetails: ActivityPlaceDetail, listType: ActivityListType, index: Int) { // Use correct type
+        
+        // Switch on the list type and directly modify the corresponding array
+        switch listType {
+        case .main:
+            // Ensure index is valid before updating
+            guard index < activities.count, activities[index].id == activityID else {
+                print("Index \(index) out of bounds or activity ID mismatch when updating details for \(activityID) in main list.")
+                return
+            }
+            // Get a mutable copy, modify it, and assign it back
+            var activityToUpdate = activities[index]
+            // Update with new details from Google Places
+            activityToUpdate.editorialSummary = placeDetails.editorialSummary?.overview ?? activityToUpdate.editorialSummary // Use editorial summary
+            activityToUpdate.openingHours = placeDetails.openingHours?.weekdayText ?? activityToUpdate.openingHours // Use weekday text for hours
+            activityToUpdate.website = placeDetails.website ?? activityToUpdate.website
+            activityToUpdate.phoneNumber = placeDetails.phoneNumber ?? activityToUpdate.phoneNumber
+            // Assign the updated activity back to the array
+            activities[index] = activityToUpdate
+            print("Successfully updated details (summary/hours/website/phone) for activity \(activityID) in main list.")
+
+        case .nearby:
+            // Ensure index is valid before updating
+            guard index < nearbyActivities.count, nearbyActivities[index].id == activityID else {
+                print("Index \(index) out of bounds or activity ID mismatch when updating details for \(activityID) in nearby list.")
+                return
+            }
+            // Get a mutable copy, modify it, and assign it back
+            var activityToUpdate = nearbyActivities[index]
+            // Update with new details from Google Places
+            activityToUpdate.editorialSummary = placeDetails.editorialSummary?.overview ?? activityToUpdate.editorialSummary // Use editorial summary
+            activityToUpdate.openingHours = placeDetails.openingHours?.weekdayText ?? activityToUpdate.openingHours // Use weekday text for hours
+            activityToUpdate.website = placeDetails.website ?? activityToUpdate.website
+            activityToUpdate.phoneNumber = placeDetails.phoneNumber ?? activityToUpdate.phoneNumber
+            // Assign the updated activity back to the array
+            nearbyActivities[index] = activityToUpdate
+            print("Successfully updated details (summary/hours/website/phone) for activity \(activityID) in nearby list.")
+
+        case .popular:
+            // Ensure index is valid before updating
+            guard index < popularActivities.count, popularActivities[index].id == activityID else {
+                print("Index \(index) out of bounds or activity ID mismatch when updating details for \(activityID) in popular list.")
+                return
+            }
+            // Get a mutable copy, modify it, and assign it back
+            var activityToUpdate = popularActivities[index]
+            // Update with new details from Google Places
+            activityToUpdate.editorialSummary = placeDetails.editorialSummary?.overview ?? activityToUpdate.editorialSummary // Use editorial summary
+            activityToUpdate.openingHours = placeDetails.openingHours?.weekdayText ?? activityToUpdate.openingHours // Use weekday text for hours
+            activityToUpdate.website = placeDetails.website ?? activityToUpdate.website
+            activityToUpdate.phoneNumber = placeDetails.phoneNumber ?? activityToUpdate.phoneNumber
+            // Assign the updated activity back to the array
+            popularActivities[index] = activityToUpdate
+            print("Successfully updated details (summary/hours/website/phone) for activity \(activityID) in popular list.")
+        }
+        
+        // Since we are modifying elements of @Published arrays directly, SwiftUI should detect the change.
+        // If UI updates are still inconsistent, uncomment the line below.
+        // self.objectWillChange.send()
     }
     
     // MARK: - Create/Update Activities
@@ -725,8 +1129,8 @@ class ActivityViewModel: ObservableObject {
                             return true
                         }
                         
-                        // Description is non-optional in Activity model
-                        if activity.description.lowercased().contains(lowercasedQuery) {
+                        // Description is optional, safely unwrap
+                        if let description = activity.description, description.lowercased().contains(lowercasedQuery) {
                             return true
                         }
                         

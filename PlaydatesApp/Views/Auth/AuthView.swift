@@ -173,24 +173,17 @@ struct AuthView: View {
 
                     // Primary action button
                     Button(action: performAction) {
+                        // Label now just contains the text or progress view
                         if authViewModel.isLoading {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(ColorTheme.primary)
-                                .cornerRadius(10)
+                                // Ensure ProgressView doesn't overly expand the button height
+                                .frame(height: 20) // Match approx text height
                         } else {
                             Text(actionButtonTitle)
-                                .font(.headline)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(ColorTheme.primary)
-                                .cornerRadius(10)
                         }
                     }
+                    .primaryStyle() // Apply the primary button style
                     .disabled(authViewModel.isLoading || !isFormValid)
                     .padding(.bottom, 24)
 
@@ -198,24 +191,17 @@ struct AuthView: View {
                     VStack(spacing: 20) {
                         switch mode {
                         case .signIn:
-                            Button(action: { mode = .resetPassword }) {
-                                Text("Forgot Password?")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(ColorTheme.primary)
-                            }
+                            Button("Forgot Password?") { mode = .resetPassword }
+                                .textStyle() // Apply text button style
 
                             HStack(spacing: 4) {
                                 Text("Don't have an account?")
                                     .font(.subheadline)
                                     .foregroundColor(ColorTheme.lightText)
 
-                                Button(action: { mode = .signUp }) {
-                                    Text("Sign Up")
-                                        .font(.subheadline)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(ColorTheme.primary)
-                                }
+                                Button("Sign Up") { mode = .signUp }
+                                    .textStyle() // Apply text button style
+                                    .fontWeight(.bold) // Keep bold for emphasis if needed
                             }
 
                         case .signUp:
@@ -224,21 +210,15 @@ struct AuthView: View {
                                     .font(.subheadline)
                                     .foregroundColor(ColorTheme.lightText)
 
-                                Button(action: { mode = .signIn }) {
-                                    Text("Sign In")
-                                        .font(.subheadline)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(ColorTheme.primary)
-                                }
+                                Button("Sign In") { mode = .signIn }
+                                    .textStyle() // Apply text button style
+                                    .fontWeight(.bold) // Keep bold for emphasis if needed
                             }
 
                         case .resetPassword:
-                            Button(action: { mode = .signIn }) {
-                                Text("Back to Sign In")
-                                    .font(.subheadline)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(ColorTheme.primary)
-                            }
+                            Button("Back to Sign In") { mode = .signIn }
+                                .textStyle() // Apply text button style
+                                .fontWeight(.bold) // Keep bold for emphasis if needed
                         }
                     }
 

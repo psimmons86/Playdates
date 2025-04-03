@@ -139,20 +139,35 @@ class ActivitySearchViewModel: ObservableObject {
     func getActivityDetails(for activity: ActivityPlace) {
         isLoading = true
         error = nil
-        
-        placesService.getPlaceDetails(placeId: activity.id) { [weak self] (result: Result<ActivityPlace, Error>) in // Added explicit type annotation
+
+        // Define the completion handler explicitly with the correct signature
+        let completionHandler: (Result<ActivityPlaceDetail, Error>) -> Void = { [weak self] result in
             guard let self = self else { return }
-            
+
             self.isLoading = false
-            
             switch result {
-            case .success(let details):
-                self.selectedActivity = details
+            case .success(let placeDetail): // placeDetail is ActivityPlaceDetail
+                // Update the original activity object with fetched details
+                var updatedActivity = activity // Make a mutable copy
+                updatedActivity.website = placeDetail.website
+                updatedActivity.phoneNumber = placeDetail.phoneNumber
+                updatedActivity.rating = placeDetail.rating ?? updatedActivity.rating // Update rating if available
+                // Optionally update description if needed/available in ActivityPlace
+                // updatedActivity.description = placeDetail.editorialSummary?.overview ?? updatedActivity.description
+
+                // Update the selectedActivity with the modified original object
+                self.selectedActivity = updatedActivity
+
             case .failure(let error):
-                self.error = "Failed to get activity details: \(error.localizedDescription)"
+                 DispatchQueue.main.async {
+                    self.error = "Failed to get activity details: \(error.localizedDescription)"
+                 }
             }
         }
-    }
+
+        // Call the function with the explicitly defined handler
+        placesService.getPlaceDetails(placeId: activity.id, completion: completionHandler)
+    } // This brace closes the getActivityDetails function
     
     /**
      Clear the selected activity.
@@ -222,10 +237,10 @@ class ActivitySearchViewModel: ObservableObject {
             startDate: startDate,
             endDate: endDate,
             attendeeIDs: [hostID],
-            isPublic: true,
-            createdAt: Date()
+            isPublic: true
+            // createdAt is handled by @ServerTimestamp in the model
         )
-        
+
         // Use the PlaydateViewModel to create the playdate
         let playdateViewModel = PlaydateViewModel()
         playdateViewModel.createPlaydate(playdate, completion: completion)

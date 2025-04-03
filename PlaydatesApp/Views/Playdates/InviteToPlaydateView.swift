@@ -48,18 +48,13 @@ struct InviteToPlaydateView: View {
                                     .multilineTextAlignment(.center)
                                     .padding(.horizontal, 32)
                                 
-                                Button(action: {
+                                Button {
                                     showingCreatePlaydateSheet = true
-                                }) {
+                                } label: {
                                     Text("Create New Playdate")
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 24)
-                                        .padding(.vertical, 12)
-                                        .background(ColorTheme.primary)
-                                        .cornerRadius(20)
                                 }
+                                .buttonStyle(PrimaryButtonStyle())
+                                .padding(.vertical, 4)
                                 .padding(.top, 8)
                             }
                             .padding()
@@ -67,7 +62,8 @@ struct InviteToPlaydateView: View {
                             // Playdates list
                             ScrollView {
                                 VStack(spacing: 16) {
-                                    ForEach(userPlaydates) { playdate in
+                                    // Filter out playdates with nil IDs before iterating
+                                    ForEach(userPlaydates.filter { $0.id != nil }) { playdate in
                                         PlaydateSelectionCard(
                                             playdate: playdate,
                                             isSelected: selectedPlaydate?.id == playdate.id,
@@ -94,18 +90,13 @@ struct InviteToPlaydateView: View {
                             .padding(.horizontal)
                             
                             // Send invitation button
-                            Button(action: {
+                            Button {
                                 sendInvitation()
-                            }) {
+                            } label: {
                                 Text("Send Invitation")
-                                    .font(.headline)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(selectedPlaydate != nil ? ColorTheme.highlight : ColorTheme.highlight.opacity(0.5))
-                                    .cornerRadius(28)
                             }
+                            .buttonStyle(PrimaryButtonStyle())
+                            // Note: Conditional background is removed; disabled state is handled by the style.
                             .disabled(selectedPlaydate == nil)
                             .padding(.horizontal)
                             .padding(.bottom, 16)
@@ -116,7 +107,8 @@ struct InviteToPlaydateView: View {
             .navigationTitle("Invite to Playdate")
             .navigationBarItems(trailing: Button("Cancel") {
                 presentationMode.wrappedValue.dismiss()
-            })
+            }
+            .buttonStyle(TextButtonStyle()))
             .onAppear {
                 loadUserPlaydates()
             }
@@ -369,26 +361,28 @@ struct CreatePlaydateView: View {
                 }
                 
                 Section {
-                    Button(action: createPlaydate) {
+                    Button {
+                        createPlaydate()
+                    } label: {
+                        // Label for primary button
                         if playdateViewModel.isLoading {
                             ProgressView()
-                                .frame(maxWidth: .infinity)
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .frame(height: 20) // Match approx text height
                         } else {
                             Text("Create Playdate")
-                                .frame(maxWidth: .infinity)
-                                .foregroundColor(.white)
                         }
                     }
-                    .padding(.vertical, 8)
-                    .background(isFormValid ? ColorTheme.primary : ColorTheme.primary.opacity(0.5))
-                    .cornerRadius(8)
+                    .buttonStyle(PrimaryButtonStyle())
                     .disabled(!isFormValid || playdateViewModel.isLoading)
+                    // Remove padding and background modifiers as they are handled by the style
                 }
             }
             .navigationTitle("Create Playdate")
             .navigationBarItems(trailing: Button("Cancel") {
                 presentationMode.wrappedValue.dismiss()
-            })
+            }
+            .buttonStyle(TextButtonStyle()))
         }
     }
     

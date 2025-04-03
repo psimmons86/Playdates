@@ -1,6 +1,8 @@
 import SwiftUI
 import EventKit
 
+// The CalendarViewMode enum is now defined in Models/CalendarViewMode.swift
+
 // MARK: - Calendar UI Components
 
 /// Button that adds a playdate to the calendar
@@ -14,27 +16,27 @@ struct AddToCalendarButton: View {
     @State private var showingSettings = false
     
     var body: some View {
-        Button(action: {
+        Button { // Use trailing closure syntax
             addToCalendar()
-        }) {
+        } label: {
             HStack {
                 Image(systemName: "calendar.badge.plus")
-                    .font(.system(size: 16))
+                    .font(.system(size: 16)) // Keep icon size
                 
                 if isLoading {
                     ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         .scaleEffect(0.7)
                         .padding(.leading, 4)
                 } else {
                     Text("Add to Calendar")
+                    // Font/color handled by primaryStyle
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(ColorTheme.primary)
-            .foregroundColor(.white)
-            .cornerRadius(8)
+            // Styling handled by primaryStyle
         }
+        .primaryStyle() // Apply primary style
+        .fixedSize(horizontal: true, vertical: false) // Prevent stretching
         .disabled(isLoading)
         .alert(isPresented: $showingAlert) {
             Alert(
@@ -138,13 +140,10 @@ struct CalendarAvailabilityIndicator: View {
                         .foregroundColor(isAvailable ? .green : .orange)
                 }
             } else {
-                Button(action: {
+                Button("Check availability") { // Use simple title init
                     checkAvailability()
-                }) {
-                    Text("Check availability")
-                        .font(.caption)
-                        .foregroundColor(.blue)
                 }
+                .textStyle(color: .blue) // Apply text style with blue color
             }
         }
         .onAppear {
@@ -205,35 +204,37 @@ struct CalendarSelector: View {
                 .foregroundColor(ColorTheme.darkPurple)
             
             if !calendarService.hasCalendarAccess {
-                Button(action: {
+                Button { // Use trailing closure syntax
                     calendarService.requestCalendarAccess { _ in }
-                }) {
+                } label: {
                     HStack {
                         Image(systemName: "calendar")
-                            .foregroundColor(.blue)
+                            .foregroundColor(.blue) // Keep color
                         Text("Grant Calendar Access")
-                            .foregroundColor(.blue)
+                            .foregroundColor(.blue) // Keep color
                     }
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.gray.opacity(0.1))
                     .cornerRadius(8)
                 }
+                .buttonStyle(PlainButtonStyle()) // Apply plain style for custom background
             } else if calendarService.availableCalendars.isEmpty {
-                Button(action: {
+                Button { // Use trailing closure syntax
                     showingSettings = true
-                }) {
+                } label: {
                     HStack {
                         Image(systemName: "calendar")
-                            .foregroundColor(.blue)
+                            .foregroundColor(.blue) // Keep color
                         Text("No calendars available")
-                            .foregroundColor(.blue)
+                            .foregroundColor(.blue) // Keep color
                     }
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.gray.opacity(0.1))
                     .cornerRadius(8)
                 }
+                .buttonStyle(PlainButtonStyle()) // Apply plain style for custom background
             } else {
                 Menu {
                     ForEach(calendarService.availableCalendars, id: \.calendarIdentifier) { calendar in
@@ -251,11 +252,12 @@ struct CalendarSelector: View {
                     
                     Divider()
                     
-                    Button(action: {
+                    Button { // Use trailing closure syntax
                         showingSettings = true
-                    }) {
+                    } label: {
                         Label("Calendar Settings", systemImage: "gear")
                     }
+                    .buttonStyle(PlainButtonStyle()) // Apply plain style to menu item
                 } label: {
                     HStack {
                         if let selectedId = calendarService.selectedCalendarIdentifier,
@@ -302,28 +304,28 @@ struct SendCalendarInviteButton: View {
     @State private var alertMessage = ""
     
     var body: some View {
-        Button(action: {
+        Button { // Use trailing closure syntax
             sendInvite()
-        }) {
+        } label: {
             HStack {
                 Image(systemName: "calendar.badge.plus")
-                    .font(.system(size: 14))
+                    .font(.system(size: 14)) // Keep icon size
                 
                 if isLoading {
                     ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         .scaleEffect(0.7)
                         .padding(.leading, 4)
                 } else {
                     Text("Send Calendar Invite")
-                        .font(.caption)
+                    // Font/color handled by primaryStyle
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(ColorTheme.primary)
-            .foregroundColor(.white)
-            .cornerRadius(6)
+            // Styling handled by primaryStyle
         }
+        .primaryStyle() // Apply primary style
+        .padding(.vertical, -6) // Adjust vertical padding
+        .fixedSize(horizontal: true, vertical: false) // Prevent stretching
         .disabled(isLoading)
         .alert(isPresented: $showingAlert) {
             Alert(

@@ -3,26 +3,20 @@ import Foundation
 
 struct WishlistActivityCard: View {
     let activity: Activity
-    let onRemove: () -> Void
+    // Removed onRemove parameter
+    @EnvironmentObject var activityViewModel: ActivityViewModel // Inject ViewModel
     
-    @State private var isAnimating = false
+    // Removed @State private var isAnimating = false
     
     var body: some View {
-        GradientCard(
-            gradientColors: [
-                activityColor,
-                activityColor.opacity(0.7)
-            ],
-            cornerRadius: 12,
-            shadowRadius: 5
-        ) {
+        RoundedCard { // Using RoundedCard with default white background
             HStack(spacing: 16) {
                 // Activity icon
                 Image(systemName: activityIcon)
                     .font(.system(size: 24))
-                    .foregroundColor(.white)
+                    .foregroundColor(ColorTheme.primary) // Use theme color
                     .frame(minWidth: 40, idealWidth: 50, maxWidth: 50, minHeight: 40, idealHeight: 50, maxHeight: 50)
-                    .background(Color.white.opacity(0.2))
+                    .background(ColorTheme.primaryLight.opacity(0.3)) // Use theme color background
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 
                 // Activity details
@@ -31,7 +25,7 @@ struct WishlistActivityCard: View {
                     HStack {
                         Text(activity.name)
                             .font(.headline)
-                            .foregroundColor(.white)
+                            .foregroundColor(ColorTheme.text) // Use theme color
                             // Allow wrapping
                         
                         Spacer()
@@ -40,12 +34,12 @@ struct WishlistActivityCard: View {
                             HStack(spacing: 2) {
                                 Image(systemName: "star.fill")
                                     .font(.system(size: 12))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(ColorTheme.highlight) // Use theme color
                                 
                                 Text(String(format: "%.1f", rating))
                                     .font(.caption)
                                     .fontWeight(.medium)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(ColorTheme.text) // Use theme color
                             }
                         }
                     }
@@ -54,11 +48,11 @@ struct WishlistActivityCard: View {
                     HStack {
                         Image(systemName: "mappin.and.ellipse")
                             .font(.system(size: 12))
-                            .foregroundColor(.white.opacity(0.9))
+                            .foregroundColor(ColorTheme.lightText) // Use theme color
                         
                         Text(activity.location.name)
                             .font(.caption)
-                            .foregroundColor(.white.opacity(0.9))
+                            .foregroundColor(ColorTheme.lightText) // Use theme color
                             // Allow wrapping
                     }
                     
@@ -66,19 +60,24 @@ struct WishlistActivityCard: View {
                     HStack {
                         Image(systemName: "tag")
                             .font(.system(size: 12))
-                            .foregroundColor(.white.opacity(0.9))
+                            .foregroundColor(ColorTheme.lightText) // Use theme color
                         
                         Text(activity.type.rawValue.capitalized)
                             .font(.caption)
-                            .foregroundColor(.white.opacity(0.9))
+                            .foregroundColor(ColorTheme.lightText) // Use theme color
                     }
                 }
                 
-                // Remove button
-                Button(action: onRemove) {
-                    Image(systemName: "xmark.circle.fill")
+                // Wishlist button (replaces remove button)
+                Button {
+                    Task {
+                        await activityViewModel.toggleWantToDo(activity: activity)
+                    }
+                } label: {
+                    let isWishlisted = activityViewModel.isWantToDo(activity: activity)
+                    Image(systemName: isWishlisted ? "heart.fill" : "heart")
                         .font(.system(size: 20))
-                        .foregroundColor(.white.opacity(0.9))
+                        .foregroundColor(isWishlisted ? ColorTheme.highlight : ColorTheme.lightText) // Use theme colors
                 }
                 .buttonStyle(PlainButtonStyle())
             }

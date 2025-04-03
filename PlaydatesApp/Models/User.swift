@@ -2,142 +2,56 @@ import Foundation
 import FirebaseFirestoreSwift
 import FirebaseFirestore
 
-public struct User: Identifiable, Codable {
+// Add Equatable conformance
+public struct User: Identifiable, Codable, Equatable {
     @DocumentID public var id: String?
     public var name: String
     public var email: String
-    public var profileImageURL: String?
+    public var profileImageURL: String? // Corrected property name casing
     public var bio: String?
     // Search-optimized fields
     public var name_lowercase: String?
     // Removed StoredOnHeap wrapper
-    public var children: [PlaydateChild]?
+    public var children: [PlaydateChild]? // Assuming PlaydateChild is defined elsewhere and is Codable/Equatable if needed
     public var friendIDs: [String]?
     public var friendRequestIDs: [String]?
-    public var createdAt: Date
-    public var lastActive: Date
+    public var favoriteActivityIDs: [String]? // Added for favorite activities
+    public var wantToDoActivityIDs: [String]? // Added for "want to do" activities
+    public var createdAt: Date? // Make optional for flexibility
+    public var lastActive: Date? // Make optional for flexibility
 
     // Custom initializer to ensure all properties are properly initialized
-    public init(id: String?, name: String, email: String, profileImageURL: String? = nil, bio: String? = nil,
+    // Keep this initializer for creating User objects manually in code
+    public init(id: String? = nil, name: String, email: String, profileImageURL: String? = nil, bio: String? = nil,
          children: [PlaydateChild]? = nil, friendIDs: [String]? = nil, friendRequestIDs: [String]? = nil,
-         createdAt: Date, lastActive: Date) {
+         favoriteActivityIDs: [String]? = nil, wantToDoActivityIDs: [String]? = nil, // Added to initializer
+         createdAt: Date? = nil, lastActive: Date? = nil) { // Accept optional dates
         self.id = id
         self.name = name
         self.email = email
-        self.profileImageURL = profileImageURL
+        self.profileImageURL = profileImageURL // Corrected casing
         self.bio = bio
         self.children = children
         self.friendIDs = friendIDs
         self.friendRequestIDs = friendRequestIDs
+        self.favoriteActivityIDs = favoriteActivityIDs // Initialize new property
+        self.wantToDoActivityIDs = wantToDoActivityIDs // Initialize new property
         self.createdAt = createdAt
         self.lastActive = lastActive
-        
+
         // Set search-optimized fields
         self.name_lowercase = name.lowercased()
     }
 
-    enum CodingKeys: String, CodingKey {
-        case id
-        case name
-        case email
-        case profileImageURL
-        case bio
-        case name_lowercase
-        case children
-        case friendIDs
-        case friendRequestIDs
-        case createdAt
-        case lastActive
-    }
+    // REMOVED custom CodingKeys, init(from decoder:), and encode(to encoder:)
+    // Rely on synthesized Codable conformance provided by Swift and FirebaseFirestoreSwift
+    // This allows @DocumentID to work correctly.
 
-    // Custom decoder implementation to handle type mismatches
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-
-        // Decode ID
-        id = try container.decodeIfPresent(String.self, forKey: .id)
-
-        // Decode strings with fallbacks
-        name = try Self.decodeString(from: container, forKey: .name) ?? "User"
-        email = try Self.decodeString(from: container, forKey: .email) ?? ""
-        profileImageURL = try Self.decodeString(from: container, forKey: .profileImageURL)
-        bio = try Self.decodeString(from: container, forKey: .bio)
-        
-        // Decode search-optimized fields or generate them if missing
-        name_lowercase = try container.decodeIfPresent(String.self, forKey: .name_lowercase) ?? name.lowercased()
-
-        // Decode arrays and wrap in StoredOnHeap
-        children = try container.decodeIfPresent([PlaydateChild].self, forKey: .children)
-        
-        let rawFriendIDs = try Self.decodeStringArray(from: container, forKey: .friendIDs)
-        friendIDs = rawFriendIDs
-        
-        let rawRequestIDs = try Self.decodeStringArray(from: container, forKey: .friendRequestIDs)
-        friendRequestIDs = rawRequestIDs
-
-        // Decode dates with fallbacks
-        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
-        lastActive = try container.decodeIfPresent(Date.self, forKey: .lastActive) ?? Date()
-    }
-    
-    // Custom encoder implementation to handle property wrappers
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        
-        try container.encodeIfPresent(id, forKey: .id)
-        try container.encode(name, forKey: .name)
-        try container.encode(email, forKey: .email)
-        try container.encodeIfPresent(profileImageURL, forKey: .profileImageURL)
-        try container.encodeIfPresent(bio, forKey: .bio)
-        
-        // Always ensure name_lowercase is set and encoded
-        let nameLowercase = name.lowercased()
-        try container.encode(nameLowercase, forKey: .name_lowercase)
-        
-        try container.encodeIfPresent(children, forKey: .children)
-        try container.encodeIfPresent(friendIDs, forKey: .friendIDs)
-        try container.encodeIfPresent(friendRequestIDs, forKey: .friendRequestIDs)
-        try container.encode(createdAt, forKey: .createdAt)
-        try container.encode(lastActive, forKey: .lastActive)
-    }
-
-    // Helper method to safely decode strings from various source types
-    private static func decodeString(from container: KeyedDecodingContainer<CodingKeys>, forKey key: CodingKeys) throws -> String? {
-        // Try decoding as String first
-        if let value = try? container.decodeIfPresent(String.self, forKey: key) {
-            return value
-        }
-
-        // If it's a number convert to string
-        if let value = try? container.decodeIfPresent(Int.self, forKey: key) {
-            return String(value)
-        }
-
-        if let value = try? container.decodeIfPresent(Double.self, forKey: key) {
-            return String(value)
-        }
-
-        if let value = try? container.decodeIfPresent(Bool.self, forKey: key) {
-            return String(value)
-        }
-
-        // If key doesn't exist or has null value
-        return nil
-    }
-
-    // Helper method to safely decode string arrays
-    private static func decodeStringArray(from container: KeyedDecodingContainer<CodingKeys>, forKey key: CodingKeys) throws -> [String]? {
-        // Try decoding as [String] first
-        if let values = try? container.decodeIfPresent([String].self, forKey: key) {
-            return values
-        }
-
-        // Try decoding as [Int] and converting each value
-        if let values = try? container.decodeIfPresent([Int].self, forKey: key) {
-            return values.map { String($0) }
-        }
-
-        // If the key doesn't exist or has null value
-        return nil
+    // Equatable conformance: Compare based on ID
+    public static func == (lhs: User, rhs: User) -> Bool {
+        lhs.id == rhs.id && lhs.id != nil // Ensure IDs are non-nil for equality
     }
 }
+
+// Removed placeholder PlaydateChild struct definition as it likely exists elsewhere (e.g., Child.swift)
+// Ensure the actual PlaydateChild struct conforms to Codable and Equatable if required by User's conformance.

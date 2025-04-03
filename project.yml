@@ -35,6 +35,20 @@ targets:
         CODE_SIGN_STYLE: Automatic
         TARGETED_DEVICE_FAMILY: "1,2"
         SWIFT_VERSION: 5.0
+    postBuildScripts:
+      - name: "Fix Firebase Frameworks"
+        script: |
+          # Fix for FirebaseFirestoreInternal.framework missing bundle executable
+          find "${BUILT_PRODUCTS_DIR}" -name "FirebaseFirestoreInternal.framework" -type d | while read -r FRAMEWORK; do
+            FRAMEWORK_EXECUTABLE_NAME=$(defaults read "$FRAMEWORK/Info.plist" CFBundleExecutable)
+            FRAMEWORK_EXECUTABLE_PATH="$FRAMEWORK/$FRAMEWORK_EXECUTABLE_NAME"
+            if [ ! -f "$FRAMEWORK_EXECUTABLE_PATH" ]; then
+              echo "Creating empty executable file at $FRAMEWORK_EXECUTABLE_PATH"
+              mkdir -p "$(dirname "$FRAMEWORK_EXECUTABLE_PATH")"
+              touch "$FRAMEWORK_EXECUTABLE_PATH"
+              chmod +x "$FRAMEWORK_EXECUTABLE_PATH"
+            fi
+          done
     dependencies:
       - package: Firebase
         product: FirebaseFirestore

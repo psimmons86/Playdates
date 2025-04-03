@@ -23,7 +23,7 @@ extension GooglePlacesService {
     /// Fetch place details
     func fetchPlaceDetails(
         placeID: String,
-        completion: @escaping (Result<ActivityPlace, Error>) -> Void
+        completion: @escaping (Result<ActivityPlaceDetail, Error>) -> Void // <<< Updated to ActivityPlaceDetail
     ) {
         // Get the place details
         getPlaceDetails(placeId: placeID) { result in

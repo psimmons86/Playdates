@@ -216,31 +216,20 @@ public struct WelcomeView: View {
                             Image(systemName: "arrow.right.circle.fill")
                                 .font(.headline)
                         }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            LinearGradient(
-                                gradient: Gradient(colors: [ColorTheme.primary, ColorTheme.primaryDark]),
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .cornerRadius(28)
-                        .shadow(color: ColorTheme.primary.opacity(0.4), radius: 8, x: 0, y: 4)
+                        // Note: primaryStyle() applies its own padding, frame, foregroundColor, background, cornerRadius
                     }
+                    .primaryStyle() // Apply primary button style
                     
                     HStack {
                         Text("Already have an account?")
                             .font(.subheadline)
                             .foregroundColor(ColorTheme.lightText)
                         
-                        Button(action: onSignIn) {
-                            Text("Sign In")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(ColorTheme.primary)
+                        Button("Sign In") {
+                            onSignIn()
                         }
+                        .textStyle() // Apply text button style
+                        .fontWeight(.semibold) // Keep semibold for emphasis if needed
                     }
                 }
                 .padding(.horizontal, 32)

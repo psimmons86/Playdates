@@ -194,18 +194,21 @@ class GooglePlacesService {
      */
     func getPlaceDetails(
         placeId: String,
-        completion: @escaping (Result<ActivityPlace, Error>) -> Void
+        completion: @escaping (Result<ActivityPlaceDetail, Error>) -> Void // Changed to ActivityPlaceDetail
     ) {
         // Check cache first
-        if let cachedDetail = cache.placeDetailsCache[placeId],
-           let lastTime = cache.lastDetailsRequestTime,
-           Date().timeIntervalSince(lastTime) < cache.detailsThrottleInterval {
-            // Cache hit - return cached results
-            DispatchQueue.main.async {
-                completion(.success(cachedDetail))
-            }
-            return
-        }
+        // Note: Cache stores ActivityPlace, but we need ActivityPlaceDetail.
+        // We should ideally cache ActivityPlaceDetail or adjust logic.
+        // For now, we proceed with API call if cache miss or type mismatch.
+        // if let cachedDetail = cache.placeDetailsCache[placeId], // Temporarily bypass cache check due to type mismatch
+        //    let lastTime = cache.lastDetailsRequestTime,
+        //    Date().timeIntervalSince(lastTime) < cache.detailsThrottleInterval {
+        //     // Cache hit - return cached results
+        //     DispatchQueue.main.async {
+        //         completion(.success(cachedDetail)) // This would be wrong type now
+        //     }
+        //     return
+        // }
         
         // Cache miss - need to make API request
         // Construct the URL for the Place Details request
@@ -213,7 +216,8 @@ class GooglePlacesService {
         
         components.queryItems = [
             URLQueryItem(name: "place_id", value: placeId),
-            URLQueryItem(name: "fields", value: "name,formatted_address,formatted_phone_number,website,opening_hours,rating,review,price_level,photo"),
+            // Added editorial_summary to fields request
+            URLQueryItem(name: "fields", value: "name,formatted_address,formatted_phone_number,website,opening_hours,rating,review,price_level,photo,editorial_summary"),
             URLQueryItem(name: "key", value: apiKey)
         ]
         
@@ -262,34 +266,52 @@ class GooglePlacesService {
                         throw NSError(domain: "GooglePlacesService", code: 3, userInfo: [NSLocalizedDescriptionKey: "API Error: \(response.status)"])
                     }
                     
-                    // Map the result to an ActivityPlace object
+                    // Map the result to an ActivityPlaceDetail object
                     let result = response.result
                     print("Debug: Got details for place: \(result.name)")
-                    
-                    let location = Location(
-                        name: result.name,
-                        address: result.formattedAddress ?? "",
-                        latitude: 0.0, // We don't have coordinates in details response
-                        longitude: 0.0
-                    )
-                    
-                    let place = ActivityPlace(
+
+                    // Map reviews
+                    let reviews = result.reviews?.map { reviewResult -> PlaceReview in
+                        PlaceReview(
+                            authorName: reviewResult.authorName,
+                            rating: reviewResult.rating,
+                            text: reviewResult.text,
+                            time: Date(timeIntervalSince1970: TimeInterval(reviewResult.time))
+                        )
+                    }
+
+                    // Map photos
+                    let photos = result.photos?.map { photoResult -> PlacePhoto in
+                        PlacePhoto(
+                            reference: photoResult.photoReference,
+                            width: photoResult.width,
+                            height: photoResult.height
+                        )
+                    }
+
+                    // Create the ActivityPlaceDetail object
+                    let placeDetail = ActivityPlaceDetail(
                         id: placeId,
                         name: result.name,
-                        location: location,
-                        types: [], // We don't have types in details response
+                        address: result.formattedAddress,
+                        phoneNumber: result.formattedPhoneNumber,
+                        website: result.website,
+                        isOpen: result.openingHours?.openNow,
+                        weekdayHours: result.openingHours?.weekdayText,
                         rating: result.rating,
-                        userRatingsTotal: nil,
-                        photoReference: result.photos?.first?.photoReference
+                        reviews: reviews,
+                        priceLevel: result.priceLevel,
+                        photos: photos,
+                        editorialSummary: result.editorialSummary, // Pass editorial summary
+                        openingHours: result.openingHours         // Pass opening hours
                     )
-                    
-                    // Store in cache
-                    self.cache.placeDetailsCache[placeId] = place
-                    self.cache.lastDetailsRequestTime = Date()
-                    
+
+                    // TODO: Update cache to store ActivityPlaceDetail if needed
+                    // self.cache.placeDetailsCache[placeId] = placeDetail // This would require changing cache type
+
                     // Always update UI on the main thread
                     DispatchQueue.main.async {
-                        completion(.success(place))
+                        completion(.success(placeDetail)) // Return the detailed object
                     }
                 } catch {
                     DispatchQueue.main.async {

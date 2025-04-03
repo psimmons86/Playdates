@@ -7,26 +7,20 @@ struct WeatherView: View {
     @State private var showingSettings = false
     
     var body: some View {
-        ZStack {
-            // Gradient background based on weather condition
-            LinearGradient(
-                gradient: Gradient(colors: weatherGradientColors),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            
+        // Use VStack as the main container instead of Group
+        VStack {
             if isLoading {
                 // Loading state
                 VStack {
                     ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .progressViewStyle(CircularProgressViewStyle(tint: ColorTheme.primary)) // Changed tint
                     
                     Text("Loading weather...")
                         .font(.caption)
-                        .foregroundColor(.white)
+                        .foregroundColor(ColorTheme.lightText) // Changed color
                         .padding(.top, 8)
                 }
+                .frame(maxWidth: .infinity, minHeight: 80) // Ensure minimum height for loading state
             } else if let weather = weatherService.currentWeather {
                 // Weather content
                 HStack(spacing: 20) {
@@ -34,15 +28,15 @@ struct WeatherView: View {
                     VStack(alignment: .center, spacing: 4) {
                         Image(systemName: weatherIconName)
                             .font(.system(size: 40))
-                            .foregroundColor(.white)
+                            .foregroundColor(ColorTheme.primary) // Changed color
                         
                         Text("\(Int(weather.temperature))°")
                             .font(.system(size: 36, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(ColorTheme.text) // Changed color
                         
                         Text(weather.condition)
                             .font(.caption)
-                            .foregroundColor(.white)
+                            .foregroundColor(ColorTheme.lightText) // Changed color
                     }
                     .frame(width: 100)
                     
@@ -50,7 +44,7 @@ struct WeatherView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(weather.location)
                             .font(.headline)
-                            .foregroundColor(.white)
+                            .foregroundColor(ColorTheme.text) // Changed color
                         
                         HStack {
                             WeatherDetailItem(
@@ -70,21 +64,21 @@ struct WeatherView: View {
                         
                         Text("Updated: \(formattedUpdateTime)")
                             .font(.caption2)
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundColor(ColorTheme.lightText) // Changed color
                     }
                     .padding(.trailing)
                 }
-                .padding()
+                // .padding() // Padding is handled by RoundedCard in HomeView
             } else {
                 // Error or no data state
                 VStack(spacing: 12) {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 30))
-                        .foregroundColor(.white)
+                        .foregroundColor(ColorTheme.warning) // Changed color
                     
                     Text("Weather data unavailable")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundColor(ColorTheme.text) // Changed color
                     
                     Button(action: {
                         refreshWeather()
@@ -93,14 +87,16 @@ struct WeatherView: View {
                             .font(.caption)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
-                            .background(Color.white.opacity(0.3))
-                            .foregroundColor(.white)
+                            .background(ColorTheme.primaryLight.opacity(0.3)) // Changed background
+                            .foregroundColor(ColorTheme.primary) // Changed color
                             .cornerRadius(8)
                     }
+                    .buttonStyle(PlainButtonStyle()) // Apply plain style for custom background
                 }
+                .frame(maxWidth: .infinity, minHeight: 80) // Ensure minimum height for error state
             }
-        }
-        .frame(height: 120)
+        } // End of conditional content VStack/HStack
+        // Apply modifiers to the outer VStack
         .onAppear {
             refreshWeather()
         }
@@ -151,32 +147,7 @@ struct WeatherView: View {
         }
     }
     
-    private var weatherGradientColors: [Color] {
-        guard let weather = weatherService.currentWeather else {
-            return [Color.blue, Color.blue.opacity(0.7)]
-        }
-        
-        let condition = weather.condition.lowercased()
-        let isDay = true // In a real app, determine based on time
-        
-        if condition.contains("clear") || condition.contains("sunny") {
-            return isDay ? 
-                [Color.blue, Color(red: 0.3, green: 0.7, blue: 0.9)] : 
-                [Color(red: 0.1, green: 0.1, blue: 0.3), Color(red: 0.2, green: 0.2, blue: 0.5)]
-        } else if condition.contains("cloud") {
-            return isDay ?
-                [Color(red: 0.5, green: 0.7, blue: 0.9), Color(red: 0.7, green: 0.8, blue: 0.9)] :
-                [Color(red: 0.2, green: 0.3, blue: 0.4), Color(red: 0.3, green: 0.4, blue: 0.5)]
-        } else if condition.contains("rain") {
-            return [Color(red: 0.3, green: 0.4, blue: 0.5), Color(red: 0.5, green: 0.6, blue: 0.7)]
-        } else if condition.contains("snow") {
-            return [Color(red: 0.7, green: 0.7, blue: 0.8), Color(red: 0.9, green: 0.9, blue: 1.0)]
-        } else if condition.contains("thunder") {
-            return [Color(red: 0.3, green: 0.3, blue: 0.4), Color(red: 0.5, green: 0.5, blue: 0.6)]
-        } else {
-            return [Color.blue, Color.blue.opacity(0.7)]
-        }
-    }
+    // Removed weatherGradientColors computed property
     
     private var formattedUpdateTime: String {
         guard let lastUpdated = weatherService.lastUpdated else {
@@ -208,15 +179,15 @@ struct WeatherDetailItem: View {
         VStack(spacing: 4) {
             Image(systemName: icon)
                 .font(.system(size: 16))
-                .foregroundColor(.white)
+                .foregroundColor(ColorTheme.lightText) // Changed color
             
             Text(value)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.white)
+                .foregroundColor(ColorTheme.text) // Changed color
             
             Text(label)
                 .font(.system(size: 10))
-                .foregroundColor(.white.opacity(0.8))
+                .foregroundColor(ColorTheme.lightText) // Changed color
         }
     }
 }
@@ -255,14 +226,16 @@ struct WeatherSettingsView: View {
                         presentationMode.wrappedValue.dismiss()
                     }) {
                         Text("Save Settings")
-                            .foregroundColor(.blue)
+                        // Color handled by buttonStyle
                     }
+                    .buttonStyle(TextButtonStyle(color: .blue)) // Apply text style with blue color
                 }
             }
             .navigationTitle("Weather Settings")
             .navigationBarItems(trailing: Button("Done") {
                 presentationMode.wrappedValue.dismiss()
-            })
+            }
+            .buttonStyle(TextButtonStyle())) // Apply text style
             .onAppear {
                 // Load current settings
                 locationText = weatherService.customLocation ?? ""

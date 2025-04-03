@@ -23,59 +23,84 @@ struct FeaturedActivityCard: View {
     }
     
     var body: some View {
-        let activityColor = getColorForActivityType(activity.type)
-        
         ZStack(alignment: .bottomLeading) {
-            // Background gradient
+            // Image Background
+            activityImageView
+            
+            // Gradient Overlay for text readability
             LinearGradient(
-                gradient: Gradient(colors: [activityColor, activityColor.opacity(0.7)]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                gradient: Gradient(colors: [Color.black.opacity(0.6), Color.black.opacity(0)]),
+                startPoint: .bottom,
+                endPoint: .center
             )
             
-            // Content
-            VStack(alignment: .leading, spacing: 12) {
-                // Activity icon
-                Image(systemName: activity.type.iconName)
-                    .font(.system(size: 24))
-                    .foregroundColor(.white)
-                    .padding(12)
-                    .background(Color.white.opacity(0.2))
-                    .clipShape(Circle())
-                
-                Spacer()
-                
-                // Activity name
+            // Content Overlay
+            VStack(alignment: .leading, spacing: 6) { // Reduced spacing
                 Text(activity.name)
-                    .font(.title3)
+                    .font(.headline) // Adjusted font size
                     .fontWeight(.bold)
                     .foregroundColor(.white)
+                    .lineLimit(2) // Allow two lines for name
                 
-                // Activity location
                 Text(activity.location.name)
-                    .font(.subheadline)
+                    .font(.caption) // Smaller font for location
                     .foregroundColor(.white.opacity(0.9))
                 
-                // Action button if provided
-                if let action = buttonAction {
-                    Button(action: action) {
-                        Text("View Details")
-                            .font(.subheadline)
+                // Rating (optional)
+                if let rating = activity.rating {
+                    HStack(spacing: 2) {
+                        Image(systemName: "star.fill")
+                            .foregroundColor(.yellow)
+                            .font(.caption)
+                        Text(String(format: "%.1f", rating))
+                            .font(.caption)
                             .fontWeight(.medium)
-                            .foregroundColor(activityColor)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 16)
-                            .background(Color.white)
-                            .cornerRadius(20)
+                            .foregroundColor(.white)
                     }
-                    .padding(.top, 8)
+                    .padding(.top, 2)
                 }
             }
-            .padding(20)
+            .padding(12) // Adjusted padding
         }
-        // Removed fixed height to allow natural sizing
-        .cornerRadius(16)
-        .shadow(color: activityColor.opacity(0.5), radius: 10, x: 0, y: 5)
+        .frame(height: 200) // Give the card a fixed height
+        .background(Color(.systemGray5)) // Background color for loading/error state
+        .cornerRadius(16) // More rounded corners
+        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2) // Softer shadow
+        .onTapGesture {
+            buttonAction?() // Execute action on tap if provided
+        }
+    }
+    
+    // ViewBuilder for the image part
+    @ViewBuilder
+    private var activityImageView: some View {
+        if let photos = activity.photos, let firstPhotoUrlString = photos.first, let url = URL(string: firstPhotoUrlString) {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .empty:
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill) // Fill the frame
+                case .failure:
+                    defaultImagePlaceholder // Show placeholder on failure
+                @unknown default:
+                    defaultImagePlaceholder
+                }
+            }
+        } else {
+            defaultImagePlaceholder // Show placeholder if no photos
+        }
+    }
+    
+    // Placeholder view
+    private var defaultImagePlaceholder: some View {
+        Image(systemName: "photo")
+            .font(.largeTitle)
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -85,17 +110,19 @@ struct FeaturedActivityCard_Previews: PreviewProvider {
         let mockLocation = Location(name: "Central Park", address: "New York, NY", latitude: 40.7812, longitude: -73.9665)
         let mockActivity = Activity(
             id: "preview-1",
-            name: "Family Picnic",
+            name: "Family Picnic in the Big Apple Park Area", // Longer name
             description: "Enjoy a day at the park with family activities",
             type: .park,
-            location: mockLocation
+            location: mockLocation,
+            photos: ["https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"], // Example image
+            rating: 4.3
         )
         
         return FeaturedActivityCard(
             activity: mockActivity,
-            buttonAction: nil
+            buttonAction: { print("Card tapped") }
         )
-        .frame(width: 300, height: 200)
+        .frame(width: 250) // Adjust width for preview
         .previewLayout(.sizeThatFits)
         .padding()
     }

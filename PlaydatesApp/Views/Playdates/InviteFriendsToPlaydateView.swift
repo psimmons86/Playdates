@@ -82,7 +82,8 @@ struct InviteFriendsToPlaydateView: View {
             .navigationTitle("Invite Friends")
             .navigationBarItems(trailing: Button("Done") {
                 presentationMode.wrappedValue.dismiss()
-            })
+            }
+            .buttonStyle(TextButtonStyle())) // Apply text style
             .alert("Invitation Sent", isPresented: $showingInvitationSentAlert) {
                 Button("OK") {
                     presentationMode.wrappedValue.dismiss()
@@ -157,16 +158,13 @@ struct FriendInviteRow: View {
             Spacer()
             
             // Invite button
-            Button(action: onInvite) {
-                Text("Invite")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(ColorTheme.primary)
-                    .cornerRadius(20)
+            Button("Invite") { // Use simple title init
+                onInvite()
             }
+            .buttonStyle(PrimaryButtonStyle()) // Apply primary style
+            // Adjust padding if needed to make it less wide
+            .padding(.vertical, -4) // Reduce vertical padding slightly
+            .fixedSize(horizontal: true, vertical: false) // Prevent stretching full width
         }
         .padding()
         .background(Color.white)

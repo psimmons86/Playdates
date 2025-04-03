@@ -1,26 +1,26 @@
 import SwiftUI
 
-/// Comments section with generic row type
+/// Comments section (Simplified: Non-generic, uses DefaultCommentRow directly)
 @available(iOS 17.0, *)
-public struct CommentsSection<RowType: View>: View {
+public struct CommentsSection: View {
+    // Removed generic RowType
     private let comments: [CommentWithUser]
     @Binding private var commentText: String
     private let isLoadingComments: Bool
     private let onSubmitComment: () -> Void
-    private let rowBuilder: (CommentWithUser) -> RowType
-    
+    // Removed rowBuilder property
+
     public init(
         comments: [CommentWithUser], 
         commentText: Binding<String>, 
         isLoadingComments: Bool,
-        onSubmitComment: @escaping () -> Void,
-        @ViewBuilder rowBuilder: @escaping (CommentWithUser) -> RowType
+        onSubmitComment: @escaping () -> Void
+        // Removed @ViewBuilder rowBuilder parameter
     ) {
         self.comments = comments
         self._commentText = commentText
         self.isLoadingComments = isLoadingComments
         self.onSubmitComment = onSubmitComment
-        self.rowBuilder = rowBuilder
     }
     
     public var body: some View {
@@ -42,10 +42,11 @@ public struct CommentsSection<RowType: View>: View {
                     .foregroundColor(ColorTheme.lightText)
                     .padding(.vertical, 8)
             } else {
-                // Comments list
+                // Comments list - Directly use DefaultCommentRow
                 VStack(spacing: 16) {
                     ForEach(comments) { commentWithUser in
-                        rowBuilder(commentWithUser)
+                        // Directly use DefaultCommentRow instead of rowBuilder
+                        DefaultCommentRow(commentWithUser: commentWithUser) 
                     }
                 }
             }
@@ -56,13 +57,21 @@ public struct CommentsSection<RowType: View>: View {
                     .padding(12)
                     .background(Color.gray.opacity(0.1))
                     .cornerRadius(20)
+                    .submitLabel(.send)
+                    .onSubmit {
+                        if !commentText.isEmpty {
+                            onSubmitComment()
+                        }
+                    }
                 
                 Button(action: onSubmitComment) {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.system(size: 32))
-                        .foregroundColor(commentText.isEmpty ? ColorTheme.lightText : ColorTheme.primary)
+                        .foregroundColor(commentText.isEmpty ? ColorTheme.lightText : ColorTheme.primary) // Keep color logic
                 }
+                .buttonStyle(PlainButtonStyle()) // Apply plain style
                 .disabled(commentText.isEmpty)
+                .accessibilityLabel("Send comment")
             }
             .padding(.top, 8)
         }
@@ -74,7 +83,7 @@ public struct CommentsSection<RowType: View>: View {
     }
 }
 
-/// Default comment row implementation
+/// Default comment row implementation (Remains the same)
 @available(iOS 17.0, *)
 public struct DefaultCommentRow: View {
     private let commentWithUser: CommentWithUser

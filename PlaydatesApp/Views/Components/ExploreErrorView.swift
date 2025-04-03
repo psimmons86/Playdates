@@ -17,16 +17,13 @@ struct ExploreErrorView: View {
                 .padding(.horizontal, 24)
             
             if let retryAction = retryAction {
-                Button(action: retryAction) {
-                    Text("Try Again")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 8)
-                        .background(ColorTheme.primary)
-                        .cornerRadius(20)
+                Button("Try Again") { // Use simple title init
+                    retryAction()
                 }
+                .primaryStyle() // Apply primary style
+                // Adjust padding if needed
+                .padding(.vertical, -4) // Reduce vertical padding slightly
+                .fixedSize(horizontal: true, vertical: false) // Prevent stretching full width
             }
         }
         .padding()

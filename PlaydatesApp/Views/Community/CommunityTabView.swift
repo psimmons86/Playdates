@@ -98,6 +98,7 @@ struct CommunityTabButton: View {
                 alignment: .bottom
             )
         }
+        .buttonStyle(PlainButtonStyle()) // Apply plain style for custom background/overlay
     }
 }
 

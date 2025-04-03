@@ -1,5 +1,7 @@
 import SwiftUI
 
+// The CalendarViewMode enum is now defined in Models/CalendarViewMode.swift
+
 // Placeholder Views
 struct CreateEventView: View {
     var body: some View { Text("Create Event Placeholder") }
@@ -43,27 +45,28 @@ struct CommunityEventsView: View {
                                 .foregroundColor(ColorTheme.text)
                             
                             if !searchText.isEmpty {
-                                Button(action: {
+                                Button { // Use trailing closure syntax
                                     searchText = ""
-                                }) {
+                                } label: {
                                     Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(ColorTheme.lightText)
+                                        .foregroundColor(ColorTheme.lightText) // Keep color
                                 }
+                                .buttonStyle(PlainButtonStyle()) // Apply plain style
                             }
                             
                             Divider()
                                 .frame(height: 20)
                             
-                            Button(action: {
+                            Button { // Use trailing closure syntax
                                 activeSheet = .filter
-                            }) {
+                            } label: {
                                 HStack(spacing: 4) {
                                     Image(systemName: "line.3.horizontal.decrease")
                                     Text("Filter")
                                 }
-                                .font(.subheadline)
-                                .foregroundColor(ColorTheme.primary)
+                                // Font/color handled by textStyle
                             }
+                            .textStyle() // Apply text style
                         }
                         .padding(12)
                         .background(Color.white)
@@ -79,6 +82,7 @@ struct CommunityEventsView: View {
                     // Event category filter
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 10) {
+                            // CategoryButton uses PlainButtonStyle internally (defined in HomeComponents)
                             CategoryButton(
                                 title: "All",
                                 isSelected: selectedCategory == nil,
@@ -120,6 +124,7 @@ struct CommunityEventsView: View {
                     } else if viewModel.filteredEvents.isEmpty {
                         // Empty state
                         SectionBox(title: "Upcoming Events") {
+                            // EmptyStateBox uses primaryStyle internally (defined in HomeComponents)
                             EmptyStateBox(
                                 icon: "calendar",
                                 title: "No Events Yet",
@@ -195,13 +200,14 @@ struct CommunityEventsView: View {
                 .padding(.vertical)
             }
         }
-        .navigationBarItems(trailing: Button(action: {
+        .navigationBarItems(trailing: Button { // Use trailing closure syntax
             activeSheet = .createEvent
-        }) {
+        } label: {
             Image(systemName: "plus")
                 .font(.system(size: 16, weight: .bold))
-                .foregroundColor(ColorTheme.primary)
-        })
+                .foregroundColor(ColorTheme.primary) // Keep color
+        }
+        .buttonStyle(PlainButtonStyle())) // Apply plain style
         .sheet(item: $activeSheet) { item -> AnyView in
             switch item {
             case .createEvent:
@@ -304,6 +310,7 @@ struct CalendarModeButton: View {
                     nil
             )
         }
+        .buttonStyle(PlainButtonStyle()) // Apply plain style for custom background/overlay
     }
 }
 
@@ -635,15 +642,21 @@ struct EventCalendarPlaceholder: View {
                 Spacer()
                 
                 HStack(spacing: 20) {
-                    Button(action: {}) {
+                    Button { // Use trailing closure syntax
+                        // Action for previous
+                    } label: {
                         Image(systemName: "chevron.left")
-                            .foregroundColor(ColorTheme.primary)
+                            .foregroundColor(ColorTheme.primary) // Keep color
                     }
+                    .buttonStyle(PlainButtonStyle()) // Apply plain style
                     
-                    Button(action: {}) {
+                    Button { // Use trailing closure syntax
+                        // Action for next
+                    } label: {
                         Image(systemName: "chevron.right")
-                            .foregroundColor(ColorTheme.primary)
+                            .foregroundColor(ColorTheme.primary) // Keep color
                     }
+                    .buttonStyle(PlainButtonStyle()) // Apply plain style
                 }
             }
             
@@ -659,10 +672,6 @@ struct EventCalendarPlaceholder: View {
                 agendaView
             case .map:
                 mapView
-            // Add default case to make switch exhaustive
-            default:
-                // Use string interpolation directly as CalendarViewMode has no rawValue
-                Text("Selected View Mode: \(viewMode)") // Placeholder for any potentially missed modes
             }
         }
         .padding()
@@ -888,7 +897,6 @@ struct EventCalendarPlaceholder: View {
         }
     }
 }
-
 // Add a computed property to CommunityEvent for remaining spots
 extension CommunityEvent {
     // Corrected property name from maxAttendees to maxCapacity

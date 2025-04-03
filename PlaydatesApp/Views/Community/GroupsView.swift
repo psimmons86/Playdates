@@ -44,12 +44,13 @@ struct GroupsView: View {
                                 .foregroundColor(ColorTheme.text)
                             
                             if !searchText.isEmpty {
-                                Button(action: {
+                                Button { // Use trailing closure syntax
                                     searchText = ""
-                                }) {
+                                } label: {
                                     Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(ColorTheme.lightText)
+                                        .foregroundColor(ColorTheme.lightText) // Keep color
                                 }
+                                .buttonStyle(PlainButtonStyle()) // Apply plain style
                             }
                         }
                         .padding(12)
@@ -60,6 +61,7 @@ struct GroupsView: View {
                         // Group type filter
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 10) {
+                                // CategoryButton uses PlainButtonStyle internally (defined in HomeComponents)
                                 CategoryButton(
                                     title: "All",
                                     isSelected: selectedGroupType == nil,
@@ -102,6 +104,7 @@ struct GroupsView: View {
                     } else if filteredGroups.isEmpty {
                         // Empty state
                         SectionBox(title: "Your Groups") {
+                            // EmptyStateBox uses primaryStyle internally (defined in HomeComponents)
                             EmptyStateBox(
                                 icon: "person.3",
                                 title: "No Groups Yet",
@@ -209,13 +212,14 @@ struct GroupsView: View {
                 .padding(.vertical)
             }
         }
-        .navigationBarItems(trailing: Button(action: {
+        .navigationBarItems(trailing: Button { // Use trailing closure syntax
             showingCreateGroupSheet = true
-        }) {
+        } label: {
             Image(systemName: "plus")
                 .font(.system(size: 16, weight: .bold))
-                .foregroundColor(ColorTheme.primary)
-        })
+                .foregroundColor(ColorTheme.primary) // Keep color
+        }
+        .buttonStyle(PlainButtonStyle())) // Apply plain style
         .sheet(isPresented: $showingCreateGroupSheet) {
             CreateGroupView()
         }
@@ -433,18 +437,13 @@ struct CompactGroupCard: View {
                 .foregroundColor(ColorTheme.text)
                 .lineLimit(2)
             
-            Button(action: {
+            Button("Join Group") { // Use simple title init
                 // Join group action
-            }) {
-                Text("Join Group")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .background(groupTypeColor)
-                    .cornerRadius(8)
             }
+            .primaryStyle() // Apply primary style
+            .padding(.vertical, -4) // Adjust padding
+            .background(groupTypeColor) // Keep custom background color
+            .cornerRadius(10) // Match primary style corner radius
         }
         .padding(16)
         .frame(width: 220, height: 200)
@@ -549,7 +548,8 @@ struct CreateGroupView: View {
                 .navigationTitle("Create Group")
                 .navigationBarItems(leading: Button("Cancel") {
                     presentationMode.wrappedValue.dismiss()
-                })
+                }
+                .textStyle()) // Apply text style
         }
     }
 }

@@ -11,13 +11,32 @@ struct ActivityPlace: Identifiable {
     let name: String
     let location: Location
     let types: [String]
-    let rating: Double?
+    var rating: Double? // Changed from let to var
     let userRatingsTotal: Int?
     let photoReference: String?
+    // Added fields to hold details fetched on demand
+    var description: String?
+    var website: String?
+    var phoneNumber: String?
     
     var formattedRating: String {
         guard let rating = rating else { return "No ratings" }
         return String(format: "%.1f/5", rating)
+    }
+    
+    // Explicit initializer to avoid ambiguity
+    // Note: The initializer parameter 'rating' remains 'let' as it's just the initial value.
+    init(id: String, name: String, location: Location, types: [String], rating: Double?, userRatingsTotal: Int?, photoReference: String?, description: String? = nil, website: String? = nil, phoneNumber: String? = nil) {
+        self.id = id
+        self.name = name
+        self.location = location
+        self.types = types
+        self.rating = rating
+        self.userRatingsTotal = userRatingsTotal
+        self.photoReference = photoReference
+        self.description = description
+        self.website = website
+        self.phoneNumber = phoneNumber
     }
 }
 
@@ -36,6 +55,8 @@ struct ActivityPlaceDetail {
     let reviews: [PlaceReview]?
     let priceLevel: Int?
     let photos: [PlacePhoto]?
+    let editorialSummary: EditorialSummary? // Added for consistency with PlaceDetailResult
+    let openingHours: OpeningHours?       // Added for consistency with PlaceDetailResult
     
     var formattedRating: String {
         guard let rating = rating else { return "No ratings" }
@@ -155,6 +176,7 @@ struct PlaceDetailResult: Decodable {
     let reviews: [ReviewResult]?
     let priceLevel: Int?
     let photos: [PhotoResult]?
+    let editorialSummary: EditorialSummary? // Added editorial summary
     
     enum CodingKeys: String, CodingKey {
         case name
@@ -166,7 +188,16 @@ struct PlaceDetailResult: Decodable {
         case reviews
         case priceLevel = "price_level"
         case photos
+        case editorialSummary = "editorial_summary" // Added coding key
     }
+}
+
+/**
+ Editorial summary information from Place Details API.
+ */
+struct EditorialSummary: Decodable {
+    let overview: String?
+    // language field is also available if needed
 }
 
 /**

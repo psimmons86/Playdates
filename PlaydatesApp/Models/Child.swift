@@ -9,19 +9,10 @@ public struct PlaydateChild: Identifiable, Codable, Equatable {
     public var gender: String?
     public var interests: [String]
     public var parentID: String
-    public var createdAt: Date
-    public var updatedAt: Date
+    public var createdAt: Date? // Made optional
+    public var updatedAt: Date? // Made optional
     
-    enum CodingKeys: String, CodingKey {
-        case id
-        case name
-        case age
-        case gender
-        case interests
-        case parentID
-        case createdAt
-        case updatedAt
-    }
+    // Removed explicit CodingKeys to rely on synthesized Codable
     
     public init(id: String? = nil, 
          name: String, 
@@ -29,8 +20,8 @@ public struct PlaydateChild: Identifiable, Codable, Equatable {
          gender: String? = nil, 
          interests: [String] = [], 
          parentID: String,
-         createdAt: Date = Date(),
-         updatedAt: Date = Date()) {
+         createdAt: Date? = nil, // Accept optional Date, default to nil
+         updatedAt: Date? = nil) { // Accept optional Date, default to nil
         self.id = id
         self.name = name
         self.age = age
@@ -53,5 +44,5 @@ public struct PlaydateChild: Identifiable, Codable, Equatable {
     ]
 }
 
-// For backward compatibility
-public typealias Child = PlaydateChild
+// Removed typealias Child = PlaydateChild to resolve ambiguity.
+// Use PlaydateChild directly throughout the project.

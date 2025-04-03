@@ -25,16 +25,13 @@ struct ExploreEmptyStateView: View {
                 .padding(.horizontal, 24)
             
             if let actionTitle = actionTitle, let action = action {
-                Button(action: action) {
-                    Text(actionTitle)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 8)
-                        .background(ColorTheme.primary)
-                        .cornerRadius(20)
+                Button(actionTitle) { // Use simple title init
+                    action()
                 }
+                .primaryStyle() // Apply primary style
+                // Adjust padding if needed
+                .padding(.vertical, -4) // Reduce vertical padding slightly
+                .fixedSize(horizontal: true, vertical: false) // Prevent stretching full width
             }
         }
         .padding()

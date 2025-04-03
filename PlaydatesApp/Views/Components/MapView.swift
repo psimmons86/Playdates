@@ -41,17 +41,17 @@ struct MapView: View {
                     .foregroundColor(ColorTheme.lightText)
                 
                 // Open in Maps button
-                Button(action: openInMaps) {
+                Button { // Use trailing closure syntax
+                    openInMaps()
+                } label: {
                     HStack {
                         Image(systemName: "map.fill")
                         Text("Open in Maps")
+                        // Font/color handled by primaryStyle
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(ColorTheme.primary)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
+                    // Styling handled by primaryStyle
                 }
+                .primaryStyle() // Apply primary style
                 .padding(.top, 8)
             }
             .padding()

@@ -129,43 +129,45 @@ struct PlaydateActionButtonsView: View {
         VStack(spacing: 12) {
             if isHost {
                 // Host actions
-                Button(action: onInvite) {
+                Button { // Use trailing closure syntax
+                    onInvite()
+                } label: {
                     HStack {
                         Image(systemName: "person.badge.plus")
                         Text("Invite Friends")
+                        // Font/color handled by primaryStyle
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(ColorTheme.primary)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
+                    // Styling handled by primaryStyle
                 }
+                .primaryStyle() // Apply primary style
             } else if isAttending {
                 // Attendee actions
-                Button(action: onLeave) {
+                Button { // Use trailing closure syntax
+                    onLeave()
+                } label: {
                     HStack {
                         Image(systemName: "person.badge.minus")
                         Text("Leave Playdate")
+                        // Font/color handled by primaryStyle
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.red.opacity(0.8))
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
+                    // Styling handled by primaryStyle
                 }
+                .primaryStyle() // Apply primary style
+                .background(Color.red.opacity(0.8)) // Override background for destructive action
+                .cornerRadius(10) // Ensure corner radius matches style
             } else {
                 // Non-attendee actions
-                Button(action: onJoin) {
+                Button { // Use trailing closure syntax
+                    onJoin()
+                } label: {
                     HStack {
                         Image(systemName: "person.badge.plus")
                         Text("Join Playdate")
+                        // Font/color handled by primaryStyle
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(ColorTheme.primary)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
+                    // Styling handled by primaryStyle
                 }
+                .primaryStyle() // Apply primary style
             }
         }
         .padding()

@@ -4,15 +4,10 @@ import Foundation
 // MARK: - Playdate Card
 struct PlaydateCard: View {
     let playdate: Playdate
-    @State private var isAnimating = false
+    // Removed @State private var isAnimating = false
     
     var body: some View {
-        GradientCard(
-            gradientColors: [
-                activityColor,
-                activityColor.opacity(0.8)
-            ]
-        ) {
+        RoundedCard { // Replaced GradientCard with RoundedCard
             VStack(alignment: .leading, spacing: 12) {
                 // Header with activity type icon
                 HStack {
@@ -24,13 +19,13 @@ struct PlaydateCard: View {
                         // Title
                         Text(playdate.title)
                             .font(.headline)
-                            .foregroundColor(.white)
+                            .foregroundColor(ColorTheme.text) // Changed from .white
                             .lineLimit(1)
                         
                         // Host info if available
-                        Text("Hosted by You")
+                        Text("Hosted by You") // TODO: Replace with actual host name if available
                             .font(.caption)
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundColor(ColorTheme.lightText) // Changed from .white.opacity(0.8)
                     }
                     
                     Spacer()
@@ -39,53 +34,54 @@ struct PlaydateCard: View {
                     VStack(spacing: 0) {
                         Text(dayOfMonth)
                             .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(ColorTheme.darkPurple) // Changed from .white
                         
                         Text(monthAbbreviation)
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.white)
+                            .foregroundColor(ColorTheme.darkPurple) // Changed from .white
                     }
                     .frame(width: 40, height: 40)
-                    .background(Color.white.opacity(0.2))
+                    .background(ColorTheme.primaryLight.opacity(0.5)) // Changed background
                     .cornerRadius(8)
                 }
                 
                 Divider()
-                    .background(Color.white.opacity(0.3))
+                    .background(ColorTheme.lightText.opacity(0.3)) // Changed divider color
                 
                 // Date and time
                 HStack {
                     Image(systemName: "clock")
-                        .foregroundColor(.white)
+                        .foregroundColor(ColorTheme.lightText) // Changed from .white
                     
                     Text(formatTime(playdate.startDate))
                         .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.9))
+                        .foregroundColor(ColorTheme.text) // Changed from .white.opacity(0.9)
                 }
                 
                 // Location
                 HStack {
                     Image(systemName: "mappin.and.ellipse")
-                        .foregroundColor(.white)
+                        .foregroundColor(ColorTheme.lightText) // Changed from .white
                     
                     Text(playdate.location?.name ?? playdate.address ?? "Location TBD")
                         .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.9))
+                        .foregroundColor(ColorTheme.text) // Changed from .white.opacity(0.9)
                         .lineLimit(1)
                 }
                 
                 // Attendees
                 HStack {
                     Image(systemName: "person.2")
-                        .foregroundColor(.white)
+                        .foregroundColor(ColorTheme.lightText) // Changed from .white
                     
                     Text("\(playdate.attendeeIDs.count) attending")
                         .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.9))
+                        .foregroundColor(ColorTheme.text) // Changed from .white.opacity(0.9)
                 }
             }
             .padding()
         }
+        // Removed activityColor computed property
     }
     
     // Helper properties for date formatting
@@ -108,27 +104,7 @@ struct PlaydateCard: View {
         return formatter.string(from: date)
     }
     
-    // Activity color based on playdate activity type
-    private var activityColor: Color {
-        let activityType = ActivityType(rawValue: playdate.activityType ?? "other") ?? .other
-        
-        switch activityType {
-        case .park:
-            return Color(red: 0.02, green: 0.84, blue: 0.63)
-        case .museum, .library:
-            return ColorTheme.accent
-        case .playground, .zoo:
-            return ColorTheme.highlight
-        case .swimmingPool, .aquarium:
-            return Color(red: 0.07, green: 0.54, blue: 0.7)
-        case .sportingEvent, .themePark:
-            return Color(red: 0.94, green: 0.28, blue: 0.44)
-        case .movieTheater:
-            return Color(red: 0.46, green: 0.47, blue: 0.93)
-        default:
-            return ColorTheme.primary
-        }
-    }
+    // Removed activityColor computed property
     
     // Activity type icon based on playdate activity type
     private var activityTypeIcon: some View {
@@ -162,9 +138,9 @@ struct PlaydateCard: View {
         
         return Image(systemName: systemName)
             .font(.system(size: 24))
-            .foregroundColor(.white)
+            .foregroundColor(ColorTheme.darkPurple) // Changed from .white
             .frame(width: 40, height: 40)
-            .background(Color.white.opacity(0.2))
+            .background(ColorTheme.primaryLight.opacity(0.5)) // Changed background
             .clipShape(Circle())
     }
 }

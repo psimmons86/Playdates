@@ -12,8 +12,8 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             if authViewModel.isSignedIn {
-                // User is signed in - show main app
-                MainTabView()
+                // User is signed in - show main app with side menu navigation
+                MainContainerView()
                     .environmentObject(authViewModel)
                     .environmentObject(locationManager)
             } else if !hasCompletedOnboarding || showingOnboarding {

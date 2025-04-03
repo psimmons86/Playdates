@@ -6,7 +6,7 @@ struct EnhancedChatView: View {
     @State private var messageText = ""
     @State private var isImagePickerPresented = false
     @State private var selectedImage: UIImage?
-    @State private var messages: [ChatMessage] = []
+    // Removed redundant local @State messages; view should use viewModel.messages
     @State private var imageUploadProgress: Double?
     @State private var scrollToBottom = false
     
@@ -26,10 +26,13 @@ struct EnhancedChatView: View {
             messageInput
         }
         .onAppear {
-            setupChat()
+            // Use setupListener from the correct ViewModel
+            guard let recipientId = recipientUser.id else { return }
+            viewModel.setupListener(for: recipientId)
         }
         .onDisappear {
-            viewModel.stopListening()
+            // Use removeListener from the correct ViewModel
+            viewModel.removeListener()
         }
         .navigationBarHidden(true)
         .background(ColorTheme.background.edgesIgnoringSafeArea(.all))
@@ -37,8 +40,8 @@ struct EnhancedChatView: View {
     
     private var chatHeader: some View {
         HStack {
+            // Reverted Back Button
             Button(action: {
-                // Go back
                 presentationMode.wrappedValue.dismiss()
             }) {
                 Image(systemName: "chevron.left")
@@ -63,14 +66,12 @@ struct EnhancedChatView: View {
                 Text(recipientUser.name)
                     .font(.headline)
                     .foregroundColor(.primary)
-                
-                Text(viewModel.isUserOnline ? "Online" : "Offline")
-                    .font(.caption)
-                    .foregroundColor(viewModel.isUserOnline ? .green : .gray)
+                // Removed Text view for online status as viewModel.isUserOnline is not available.
             }
-            
+
             Spacer()
             
+            // Reverted Info Button
             Button(action: {
                 // Show profile
             }) {
@@ -86,37 +87,82 @@ struct EnhancedChatView: View {
     
     private var messageList: some View {
         ScrollViewReader { scrollView in
-            ScrollView {
-                LazyVStack(spacing: 16) {
-                    // Date divider
-                    ForEach(Array(viewModel.messageSections.keys.sorted()), id: \.self) { date in
-                        if let sectionMessages = viewModel.messageSections[date] {
-                            DateDivider(date: date)
-                                .padding(.vertical, 8)
-                            
-                            ForEach(sectionMessages) { message in
-                                MessageBubble(message: message)
-                                    .id(message.id)
-                            }
+            // Handle loading state outside ScrollView
+            if viewModel.isLoading {
+                 loadingView()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        // Handle error state
+                        if let error = viewModel.error {
+                            errorView(error)
+                        }
+                        // Handle empty state
+                        else if viewModel.messages.isEmpty {
+                            emptyMessagesView()
+                        }
+                        // Display messages
+                        else {
+                            messageListView()
                         }
                     }
+                    .padding()
                 }
-                .padding()
-            }
-            .onChange(of: viewModel.messages) { _ in
-                if let lastMessage = viewModel.messages.last {
-                    withAnimation {
-                        scrollView.scrollTo(lastMessage.id, anchor: .bottom)
-                    }
+                .background(ColorTheme.background) // Apply background to ScrollView content area
+                .onChange(of: viewModel.messages) { _ in // Use the correct published property
+                    scrollToLastMessage(scrollView: scrollView)
                 }
-            }
-            .onAppear {
-                if let lastMessage = viewModel.messages.last {
-                    scrollView.scrollTo(lastMessage.id, anchor: .bottom)
+                .onAppear {
+                    scrollToLastMessage(scrollView: scrollView)
                 }
             }
         }
-        .background(ColorTheme.background)
+        .background(ColorTheme.background) // Ensure background covers loading state too
+    }
+
+    // Helper view for loading state
+    @ViewBuilder
+    private func loadingView() -> some View {
+        ProgressView("Loading messages...")
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(ColorTheme.background) // Ensure background consistency
+    }
+
+    // Helper view for error state
+    @ViewBuilder
+    private func errorView(_ error: Error) -> some View {
+        Text("Error loading messages: \(error.localizedDescription)")
+            .foregroundColor(.red)
+            .padding()
+    }
+
+    // Helper view for empty state
+    @ViewBuilder
+    private func emptyMessagesView() -> some View {
+        Text("No messages yet. Start the conversation!")
+            .foregroundColor(.secondary)
+            .padding()
+    }
+
+    // Helper view for the list of messages
+    @ViewBuilder
+    private func messageListView() -> some View {
+        // Use the correct published property from the ViewModel
+        ForEach(viewModel.messages) { message in
+            let isFromCurrentUser = message.senderID == authViewModel.user?.id
+            MessageBubble(message: message, isFromCurrentUser: isFromCurrentUser)
+                .id(message.id) // Ensure ChatMessage has an id
+        }
+    }
+
+    // Helper function for scrolling
+    private func scrollToLastMessage(scrollView: ScrollViewProxy) {
+        // Use the correct published property
+        if let lastMessage = viewModel.messages.last {
+            withAnimation {
+                scrollView.scrollTo(lastMessage.id, anchor: .bottom)
+            }
+        }
     }
     
     private var messageInput: some View {
@@ -138,6 +184,7 @@ struct EnhancedChatView: View {
                             .progressViewStyle(CircularProgressViewStyle())
                     }
                     
+                    // Reverted Remove Image Button
                     Button(action: {
                         selectedImage = nil
                         imageUploadProgress = nil
@@ -151,7 +198,7 @@ struct EnhancedChatView: View {
             }
             
             HStack(spacing: 12) {
-                // Media attachment button
+                // Reverted Media Attachment Button
                 Button(action: {
                     isImagePickerPresented = true
                 }) {
@@ -166,7 +213,7 @@ struct EnhancedChatView: View {
                     .background(Color.white)
                     .cornerRadius(20)
                 
-                // Send button
+                // Reverted Send Button
                 Button(action: sendMessage) {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.system(size: 32))
@@ -184,53 +231,53 @@ struct EnhancedChatView: View {
             ImagePicker(selectedImage: $selectedImage)
         }
     }
-    
-    private func setupChat() {
-        guard let currentUserId = authViewModel.user?.id,
-              let recipientId = recipientUser.id else {
-            return
-        }
-        
-        viewModel.setupChat(currentUserId: currentUserId, recipientId: recipientId)
-    }
-    
+
+    // setupChat() function is removed as its logic is handled in .onAppear
+
     private func sendMessage() {
-        guard let currentUserId = authViewModel.user?.id,
-              let recipientId = recipientUser.id else {
+        // No need for currentUserId and recipientId here, ViewModel handles it
+        guard authViewModel.user?.id != nil else {
             return
         }
         
         // If there's an image, upload it first
         if let image = selectedImage {
             uploadImage(image) { imageUrl in
-                viewModel.sendMessage(
-                    from: currentUserId,
-                    to: recipientId,
-                    text: messageText,
-                    imageURL: imageUrl
-                )
-                
-                // Reset state
-                messageText = ""
-                selectedImage = nil
-                imageUploadProgress = nil
+                // Call the async sendMessage from the correct ViewModel
+                Task {
+                    do {
+                        try await viewModel.sendMessage(text: messageText, imageURL: imageUrl)
+                        // Reset state on success
+                        messageText = ""
+                        selectedImage = nil
+                        imageUploadProgress = nil
+                    } catch {
+                        // Handle error (e.g., show an alert)
+                        print("❌ Error sending message with image: \(error.localizedDescription)")
+                    }
+                }
             }
         } else if !messageText.isEmpty {
-            viewModel.sendMessage(
-                from: currentUserId,
-                to: recipientId,
-                text: messageText
-            )
-            
-            // Reset message text
-            messageText = ""
+            // Call the async sendMessage from the correct ViewModel
+            Task {
+                do {
+                    try await viewModel.sendMessage(text: messageText)
+                    // Reset message text on success
+                    messageText = ""
+                } catch {
+                    // Handle error (e.g., show an alert)
+                    print("❌ Error sending text message: \(error.localizedDescription)")
+                }
+            }
         }
     }
-    
+
+    // Note: This uploadImage function is a placeholder simulation.
+    // In a real app, integrate with FirebaseStorageService.
     private func uploadImage(_ image: UIImage, completion: @escaping (String?) -> Void) {
         // Set initial progress
         imageUploadProgress = 0.0
-        
+
         // Simulate upload progress (in a real app, you'd use Firebase Storage)
         var progress: Double = 0.0
         let timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
@@ -249,138 +296,6 @@ struct EnhancedChatView: View {
             }
         }
         timer.fire()
-    }
-}
-
-// Supporting view model
-class ChatViewModel: ObservableObject {
-    @Published var messages: [ChatMessage] = []
-    @Published var isUserOnline: Bool = false
-    @Published var messageSections: [Date: [ChatMessage]] = [:]
-    
-    private var messagingService = MessagingService.shared
-    private var cancellables = Set<AnyCancellable>()
-    
-    private var currentUserId: String?
-    private var recipientId: String?
-    private var chatId: String?
-    
-    func setupChat(currentUserId: String, recipientId: String) {
-        self.currentUserId = currentUserId
-        self.recipientId = recipientId
-        
-        // Create chat ID
-        chatId = getChatID(userID1: currentUserId, userID2: recipientId)
-        
-        // Start listening for messages
-        messagingService.listenToConversation(between: currentUserId, and: recipientId)
-        
-        // Subscribe to message updates
-        if let chatId = chatId {
-            messagingService.$conversations
-                .map { $0[chatId] ?? [] }
-                .assign(to: &$messages)
-            
-            // Check if user is online (simulated)
-            checkUserOnlineStatus(userId: recipientId)
-        }
-        
-        // Subscribe to messages and create date sections
-        $messages
-            .sink { [weak self] messages in
-                self?.updateMessageSections(with: messages)
-            }
-            .store(in: &cancellables)
-    }
-    
-    private func updateMessageSections(with messages: [ChatMessage]) {
-        let calendar = Calendar.current
-        var sections: [Date: [ChatMessage]] = [:]
-        
-        for message in messages {
-            let components = calendar.dateComponents([.year, .month, .day], from: message.timestamp)
-            if let date = calendar.date(from: components) {
-                if sections[date] == nil {
-                    sections[date] = []
-                }
-                sections[date]?.append(message)
-            }
-        }
-        
-        // Sort messages within each section by timestamp
-        for (date, messagesInSection) in sections {
-            sections[date] = messagesInSection.sorted { $0.timestamp < $1.timestamp }
-        }
-        
-        self.messageSections = sections
-    }
-    
-    func sendMessage(from senderID: String, to recipientID: String, text: String, imageURL: String? = nil) {
-        messagingService.sendMessage(from: senderID, to: recipientID, text: text, imageURL: imageURL)
-            .sink(receiveCompletion: { completion in
-                if case .failure(let error) = completion {
-                    print("Error sending message: \(error.localizedDescription)")
-                }
-            }, receiveValue: { _ in
-                // Message sent successfully
-            })
-            .store(in: &cancellables)
-    }
-    
-    func stopListening() {
-        if let chatId = chatId {
-            messagingService.stopListening(to: chatId)
-        }
-    }
-    
-    private func getChatID(userID1: String, userID2: String) -> String {
-        // Sort IDs to ensure the same chat ID regardless of who initiates
-        let sortedIDs = [userID1, userID2].sorted()
-        return "\(sortedIDs[0])_\(sortedIDs[1])"
-    }
-    
-    private func checkUserOnlineStatus(userId: String) {
-        // In a real app, you'd check a user's online status in Firebase
-        // Here we'll just simulate it with a random value
-        isUserOnline = Bool.random()
-    }
-}
-
-// Helper for image picking
-struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var selectedImage: UIImage?
-    @Environment(\.presentationMode) private var presentationMode
-    
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.delegate = context.coordinator
-        picker.allowsEditing = true
-        picker.sourceType = .photoLibrary
-        return picker
-    }
-    
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-    
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: ImagePicker
-        
-        init(_ parent: ImagePicker) {
-            self.parent = parent
-        }
-        
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-            if let editedImage = info[.editedImage] as? UIImage {
-                parent.selectedImage = editedImage
-            } else if let originalImage = info[.originalImage] as? UIImage {
-                parent.selectedImage = originalImage
-            }
-            
-            parent.presentationMode.wrappedValue.dismiss()
-        }
     }
 }
 
@@ -418,12 +333,16 @@ struct DateDivider: View {
 
 struct MessageBubble: View {
     let message: ChatMessage
-    
+    let isFromCurrentUser: Bool // Passed in from the ForEach loop
+
+    // Access AuthViewModel to determine if message is from current user if needed elsewhere
+    // @EnvironmentObject var authViewModel: AuthViewModel
+
     var body: some View {
         HStack {
-            if message.isFromCurrentUser {
+            if isFromCurrentUser {
                 Spacer()
-                
+
                 // Current user's message (right-aligned)
                 VStack(alignment: .trailing, spacing: 4) {
                     // Message content
@@ -464,11 +383,11 @@ struct MessageBubble: View {
             }
         }
     }
-    
+
     private var messageContent: some View {
-        VStack(alignment: message.isFromCurrentUser ? .trailing : .leading, spacing: 8) {
+        VStack(alignment: isFromCurrentUser ? .trailing : .leading, spacing: 8) {
             // Image if present
-            if let imageURL = message.imageURL {
+            if let imageURL = message.imageURL, !imageURL.isEmpty { // Check if URL is not empty
                 // In a real app, you'd use an AsyncImage or similar
                 Color.gray
                     .frame(width: 200, height: 150)

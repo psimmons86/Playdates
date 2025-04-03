@@ -71,8 +71,17 @@ class WeatherService: ObservableObject {
     
     /// Generate sample weather data
     private func generateSampleWeather() -> WeatherData? {
-        // Get location
-        let location = useCurrentLocation ? "San Francisco, CA" : (customLocation ?? "San Francisco, CA")
+        // Determine location string based on settings
+        var locationString: String
+        if useCurrentLocation {
+            // TODO: Implement actual location fetching and reverse geocoding
+            // For now, use a placeholder indicating current location is intended
+            // let currentCoords = locationManager.location?.coordinate 
+            // Perform reverse geocode on currentCoords...
+            locationString = "Current Location (Simulated)" 
+        } else {
+            locationString = customLocation ?? "Default City, ST" // Use custom or a generic default
+        }
         
         // Generate random weather conditions
         let conditions = ["Clear", "Partly Cloudy", "Cloudy", "Light Rain", "Rain", "Thunderstorm", "Sunny"]
@@ -93,7 +102,7 @@ class WeatherService: ObservableObject {
             condition: condition,
             humidity: humidity,
             windSpeed: windSpeed,
-            location: location
+            location: locationString // Use the determined location string
         )
     }
     

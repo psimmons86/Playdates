@@ -19,7 +19,7 @@ class ResourceViewModel: ObservableObject {
     init() {
         // Load mock data for development
         #if DEBUG
-        addMockData()
+        // Mock data removed
         #endif
     }
     

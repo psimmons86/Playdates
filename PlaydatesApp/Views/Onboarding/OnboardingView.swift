@@ -33,7 +33,7 @@ public struct OnboardingView: View {
             ColorTheme.background.edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 0) {
-                // Skip button
+                // Skip button (Reverted to original)
                 HStack {
                     Spacer()
                     
@@ -81,7 +81,7 @@ public struct OnboardingView: View {
                 
                 Spacer()
                 
-                // Next/Get Started button
+                // Next/Get Started button (Reverted to original)
                 Button(action: {
                     if currentScreen < screens.count - 1 {
                         withAnimation {
@@ -102,7 +102,7 @@ public struct OnboardingView: View {
                 }
                 .padding(.horizontal, 32)
                 .padding(.bottom, 32)
-            }
+            } // This is the closing brace for the main VStack
         }
     }
 }

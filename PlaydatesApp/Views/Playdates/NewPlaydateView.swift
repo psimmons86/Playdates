@@ -5,6 +5,7 @@ import MapKit
 import Combine
 import UIKit
 import Firebase
+import FirebaseAuth // Add import for FirebaseAuth
 
 // Create Playdate View
 public struct NewPlaydateView: View {
@@ -34,17 +35,18 @@ public struct NewPlaydateView: View {
                         DatePicker("Date", selection: $date, displayedComponents: [.date, .hourAndMinute])
                         
                         // Location picker button
-                        Button(action: {
+                        Button { // Use trailing closure syntax for action
                             showingLocationPicker = true
-                        }) {
+                        } label: {
                             HStack {
                                 Text(selectedLocation?.name ?? "Select Location")
-                                    .foregroundColor(selectedLocation == nil ? .gray : .primary)
+                                    .foregroundColor(selectedLocation == nil ? ColorTheme.lightText : ColorTheme.text) // Use theme colors
                                 Spacer()
                                 Image(systemName: "mappin.and.ellipse")
                                     .foregroundColor(ColorTheme.primary)
                             }
                         }
+                        .buttonStyle(PlainButtonStyle()) // Make HStack tappable without default styling
                         
                         if let location = selectedLocation {
                             Text(location.address)
@@ -54,11 +56,12 @@ public struct NewPlaydateView: View {
                     }
                     
                     Section {
-                        Button(action: {
+                        Button {
                             // Create playdate
-                            guard let userID = authViewModel.user?.id ?? Auth.auth().currentUser?.uid else { return }
+                            // Use FirebaseAuthService singleton as fallback if authViewModel doesn't have user ID yet
+                            guard let userID = authViewModel.user?.id ?? FirebaseAuthService.shared.currentUser?.uid else { return }
                             guard let location = selectedLocation else { return }
-                            
+
                             let playdate = Playdate(
                                 id: nil, // Let Firestore generate the ID
                                 hostID: userID,
@@ -93,14 +96,10 @@ public struct NewPlaydateView: View {
                                     self.selectedLocation = nil
                                 }
                             }
-                        }) {
+                        } label: {
                             Text("Create Playdate")
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(ColorTheme.primary)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
                         }
+                        .buttonStyle(PrimaryButtonStyle())
                         .disabled(title.isEmpty || selectedLocation == nil)
                     }
                 }

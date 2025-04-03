@@ -115,7 +115,7 @@ struct ChildProfileSetupView: View {
                                     .cornerRadius(12)
                             )
                         }
-                        .buttonStyle(PlainButtonStyle()) // Ensure button style doesn't interfere
+                        .buttonStyle(PlainButtonStyle()) // Keep PlainButtonStyle for custom background
                         .padding(.bottom, 32)
                     }
                     .padding(.horizontal, 16)
@@ -146,14 +146,15 @@ struct ChildProfileSetupView: View {
                                 // Update the user's children
                                 user.children = children
                                 
-                                // Save the updated user profile
+                                // Save the updated user profile, including children
                                 authViewModel.updateUserProfile(
                                     name: user.name,
                                     bio: user.bio,
-                                    profileImageURL: user.profileImageURL
+                                    profileImageURL: user.profileImageURL,
+                                    children: children // Pass the children array here
                                 ) { success in
                                     isLoading = false
-                                    
+
                                     if success {
                                         print("Successfully saved \(children.count) children to user profile")
                                         onComplete()
@@ -172,32 +173,22 @@ struct ChildProfileSetupView: View {
                             }
                         }
                     }) {
+                        // Label for the primary button
                         if isLoading {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(ColorTheme.highlight)
-                                .cornerRadius(28)
+                                .frame(height: 20) // Match approx text height
                         } else {
                             Text("Continue")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(isFormValid ? ColorTheme.highlight : ColorTheme.highlight.opacity(0.5))
-                                .cornerRadius(28)
                         }
                     }
+                    .primaryStyle() // Apply primary style
                     .disabled(isLoading || !isFormValid)
                     
-                    Button(action: onSkip) {
-                        Text("Skip for Now")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(ColorTheme.primary)
+                    Button("Skip for Now") { // Use simple title init
+                        onSkip()
                     }
+                    .textStyle() // Apply text style
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 32)
@@ -232,11 +223,10 @@ struct ChildFormView: View {
                 Spacer()
                 
                 if index > 0 {
-                    Button(action: onRemove) {
-                        Text("Remove")
-                            .font(.subheadline)
-                            .foregroundColor(.red)
+                    Button("Remove") { // Use simple title init
+                        onRemove()
                     }
+                    .textStyle(color: .red) // Apply text style with red color
                 }
             }
             
@@ -335,6 +325,7 @@ struct InterestToggleButton: View {
                 .foregroundColor(isSelected ? ColorTheme.darkPurple : ColorTheme.lightText)
                 .cornerRadius(16)
         }
+        .buttonStyle(PlainButtonStyle()) // Apply plain style for custom background
     }
 }
 

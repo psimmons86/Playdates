@@ -13,7 +13,57 @@
 
 // MARK: - Common UI Components
 "common.user" = "Usuario";
+"common.cancel" = "Cancelar";
+"common.save" = "Guardar";
 
 // MARK: - Empty States
 "emptystate.title.default" = "No hay nada que ver aquí";
 "emptystate.message.default" = "Vuelve más tarde para actualizaciones";
+
+// MARK: - Profile
+"profile.title" = "Perfil";
+"profile.edit" = "Editar Perfil";
+"profile.friends" = "Amigos";
+"profile.children" = "Niños";
+"profile.joined" = "Se unió";
+"profile.addChild" = "Añadir Niño";
+"profile.noChildren" = "Aún no hay niños añadidos";
+"profile.noChildrenMessage" = "Añade a tus niños para encontrar citas de juego perfectas para ellos";
+"profile.activity" = "Actividad";
+"profile.stats.playdates" = "Citas de Juego";
+"profile.stats.favorites" = "Favoritos";
+"profile.stats.completed" = "Completados";
+"profile.stats.upcoming" = "Próximos";
+"profile.settings" = "Configuración";
+"profile.settings.account" = "Configuración de Cuenta";
+"profile.settings.notifications" = "Notificaciones";
+"profile.settings.privacy" = "Privacidad y Seguridad";
+"profile.settings.help" = "Ayuda y Soporte";
+"profile.signOut" = "Cerrar Sesión";
+
+// MARK: - Edit Profile
+"profile.edit.title" = "Editar Perfil";
+"profile.edit.info" = "Información del Perfil";
+"profile.edit.name" = "Nombre";
+"profile.edit.bio" = "Biografía";
+"profile.edit.image" = "Imagen de Perfil";
+"profile.edit.imageUrl" = "URL de Imagen";
+"profile.edit.save" = "Guardar";
+"profile.edit.cancel" = "Cancelar";
+
+// MARK: - Child Profile
+"profile.child.title" = "Editar Niño";
+"profile.child.info" = "Información del Niño";
+"profile.child.name" = "Nombre";
+"profile.child.age" = "Edad";
+"profile.child.interests" = "Intereses";
+"profile.child.notFound" = "Niño no encontrado";
+"profile.childSetup.title" = "Configuración de Perfil de Niño";
+
+// MARK: - Edit Child
+"child.edit.title" = "Editar Niño";
+"child.edit.name" = "Nombre";
+"child.edit.age" = "Edad";
+"child.edit.interests" = "Intereses";
+"child.edit.save" = "Guardar";
+"child.edit.cancel" = "Cancelar";

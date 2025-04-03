@@ -28,7 +28,8 @@ struct EnhancedActivityList: View {
             }
             
             ForEach(activities) { activity in
-                EnhancedActivityListCard(activity: activity)
+                // Provide the missing buttonAction parameter
+                FeaturedActivityCard(activity: activity, buttonAction: {}) 
                     .transition(.move(edge: .leading).combined(with: .opacity))
             }
         }
